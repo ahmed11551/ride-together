@@ -3,14 +3,19 @@ import BottomNav from "@/components/layout/BottomNav";
 import HeroSection from "@/components/home/HeroSection";
 import PopularRoutes from "@/components/home/PopularRoutes";
 import RidesList from "@/components/rides/RidesList";
+import { RidesMap } from "@/components/map/RidesMap";
 import HowItWorks from "@/components/home/HowItWorks";
 import DriverCTA from "@/components/home/DriverCTA";
 import { Helmet } from "react-helmet-async";
 import { useTelegramAuth } from "@/hooks/useTelegramAuth";
+import { useRecentRides } from "@/hooks/useRides";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Map as MapIcon, List } from "lucide-react";
 
 const Index = () => {
   // Автоматическая авторизация через Telegram, если приложение запущено в Telegram
   useTelegramAuth();
+  const { data: rides } = useRecentRides();
 
   return (
     <>
@@ -32,7 +37,30 @@ const Index = () => {
           <PopularRoutes />
           
           <div className="container">
-            <RidesList />
+            {rides && rides.length > 0 ? (
+              <Tabs defaultValue="list" className="w-full mb-8">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="list" aria-label="Показать список поездок">
+                    <List className="w-4 h-4 mr-2" />
+                    Список
+                  </TabsTrigger>
+                  <TabsTrigger value="map" aria-label="Показать поездки на карте">
+                    <MapIcon className="w-4 h-4 mr-2" />
+                    Карта
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="list">
+                  <RidesList />
+                </TabsContent>
+
+                <TabsContent value="map" className="h-[500px]">
+                  <RidesMap rides={rides} />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <RidesList />
+            )}
           </div>
           
           <HowItWorks />
