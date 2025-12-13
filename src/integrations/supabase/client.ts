@@ -6,17 +6,31 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // Validate environment variables
 if (!SUPABASE_URL) {
-  throw new Error(
+  const error = new Error(
     'Missing VITE_SUPABASE_URL environment variable. ' +
     'Please check your .env file and ensure VITE_SUPABASE_URL is set.'
   );
+  console.error(error);
+  // In production, we should still try to continue, but log the error
+  if (import.meta.env.PROD) {
+    console.error('Supabase URL is missing. The application may not work correctly.');
+  } else {
+    throw error;
+  }
 }
 
 if (!SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
+  const error = new Error(
     'Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable. ' +
     'Please check your .env file and ensure VITE_SUPABASE_PUBLISHABLE_KEY is set.'
   );
+  console.error(error);
+  // In production, we should still try to continue, but log the error
+  if (import.meta.env.PROD) {
+    console.error('Supabase Publishable Key is missing. The application may not work correctly.');
+  } else {
+    throw error;
+  }
 }
 
 // Import the supabase client like this:
