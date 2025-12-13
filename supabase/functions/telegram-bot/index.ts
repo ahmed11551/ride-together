@@ -10,6 +10,14 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// Helper function to generate ticket number
+function generateTicketNumber(): string {
+  const date = new Date();
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+  return `TICKET-${dateStr}-${random}`;
+}
+
 interface TelegramUpdate {
   update_id: number;
   message?: {
@@ -161,6 +169,52 @@ async function handleCallbackQuery(
   const data = callbackQuery.data;
   const userId = callbackQuery.from.id;
 
+  // Handle review ratings
+  if (data.startsWith("review_")) {
+    const rating = parseInt(data.replace("review_", ""));
+    if (rating >= 1 && rating <= 5) {
+      // Save review
+      await supabase
+        .from("bot_reviews")
+        .insert({
+          telegram_user_id: userId,
+          telegram_username: callbackQuery.from.username,
+          rating: rating,
+          category: "bot",
+          is_public: true,
+        });
+
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: `⭐ Спасибо за оценку ${"⭐".repeat(rating)}!\n\n` +
+          `Хотите оставить комментарий? Отправьте его следующим сообщением или нажмите "Пропустить".`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "✅ Пропустить",
+                callback_data: "review_skip_comment",
+              },
+            ],
+          ],
+        },
+      });
+    }
+    return;
+  }
+
+  // Handle ticket categories
+  if (data.startsWith("ticket_category_")) {
+    const category = data.replace("ticket_category_", "");
+    await sendTelegramMessage({
+      chat_id: chatId,
+      text: `📝 Создание тикета: ${category}\n\n` +
+        `Пожалуйста, опишите вашу проблему или вопрос.\n\n` +
+        `Отправьте сообщение с описанием.`,
+    });
+    return;
+  }
+
   switch (data) {
     case "my_rides":
       await sendTelegramMessage({
@@ -198,6 +252,349 @@ async function handleCallbackQuery(
       });
       break;
 
+    case "support":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "💬 <b>Поддержка</b>\n\n" +
+          "Выберите категорию вопроса или создайте тикет поддержки:\n\n" +
+          "Мы ответим в течение 24 часов!",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "📝 Создать тикет",
+                callback_data: "create_ticket",
+              },
+            ],
+            [
+              {
+                text: "❓ Частые вопросы",
+                callback_data: "faq",
+              },
+              {
+                text: "📋 Мои тикеты",
+                callback_data: "my_tickets",
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "back_to_menu",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "create_ticket":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "📝 <b>Создание тикета поддержки</b>\n\n" +
+          "Пожалуйста, опишите вашу проблему или вопрос.\n\n" +
+          "Отправьте сообщение с описанием, и мы создадим тикет.\n\n" +
+          "Или выберите категорию:",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🔧 Техническая",
+                callback_data: "ticket_category_technical",
+              },
+              {
+                text: "💳 Оплата",
+                callback_data: "ticket_category_payment",
+              },
+            ],
+            [
+              {
+                text: "📅 Бронирование",
+                callback_data: "ticket_category_booking",
+              },
+              {
+                text: "❓ Другое",
+                callback_data: "ticket_category_other",
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "support",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "my_tickets":
+      // Get user's tickets
+      const { data: tickets } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("telegram_user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!tickets || tickets.length === 0) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "📋 У вас пока нет тикетов поддержки.\n\n" +
+            "Создайте новый тикет, если нужна помощь!",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "📝 Создать тикет",
+                  callback_data: "create_ticket",
+                },
+              ],
+              [
+                {
+                  text: "🔙 Назад",
+                  callback_data: "support",
+                },
+              ],
+            ],
+          },
+        });
+      } else {
+        let ticketsText = "📋 <b>Ваши тикеты:</b>\n\n";
+        tickets.forEach((ticket: any) => {
+          const statusEmoji = {
+            open: "🟢",
+            in_progress: "🟡",
+            resolved: "✅",
+            closed: "⚫",
+          }[ticket.status] || "⚪";
+          
+          ticketsText += `${statusEmoji} <b>${ticket.ticket_number}</b>\n`;
+          ticketsText += `Тема: ${ticket.subject}\n`;
+          ticketsText += `Статус: ${ticket.status}\n`;
+          ticketsText += `Дата: ${new Date(ticket.created_at).toLocaleDateString("ru-RU")}\n\n`;
+        });
+
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: ticketsText,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "📝 Создать новый",
+                  callback_data: "create_ticket",
+                },
+              ],
+              [
+                {
+                  text: "🔙 Назад",
+                  callback_data: "support",
+                },
+              ],
+            ],
+          },
+        });
+      }
+      break;
+
+    case "faq":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "❓ <b>Частые вопросы</b>\n\n" +
+          "<b>Как найти поездку?</b>\n" +
+          "Используйте поиск в приложении или нажмите кнопку 'Найти поездку'.\n\n" +
+          "<b>Как создать поездку?</b>\n" +
+          "Откройте приложение → Создать поездку → Заполните форму.\n\n" +
+          "<b>Как отменить бронирование?</b>\n" +
+          "Откройте 'Мои бронирования' → Выберите поездку → Отменить.\n\n" +
+          "<b>Как связаться с водителем?</b>\n" +
+          "Используйте чат в приложении на странице поездки.\n\n" +
+          "Если ваш вопрос не здесь, создайте тикет поддержки!",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "📝 Создать тикет",
+                callback_data: "create_ticket",
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "support",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "reviews":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "⭐ <b>Отзывы</b>\n\n" +
+          "Поделитесь своим мнением о RideConnect!\n\n" +
+          "Ваш отзыв поможет нам стать лучше.",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "⭐ Оставить отзыв",
+                callback_data: "create_review",
+              },
+            ],
+            [
+              {
+                text: "📊 Посмотреть отзывы",
+                callback_data: "view_reviews",
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "back_to_menu",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "create_review":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "⭐ <b>Оставить отзыв</b>\n\n" +
+          "Оцените нас от 1 до 5 звезд:\n\n" +
+          "Выберите оценку:",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "⭐", callback_data: "review_1" },
+              { text: "⭐⭐", callback_data: "review_2" },
+              { text: "⭐⭐⭐", callback_data: "review_3" },
+            ],
+            [
+              { text: "⭐⭐⭐⭐", callback_data: "review_4" },
+              { text: "⭐⭐⭐⭐⭐", callback_data: "review_5" },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "reviews",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "view_reviews":
+      // Get public reviews
+      const { data: reviews } = await supabase
+        .from("bot_reviews")
+        .select("*")
+        .eq("is_public", true)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!reviews || reviews.length === 0) {
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: "⭐ Пока нет отзывов.\n\n" +
+            "Станьте первым, кто оставит отзыв!",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "⭐ Оставить отзыв",
+                  callback_data: "create_review",
+                },
+              ],
+              [
+                {
+                  text: "🔙 Назад",
+                  callback_data: "reviews",
+                },
+              ],
+            ],
+          },
+        });
+      } else {
+        let reviewsText = "⭐ <b>Последние отзывы:</b>\n\n";
+        reviews.forEach((review: any) => {
+          const stars = "⭐".repeat(review.rating);
+          reviewsText += `${stars}\n`;
+          if (review.comment) {
+            reviewsText += `${review.comment}\n`;
+          }
+          reviewsText += `— ${review.telegram_username || "Пользователь"}\n\n`;
+        });
+
+        await sendTelegramMessage({
+          chat_id: chatId,
+          text: reviewsText,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "⭐ Оставить отзыв",
+                  callback_data: "create_review",
+                },
+              ],
+              [
+                {
+                  text: "🔙 Назад",
+                  callback_data: "reviews",
+                },
+              ],
+            ],
+          },
+        });
+      }
+      break;
+
+    case "settings":
+      await sendTelegramMessage({
+        chat_id: chatId,
+        text: "⚙️ <b>Настройки</b>\n\n" +
+          "Управление подписками и уведомлениями:",
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🔔 Уведомления",
+                callback_data: "notifications_settings",
+              },
+            ],
+            [
+              {
+                text: "📊 Статистика",
+                callback_data: "stats",
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "back_to_menu",
+              },
+            ],
+          ],
+        },
+      });
+      break;
+
+    case "back_to_menu":
+      await handleStartCommand(chatId, userId, callbackQuery.from.username, callbackQuery.from.first_name);
+      break;
+
     case "premium":
       await sendTelegramMessage({
         chat_id: chatId,
@@ -216,6 +613,12 @@ async function handleCallbackQuery(
               {
                 text: "🚀 Открыть приложение",
                 url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}`,
+              },
+            ],
+            [
+              {
+                text: "🔙 Назад",
+                callback_data: "back_to_menu",
               },
             ],
           ],
@@ -297,11 +700,16 @@ serve(async (req) => {
               "<b>Команды:</b>\n" +
               "/start - Начать работу с ботом\n" +
               "/help - Показать эту справку\n" +
-              "/subscribe - Подписаться на уведомления\n\n" +
+              "/subscribe - Подписаться на уведомления\n" +
+              "/support - Поддержка\n" +
+              "/review - Оставить отзыв\n" +
+              "/ticket - Создать тикет\n\n" +
               "<b>Что умеет бот:</b>\n" +
               "• Открыть приложение\n" +
               "• Найти поездку\n" +
               "• Показать ваши поездки\n" +
+              "• Поддержка и помощь\n" +
+              "• Оставить отзыв\n" +
               "• Получить Premium\n\n" +
               "Используйте кнопки в меню для быстрого доступа!",
             parse_mode: "HTML",
