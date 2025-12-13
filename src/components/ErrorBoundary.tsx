@@ -2,7 +2,8 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
-import { getErrorBoundaryFallback, logError } from "@/lib/error-handler-enhanced";
+import { getErrorBoundaryFallback } from "@/lib/error-handler-enhanced";
+import { logError } from "@/lib/error-handler";
 
 interface Props {
   children: ReactNode;
