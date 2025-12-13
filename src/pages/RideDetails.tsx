@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RideChat from "@/components/chat/RideChat";
 import { ReportDialog } from "@/components/reports/ReportDialog";
+import { RideRouteMap } from "@/components/map/RideRouteMap";
 import { getUserFriendlyError, logError } from "@/lib/error-handler";
 import { 
   ArrowLeft, 

@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAllReports, useUpdateReport, useBanUser, useIsAdmin } from "@/hooks/useReports";
+import { useAllUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,11 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/error-handler";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Shield, Ban, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Shield, Ban, CheckCircle, XCircle, AlertCircle, Users, Search, Star } from "lucide-react";
 
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Ожидает", variant: "secondary" },
@@ -38,9 +41,12 @@ const Admin = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
   const { data: reports, isLoading: reportsLoading } = useAllReports();
+  const { data: allUsers, isLoading: usersLoading } = useAllUsers();
   const updateReport = useUpdateReport();
   const banUser = useBanUser();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("reports");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -97,7 +103,7 @@ const Admin = () => {
     }
   };
 
-  if (authLoading || isAdminLoading || reportsLoading) {
+  if (authLoading || isAdminLoading || reportsLoading || usersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Загрузка...</div>
@@ -112,6 +118,17 @@ const Admin = () => {
   const pendingReports = reports?.filter((r) => r.status === "pending") || [];
   const otherReports = reports?.filter((r) => r.status !== "pending") || [];
 
+  // Filter users by search query
+  const filteredUsers = allUsers?.filter((user) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      user.full_name?.toLowerCase().includes(query) ||
+      user.phone?.toLowerCase().includes(query) ||
+      user.user_id.toLowerCase().includes(query)
+    );
+  }) || [];
+
   return (
     <div className="min-h-screen bg-background pb-8">
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
@@ -124,43 +141,94 @@ const Admin = () => {
       </header>
 
       <div className="container py-6 space-y-6">
-        <div className="bg-card rounded-2xl p-6 shadow-card">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-warning" />
-            Ожидают рассмотрения ({pendingReports.length})
-          </h2>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="reports" className="gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Жалобы ({reports?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="w-4 h-4" />
+              Пользователи ({allUsers?.length || 0})
+            </TabsTrigger>
+          </TabsList>
 
-          {pendingReports.length > 0 ? (
-            <div className="space-y-4">
-              {pendingReports.map((report) => (
-                <ReportCard
-                  key={report.id}
-                  report={report}
-                  onUpdateStatus={handleUpdateStatus}
-                  onBanUser={handleBanUser}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">Нет жалоб, ожидающих рассмотрения</p>
-          )}
-        </div>
+          <TabsContent value="reports" className="space-y-6">
+            <div className="bg-card rounded-2xl p-6 shadow-card">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-warning" />
+                Ожидают рассмотрения ({pendingReports.length})
+              </h2>
 
-        {otherReports.length > 0 && (
-          <div className="bg-card rounded-2xl p-6 shadow-card">
-            <h2 className="text-lg font-bold mb-4">Остальные жалобы</h2>
-            <div className="space-y-4">
-              {otherReports.map((report) => (
-                <ReportCard
-                  key={report.id}
-                  report={report}
-                  onUpdateStatus={handleUpdateStatus}
-                  onBanUser={handleBanUser}
-                />
-              ))}
+              {pendingReports.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      report={report}
+                      onUpdateStatus={handleUpdateStatus}
+                      onBanUser={handleBanUser}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">Нет жалоб, ожидающих рассмотрения</p>
+              )}
             </div>
-          </div>
-        )}
+
+            {otherReports.length > 0 && (
+              <div className="bg-card rounded-2xl p-6 shadow-card">
+                <h2 className="text-lg font-bold mb-4">Остальные жалобы</h2>
+                <div className="space-y-4">
+                  {otherReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      report={report}
+                      onUpdateStatus={handleUpdateStatus}
+                      onBanUser={handleBanUser}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            <div className="bg-card rounded-2xl p-6 shadow-card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Все пользователи ({filteredUsers.length})
+                </h2>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск пользователей..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {filteredUsers.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredUsers.map((user) => (
+                    <UserCard
+                      key={user.user_id}
+                      user={user}
+                      onBanUser={handleBanUser}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  {searchQuery ? "Пользователи не найдены" : "Нет пользователей"}
+                </p>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
@@ -277,6 +345,80 @@ const ReportCard = ({ report, onUpdateStatus, onBanUser }: ReportCardProps) => {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+};
+
+interface UserCardProps {
+  user: any;
+  onBanUser: (userId: string, isBanned: boolean) => void;
+}
+
+const UserCard = ({ user, onBanUser }: UserCardProps) => {
+  return (
+    <div className="border rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="relative">
+            <img
+              src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || "U")}&background=0d9488&color=fff`}
+              alt={user.full_name || "Пользователь"}
+              className="w-12 h-12 rounded-full object-cover border-2 border-border"
+            />
+            {user.is_banned && (
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-destructive flex items-center justify-center ring-2 ring-card">
+                <Ban className="w-3 h-3 text-destructive-foreground" />
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-medium truncate">{user.full_name || "Без имени"}</p>
+              {user.is_admin && (
+                <Badge variant="default" className="gap-1 text-xs">
+                  <Shield className="w-3 h-3" />
+                  Админ
+                </Badge>
+              )}
+              {user.is_verified && (
+                <Badge variant="soft" className="gap-1 text-xs">
+                  <CheckCircle className="w-3 h-3" />
+                  Проверен
+                </Badge>
+              )}
+              {user.is_banned && (
+                <Badge variant="destructive" className="gap-1 text-xs">
+                  <Ban className="w-3 h-3" />
+                  Заблокирован
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              {user.phone && <span>{user.phone}</span>}
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 fill-warning text-warning" />
+                <span>{user.rating?.toFixed(1) || "5.0"}</span>
+              </div>
+              <span>{user.trips_count || 0} поездок</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ID: {user.user_id.substring(0, 8)}...
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant={user.is_banned ? "default" : "destructive"}
+            onClick={() => onBanUser(user.user_id, !user.is_banned)}
+          >
+            <Ban className="w-4 h-4 mr-1" />
+            {user.is_banned ? "Разблокировать" : "Заблокировать"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

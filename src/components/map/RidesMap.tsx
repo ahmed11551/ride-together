@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import type { RideWithDriver } from '@/hooks/useRides';
 import { getCityCoordinates } from '@/lib/geocoding';
+import { buildRoute, formatDistance, formatDuration } from '@/lib/routing';
 import { env } from '@/lib/env';
 
 const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
@@ -25,6 +26,7 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const routesRef = useRef<any[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const markers = useMemo(() => {
@@ -123,33 +125,103 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
 
       mapInstanceRef.current = map;
 
-      // Очищаем старые маркеры
+      // Очищаем старые маркеры и маршруты
       markersRef.current.forEach((marker) => {
         map.geoObjects.remove(marker);
       });
       markersRef.current = [];
 
-      // Добавляем новые маркеры
-      markers.forEach((markerData) => {
-        const marker = new window.ymaps.Placemark(
+      routesRef.current.forEach((route) => {
+        map.geoObjects.remove(route);
+      });
+      routesRef.current = [];
+
+      // Добавляем маркеры и маршруты
+      markers.forEach(async (markerData) => {
+        // Маркер отправления
+        const fromMarker = new window.ymaps.Placemark(
           [markerData.fromCoords.lat, markerData.fromCoords.lng],
           {
-            balloonContentHeader: `${markerData.ride.from_city} → ${markerData.ride.to_city}`,
-            balloonContentBody: `${markerData.ride.price} ₽ • ${markerData.ride.seats_available} мест`,
-            balloonContentFooter: `<button onclick="window.navigateToRide('${markerData.ride.id}')" class="bg-primary text-white px-4 py-2 rounded">Подробнее</button>`,
-            hintContent: `${markerData.ride.from_city} → ${markerData.ride.to_city}`,
+            iconContent: 'A',
+            hintContent: markerData.ride.from_city,
           },
           {
-            preset: 'islands#blueAutoIcon',
+            preset: 'islands#greenCircleIcon',
           }
         );
 
-        marker.events.add('click', () => {
+        // Маркер назначения
+        const toMarker = new window.ymaps.Placemark(
+          [markerData.toCoords.lat, markerData.toCoords.lng],
+          {
+            iconContent: 'B',
+            hintContent: markerData.ride.to_city,
+            balloonContentHeader: `${markerData.ride.from_city} → ${markerData.ride.to_city}`,
+            balloonContentBody: `${markerData.ride.price} ₽ • ${markerData.ride.seats_available} мест`,
+            balloonContentFooter: `<button onclick="window.location.href='/ride/${markerData.ride.id}'" class="bg-primary text-white px-4 py-2 rounded">Подробнее</button>`,
+          },
+          {
+            preset: 'islands#redCircleIcon',
+          }
+        );
+
+        fromMarker.events.add('click', () => {
           navigate(`/ride/${markerData.ride.id}`);
         });
 
-        map.geoObjects.add(marker);
-        markersRef.current.push(marker);
+        toMarker.events.add('click', () => {
+          navigate(`/ride/${markerData.ride.id}`);
+        });
+
+        map.geoObjects.add(fromMarker);
+        map.geoObjects.add(toMarker);
+        markersRef.current.push(fromMarker, toMarker);
+
+        // Строим маршрут между точками
+        try {
+          const route = await buildRoute(
+            markerData.fromCoords,
+            markerData.toCoords
+          );
+
+          if (route && route.points.length > 1) {
+            const routePoints = route.points.map(
+              (point) => [point.lat, point.lng] as [number, number]
+            );
+
+            const polyline = new window.ymaps.Polyline(routePoints, {}, {
+              strokeColor: '#0d9488',
+              strokeWidth: 4,
+              strokeOpacity: 0.7,
+            });
+
+            // Добавляем информацию о маршруте в подсказку
+            const distance = formatDistance(route.distance);
+            const duration = formatDuration(route.duration);
+            polyline.properties.set('hintContent', `Маршрут: ${distance}, ${duration}`);
+
+            map.geoObjects.add(polyline);
+            routesRef.current.push(polyline);
+          }
+        } catch (error) {
+          console.error('Error building route:', error);
+          // Если не удалось построить маршрут, рисуем прямую линию
+          const polyline = new window.ymaps.Polyline(
+            [
+              [markerData.fromCoords.lat, markerData.fromCoords.lng],
+              [markerData.toCoords.lat, markerData.toCoords.lng],
+            ],
+            {},
+            {
+              strokeColor: '#0d9488',
+              strokeWidth: 3,
+              strokeOpacity: 0.5,
+              strokeStyle: '5 5', // Пунктирная линия
+            }
+          );
+          map.geoObjects.add(polyline);
+          routesRef.current.push(polyline);
+        }
       });
 
       // Автоматически подстраиваем границы карты под все маркеры
