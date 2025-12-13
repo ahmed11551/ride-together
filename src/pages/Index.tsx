@@ -3,7 +3,7 @@ import BottomNav from "@/components/layout/BottomNav";
 import HeroSection from "@/components/home/HeroSection";
 import PopularRoutes from "@/components/home/PopularRoutes";
 import RidesList from "@/components/rides/RidesList";
-import { RidesMap } from "@/components/map/RidesMap";
+import { LazyRidesMap } from "@/components/map/LazyRidesMap";
 import { DemoChat } from "@/components/home/DemoChat";
 import HowItWorks from "@/components/home/HowItWorks";
 import DriverCTA from "@/components/home/DriverCTA";
@@ -56,7 +56,7 @@ const Index = () => {
                 </TabsContent>
 
                 <TabsContent value="map" className="h-[500px]">
-                  <RidesMap rides={rides} />
+                  <LazyRidesMap rides={rides} height="500px" />
                 </TabsContent>
               </Tabs>
             ) : (

@@ -39,6 +39,9 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      // Кэширование запросов для лучшей производительности
+      staleTime: 5 * 60 * 1000, // 5 минут - данные считаются свежими
+      gcTime: 10 * 60 * 1000, // 10 минут - данные остаются в кэше (cacheTime переименован в gcTime в v5)
     },
     mutations: {
       onError: (error) => {
@@ -46,6 +49,17 @@ const queryClient = new QueryClient({
       },
     },
   },
+});
+
+// Настройка кэширования для конкретных типов запросов
+queryClient.setQueryDefaults(["rides"], {
+  staleTime: 2 * 60 * 1000, // 2 минуты для списков поездок
+  gcTime: 5 * 60 * 1000, // 5 минут в кэше
+});
+
+queryClient.setQueryDefaults(["ride"], {
+  staleTime: 1 * 60 * 1000, // 1 минута для деталей поездки
+  gcTime: 3 * 60 * 1000, // 3 минуты в кэше
 });
 
 const App = () => (

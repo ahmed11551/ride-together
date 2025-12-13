@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyError, logError } from "@/lib/error-handler";
 import { createRideSchema, type CreateRideFormData } from "@/lib/validation";
-import { MapComponent, type Location } from "@/components/map/MapComponent";
+import { LazyMapComponent } from "@/components/map/LazyMapComponent";
+import type { Location } from "@/components/map/MapComponent";
 import { reverseGeocode } from "@/lib/geocoding";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 

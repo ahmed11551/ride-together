@@ -1,16 +1,31 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRecentRides } from "@/hooks/useRides";
+import { useRecentRidesPaginated } from "@/hooks/useRidesPaginated";
 import RideCard from "./RideCard";
 import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
 import EmptyState from "@/components/ui/empty-state";
 import { DemoRides } from "@/components/home/DemoRides";
 import { SlidersHorizontal, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { pluralizeRide } from "@/lib/pluralize";
 
 const RidesList = () => {
   const navigate = useNavigate();
-  const { data: rides, isLoading } = useRecentRides();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: paginatedData, isLoading } = useRecentRidesPaginated({
+    page: currentPage,
+    pageSize: 5,
+  });
+
+  const rides = paginatedData?.data || [];
+  const totalPages = paginatedData?.totalPages || 0;
+  const total = paginatedData?.total || 0;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (isLoading) {
     return (
@@ -55,7 +70,8 @@ const RidesList = () => {
         <div>
           <h2 className="text-2xl font-bold text-foreground">Ближайшие поездки</h2>
           <p className="text-muted-foreground">
-            {rides.length} {pluralizeRide(rides.length)} доступно
+            {total} {pluralizeRide(total)} доступно
+            {totalPages > 1 && ` • Страница ${currentPage} из ${totalPages}`}
           </p>
         </div>
         
@@ -66,7 +82,7 @@ const RidesList = () => {
       </div>
 
       <div className="space-y-4">
-        {rides.slice(0, 5).map((ride, index) => (
+        {rides.map((ride, index) => (
           <div 
             key={ride.id}
             style={{ animationDelay: `${index * 80}ms` }}
@@ -103,8 +119,18 @@ const RidesList = () => {
         ))}
       </div>
 
-      {rides.length > 5 && (
-        <div className="mt-6 text-center">
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
+
+      {total > 5 && (
+        <div className="mt-4 text-center">
           <Button variant="soft" onClick={() => navigate("/search")}>
             Показать все поездки
             <ArrowRight className="w-4 h-4" />

@@ -6,7 +6,7 @@ import RideCard from "@/components/rides/RideCard";
 import SearchForm from "@/components/search/SearchForm";
 import EmptyState from "@/components/ui/empty-state";
 import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
-import { RidesMap } from "@/components/map/RidesMap";
+import { LazyRidesMap } from "@/components/map/LazyRidesMap";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, SlidersHorizontal, Search, X, Map as MapIcon, List } from "lucide-react";
@@ -170,7 +170,7 @@ const SearchResults = () => {
             
             <TabsContent value="map" className="mt-4">
               <div className="bg-card rounded-2xl p-4 shadow-card">
-                <RidesMap rides={rides} height="600px" />
+                <LazyRidesMap rides={rides} height="600px" />
                 <p className="text-sm text-muted-foreground mt-4 text-center">
                   Наведите на маркер, чтобы увидеть детали поездки
                 </p>
