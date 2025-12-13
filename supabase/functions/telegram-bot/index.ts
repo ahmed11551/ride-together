@@ -112,7 +112,7 @@ async function handleStartCommand(chatId: number, userId: number, username?: str
         [
           {
             text: "🚀 Открыть приложение",
-            web_app: { url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}` },
+            url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}`,
           },
         ],
         [
@@ -174,7 +174,7 @@ async function handleCallbackQuery(
             [
               {
                 text: "🚀 Открыть приложение",
-                web_app: { url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}/search` },
+                url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}/search`,
               },
             ],
           ],
@@ -199,7 +199,7 @@ async function handleCallbackQuery(
             [
               {
                 text: "🚀 Открыть приложение",
-                web_app: { url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}` },
+                url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}`,
               },
             ],
           ],
@@ -306,12 +306,12 @@ serve(async (req) => {
               "Используйте /start для начала работы или откройте приложение через кнопку ниже.",
             reply_markup: {
               inline_keyboard: [
-                [
-                  {
-                    text: "🚀 Открыть приложение",
-                    web_app: { url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}` },
-                  },
-                ],
+              [
+                {
+                  text: "🚀 Открыть приложение",
+                  url: `${Deno.env.get("APP_URL") || "https://your-app.vercel.app"}`,
+                },
+              ],
               ],
             },
           });
