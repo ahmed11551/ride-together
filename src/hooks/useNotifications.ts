@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { env } from '@/lib/env';
 
 export interface NotificationPermission {
   permission: NotificationPermissionState;
@@ -94,7 +95,7 @@ export const useNotifications = () => {
       }
 
       // VAPID ключ опционален - если нет, создаем подписку без него
-      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      const vapidKey = env.VITE_VAPID_PUBLIC_KEY;
       const subscribeOptions: PushSubscriptionOptionsInit = {
         userVisibleOnly: true,
       };

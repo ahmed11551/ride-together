@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
+import { getErrorBoundaryFallback, logError } from "@/lib/error-handler-enhanced";
 
 interface Props {
   children: ReactNode;
@@ -34,10 +35,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    if (import.meta.env.DEV) {
-      console.error("ErrorBoundary caught an error:", error, errorInfo);
-    }
+    // Log error using enhanced error handler
+    logError(error, `ErrorBoundary: ${errorInfo.componentStack}`);
     
     // In production, you might want to send this to an error tracking service
     // e.g., Sentry.captureException(error, { contexts: { react: errorInfo } });
@@ -56,15 +55,28 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const fallback = this.state.error 
+        ? getErrorBoundaryFallback(this.state.error)
+        : {
+            title: 'Что-то пошло не так',
+            message: 'Произошла непредвиденная ошибка',
+            action: 'Попробуйте обновить страницу',
+          };
+
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
           <div className="max-w-md w-full space-y-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Что-то пошло не так</AlertTitle>
+              <AlertTitle>{fallback.title}</AlertTitle>
               <AlertDescription>
-                Произошла непредвиденная ошибка. Пожалуйста, попробуйте обновить страницу
-                или вернуться на главную.
+                {fallback.message}
+                {fallback.action && (
+                  <>
+                    <br />
+                    <strong>{fallback.action}</strong>
+                  </>
+                )}
               </AlertDescription>
             </Alert>
 

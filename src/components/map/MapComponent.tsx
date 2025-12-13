@@ -3,7 +3,9 @@ import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
-const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '';
+import { env } from '@/lib/env';
+
+const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
 
 export interface Location {
   lat: number;

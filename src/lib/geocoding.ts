@@ -3,7 +3,9 @@
  * Using Yandex Maps Geocoding API
  */
 
-const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '';
+import { env } from './env';
+
+const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
 
 export interface GeocodeResult {
   lat: number;
