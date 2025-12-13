@@ -206,3 +206,30 @@ export const useRecentRides = () => {
     },
   });
 };
+
+/**
+ * Хук для очистки старых отмененных и завершенных поездок пользователя
+ * Удаляет поездки, которые были отменены или завершены более 30 дней назад
+ */
+export const useCleanupOldRides = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Вызываем SQL функцию для очистки старых поездок пользователя
+      const { data, error } = await supabase.rpc('cleanup_user_old_rides', {
+        user_uuid: user.id
+      });
+
+      if (error) throw error;
+      return data as number;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rides"] });
+      queryClient.invalidateQueries({ queryKey: ["myRides"] });
+    },
+  });
+};
