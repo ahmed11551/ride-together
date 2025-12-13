@@ -156,8 +156,8 @@ const CreateRide = () => {
             </TabsList>
             
             <TabsContent value="form" className="space-y-4 mt-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
+              <div className="space-y-4">
+                <div className="space-y-2">
               <Label>Откуда *</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
@@ -213,8 +213,8 @@ const CreateRide = () => {
                   📍 Выбрано на карте: {toLocation.address || `${toLocation.lat.toFixed(4)}, ${toLocation.lng.toFixed(4)}`}
                 </p>
               )}
-            </div>
-          </div>
+                </div>
+              </div>
             </TabsContent>
             
             <TabsContent value="map" className="mt-4 space-y-4">
