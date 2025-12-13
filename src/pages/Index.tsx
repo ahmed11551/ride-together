@@ -4,13 +4,14 @@ import HeroSection from "@/components/home/HeroSection";
 import PopularRoutes from "@/components/home/PopularRoutes";
 import RidesList from "@/components/rides/RidesList";
 import { RidesMap } from "@/components/map/RidesMap";
+import { DemoChat } from "@/components/home/DemoChat";
 import HowItWorks from "@/components/home/HowItWorks";
 import DriverCTA from "@/components/home/DriverCTA";
 import { Helmet } from "react-helmet-async";
 import { useTelegramAuth } from "@/hooks/useTelegramAuth";
 import { useRecentRides } from "@/hooks/useRides";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Map as MapIcon, List } from "lucide-react";
+import { Map as MapIcon, List, MessageCircle } from "lucide-react";
 
 const Index = () => {
   // Автоматическая авторизация через Telegram, если приложение запущено в Telegram
@@ -63,6 +64,20 @@ const Index = () => {
             )}
           </div>
           
+          {/* Demo Chat Section */}
+          <div className="container py-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center gap-2">
+                <MessageCircle className="w-6 h-6 text-primary" />
+                Общение в поездке
+              </h2>
+              <p className="text-muted-foreground">
+                Удобный чат для связи с водителем и пассажирами
+              </p>
+            </div>
+            <DemoChat />
+          </div>
+
           <HowItWorks />
           <DriverCTA />
           

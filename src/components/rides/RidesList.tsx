@@ -3,6 +3,7 @@ import { useRecentRides } from "@/hooks/useRides";
 import RideCard from "./RideCard";
 import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
 import EmptyState from "@/components/ui/empty-state";
+import { DemoRides } from "@/components/home/DemoRides";
 import { SlidersHorizontal, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -30,17 +31,20 @@ const RidesList = () => {
 
   if (!rides || rides.length === 0) {
     return (
-      <section className="py-8">
-        <EmptyState
-          icon={Search}
-          title="Поездок пока нет"
-          description="Станьте первым водителем или проверьте позже"
-          action={{
-            label: "Создать поездку",
-            onClick: () => navigate("/create-ride"),
-          }}
-        />
-      </section>
+      <>
+        <DemoRides />
+        <section className="py-8">
+          <EmptyState
+            icon={Search}
+            title="Реальных поездок пока нет"
+            description="Станьте первым водителем и создайте свою поездку!"
+            action={{
+              label: "Создать поездку",
+              onClick: () => navigate("/create-ride"),
+            }}
+          />
+        </section>
+      </>
     );
   }
 
