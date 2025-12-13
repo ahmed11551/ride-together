@@ -408,9 +408,11 @@ export const MapComponent = ({
               size="sm"
               variant="outline"
               onClick={handleGeolocate}
-              className="bg-card shadow-lg"
+              className="bg-card/95 backdrop-blur-sm shadow-lg hover:shadow-xl border-2"
+              title="Определить моё местоположение"
             >
-              📍 Моё местоположение
+              <MapPin className="w-4 h-4 mr-1" />
+              Моё местоположение
             </Button>
           )}
           {selectedLocation && mode === 'select' && (
@@ -428,11 +430,24 @@ export const MapComponent = ({
                   onLocationSelect({ lat: 0, lng: 0 });
                 }
               }}
-              className="bg-card shadow-lg"
+              className="bg-card/95 backdrop-blur-sm shadow-lg hover:shadow-xl border-2"
+              title="Очистить выбранную точку"
             >
               <X className="w-4 h-4" />
             </Button>
           )}
+        </div>
+      )}
+      
+      {/* Подсказка для режима выбора */}
+      {mode === 'select' && !selectedLocation && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 border-2 border-primary/20">
+            <p className="text-sm font-medium text-foreground flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              <span>Кликните на карте, чтобы выбрать точку</span>
+            </p>
+          </div>
         </div>
       )}
     </div>
