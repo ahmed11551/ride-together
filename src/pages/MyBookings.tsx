@@ -144,7 +144,13 @@ const MyBookings = () => {
                                 <p className="text-sm text-muted-foreground">{driver.phone}</p>
                               )}
                             </div>
-                            <Button variant="outline" size="icon">
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => navigate(`/ride/${ride.id}`)}
+                              title="Открыть чат"
+                              aria-label="Открыть чат с водителем"
+                            >
                               <MessageCircle className="w-4 h-4" />
                             </Button>
                           </div>
