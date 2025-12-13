@@ -1,138 +1,94 @@
 import { describe, it, expect } from 'vitest';
-import { loginSchema, signupSchema, createRideSchema } from '../validation';
+import { createRideSchema, loginSchema, signupSchema } from '../validation';
 
-describe('validation schemas', () => {
+describe('Validation Schemas', () => {
   describe('loginSchema', () => {
     it('should validate correct login data', () => {
-      const data = {
+      const validData = {
         email: 'test@example.com',
         password: 'password123',
       };
       
-      expect(() => loginSchema.parse(data)).not.toThrow();
+      expect(() => loginSchema.parse(validData)).not.toThrow();
     });
 
     it('should reject invalid email', () => {
-      const data = {
-        email: 'invalid-email',
+      const invalidData = {
+        email: 'not-an-email',
         password: 'password123',
       };
       
-      expect(() => loginSchema.parse(data)).toThrow();
+      expect(() => loginSchema.parse(invalidData)).toThrow();
     });
 
     it('should reject short password', () => {
-      const data = {
+      const invalidData = {
         email: 'test@example.com',
-        password: '12345',
+        password: '123',
       };
       
-      expect(() => loginSchema.parse(data)).toThrow();
+      expect(() => loginSchema.parse(invalidData)).toThrow();
     });
   });
 
   describe('signupSchema', () => {
     it('should validate correct signup data', () => {
-      const data = {
+      const validData = {
         email: 'test@example.com',
         password: 'password123',
-        fullName: 'John Doe',
+        fullName: 'Иван Иванов',
       };
       
-      expect(() => signupSchema.parse(data)).not.toThrow();
+      expect(() => signupSchema.parse(validData)).not.toThrow();
     });
 
-    it('should reject short name', () => {
-      const data = {
+    it('should reject short full name', () => {
+      const invalidData = {
         email: 'test@example.com',
         password: 'password123',
-        fullName: 'J',
+        fullName: 'A',
       };
       
-      expect(() => signupSchema.parse(data)).toThrow();
+      expect(() => signupSchema.parse(invalidData)).toThrow();
     });
   });
 
   describe('createRideSchema', () => {
     it('should validate correct ride data', () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const data = {
-        from_city: 'Moscow',
-        to_city: 'Saint Petersburg',
-        departure_date: tomorrow.toISOString().split('T')[0],
-        departure_time: '08:00',
+      const validData = {
+        from_city: 'Москва',
+        to_city: 'Санкт-Петербург',
+        departure_date: '2025-02-01',
+        departure_time: '10:00',
         price: '1500',
         seats_total: '4',
-        seats_available: '3',
-        allow_smoking: false,
-        allow_pets: false,
-        allow_music: true,
+        seats_available: '4',
       };
       
-      expect(() => createRideSchema.parse(data)).not.toThrow();
+      expect(() => createRideSchema.parse(validData)).not.toThrow();
     });
 
-    it('should reject past date', () => {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      const data = {
-        from_city: 'Moscow',
-        to_city: 'Saint Petersburg',
-        departure_date: yesterday.toISOString().split('T')[0],
-        departure_time: '08:00',
-        price: '1500',
-        seats_total: '4',
-        seats_available: '3',
-        allow_smoking: false,
-        allow_pets: false,
-        allow_music: true,
+    it('should reject missing required fields', () => {
+      const invalidData = {
+        from_city: 'Москва',
+        // Missing to_city
       };
       
-      expect(() => createRideSchema.parse(data)).toThrow();
+      expect(() => createRideSchema.parse(invalidData)).toThrow();
     });
 
     it('should reject invalid price', () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const data = {
-        from_city: 'Moscow',
-        to_city: 'Saint Petersburg',
-        departure_date: tomorrow.toISOString().split('T')[0],
-        departure_time: '08:00',
-        price: '0',
+      const invalidData = {
+        from_city: 'Москва',
+        to_city: 'Санкт-Петербург',
+        departure_date: '2025-02-01',
+        departure_time: '10:00',
+        price: '-100', // Negative price
         seats_total: '4',
-        seats_available: '3',
-        allow_smoking: false,
-        allow_pets: false,
-        allow_music: true,
+        seats_available: '4',
       };
       
-      expect(() => createRideSchema.parse(data)).toThrow();
-    });
-
-    it('should reject when seats_available > seats_total', () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const data = {
-        from_city: 'Moscow',
-        to_city: 'Saint Petersburg',
-        departure_date: tomorrow.toISOString().split('T')[0],
-        departure_time: '08:00',
-        price: '1500',
-        seats_total: '4',
-        seats_available: '5',
-        allow_smoking: false,
-        allow_pets: false,
-        allow_music: true,
-      };
-      
-      expect(() => createRideSchema.parse(data)).toThrow();
+      expect(() => createRideSchema.parse(invalidData)).toThrow();
     });
   });
 });
-

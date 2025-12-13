@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import type { RideWithDriver } from '@/hooks/useRides';
 import { getCityCoordinates } from '@/lib/geocoding';
+import { env } from '@/lib/env';
 
 const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '';
 
