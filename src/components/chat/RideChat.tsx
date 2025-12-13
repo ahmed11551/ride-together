@@ -95,7 +95,7 @@ const RideChat = ({ rideId, driverId }: RideChatProps) => {
 
       <div 
         ref={scrollRef}
-        className="h-[300px] overflow-y-auto p-4 space-y-3"
+        className="h-[250px] sm:h-[300px] md:h-[400px] overflow-y-auto p-3 sm:p-4 space-y-3"
       >
         {messagesLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -130,7 +130,7 @@ const RideChat = ({ rideId, driverId }: RideChatProps) => {
                     className="w-8 h-8 rounded-full shrink-0"
                   />
                 )}
-                <div className={cn("max-w-[75%]", isOwn ? "text-right" : "text-left")}>
+                <div className={cn("max-w-[85%] sm:max-w-[75%]", isOwn ? "text-right" : "text-left")}>
                   {!isOwn && (
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-xs font-medium text-foreground">{senderName}</span>
@@ -164,18 +164,19 @@ const RideChat = ({ rideId, driverId }: RideChatProps) => {
         )}
       </div>
 
-      <form onSubmit={handleSend} className="p-4 border-t border-border">
+      <form onSubmit={handleSend} className="p-3 sm:p-4 border-t border-border">
         <div className="flex gap-2">
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Напишите сообщение..."
-            className="flex-1"
+            className="flex-1 text-sm sm:text-base"
             disabled={sendMessage.isPending}
           />
           <Button
             type="submit"
             size="icon"
+            className="min-w-[44px] min-h-[44px]"
             disabled={!message.trim() || sendMessage.isPending}
           >
             {sendMessage.isPending ? (

@@ -128,9 +128,9 @@ const Profile = () => {
         </div>
       </header>
 
-      <div className="container py-6 space-y-6">
+      <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
         {/* Avatar & Stats */}
-        <div className="bg-card rounded-2xl p-6 shadow-card text-center">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card text-center">
           <div className="relative inline-block mb-4">
             <img 
               src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.full_name || user?.email}&background=0d9488&color=fff&size=128`}
@@ -149,31 +149,31 @@ const Profile = () => {
           </h2>
           <p className="text-muted-foreground text-sm mb-4">{user?.email}</p>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-3 rounded-xl bg-muted">
-              <Star className="w-5 h-5 text-warning mx-auto mb-1" />
-              <p className="font-bold">{profile?.rating || 5}</p>
-              <p className="text-xs text-muted-foreground">Рейтинг</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="p-2 sm:p-3 rounded-xl bg-muted">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-warning mx-auto mb-1" />
+              <p className="font-bold text-sm sm:text-base">{profile?.rating || 5}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Рейтинг</p>
             </div>
-            <div className="p-3 rounded-xl bg-muted">
-              <Car className="w-5 h-5 text-primary mx-auto mb-1" />
-              <p className="font-bold">{profile?.trips_count || 0}</p>
-              <p className="text-xs text-muted-foreground">Поездок</p>
+            <div className="p-2 sm:p-3 rounded-xl bg-muted">
+              <Car className="w-4 h-4 sm:w-5 sm:h-5 text-primary mx-auto mb-1" />
+              <p className="font-bold text-sm sm:text-base">{profile?.trips_count || 0}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Поездок</p>
             </div>
-            <div className="p-3 rounded-xl bg-muted">
-              <Calendar className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-              <p className="font-bold text-sm">
+            <div className="p-2 sm:p-3 rounded-xl bg-muted">
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground mx-auto mb-1" />
+              <p className="font-bold text-xs sm:text-sm">
                 {profile?.created_at 
                   ? new Date(profile.created_at).getFullYear()
                   : "—"}
               </p>
-              <p className="text-xs text-muted-foreground">С нами с</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">С нами с</p>
             </div>
           </div>
         </div>
 
         {/* Profile Form */}
-        <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card space-y-4">
           <h3 className="font-bold text-lg">Личные данные</h3>
           
           <div className="space-y-4">

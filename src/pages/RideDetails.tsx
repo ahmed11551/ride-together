@@ -97,7 +97,7 @@ const RideDetails = () => {
             <Skeleton className="h-6 w-40" />
           </div>
         </header>
-        <div className="container py-6 space-y-6">
+        <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-32 sm:pb-6">
           <Skeleton className="h-48 rounded-2xl" />
           <Skeleton className="h-32 rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />

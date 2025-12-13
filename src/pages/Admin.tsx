@@ -140,21 +140,25 @@ const Admin = () => {
         </div>
       </header>
 
-      <div className="container py-6 space-y-6">
+      <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="reports" className="gap-2">
-              <AlertCircle className="w-4 h-4" />
-              Жалобы ({reports?.length || 0})
+          <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6">
+            <TabsTrigger value="reports" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Жалобы</span>
+              <span className="sm:hidden">Жалобы</span>
+              <span className="text-[10px] sm:text-xs">({reports?.length || 0})</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="gap-2">
-              <Users className="w-4 h-4" />
-              Пользователи ({allUsers?.length || 0})
+            <TabsTrigger value="users" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Пользователи</span>
+              <span className="sm:hidden">Пользователи</span>
+              <span className="text-[10px] sm:text-xs">({allUsers?.length || 0})</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="reports" className="space-y-6">
-            <div className="bg-card rounded-2xl p-6 shadow-card">
+          <TabsContent value="reports" className="space-y-4 sm:space-y-6">
+            <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-warning" />
                 Ожидают рассмотрения ({pendingReports.length})
@@ -177,7 +181,7 @@ const Admin = () => {
             </div>
 
             {otherReports.length > 0 && (
-              <div className="bg-card rounded-2xl p-6 shadow-card">
+              <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card">
                 <h2 className="text-lg font-bold mb-4">Остальные жалобы</h2>
                 <div className="space-y-4">
                   {otherReports.map((report) => (
@@ -193,20 +197,22 @@ const Admin = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="users" className="space-y-6">
-            <div className="bg-card rounded-2xl p-6 shadow-card">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Все пользователи ({filteredUsers.length})
+          <TabsContent value="users" className="space-y-4 sm:space-y-6">
+            <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+                <h2 className="text-base sm:text-lg font-bold flex items-center gap-2">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Все пользователи</span>
+                  <span className="sm:hidden">Пользователи</span>
+                  <span className="text-sm sm:text-base">({filteredUsers.length})</span>
                 </h2>
-                <div className="relative w-64">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     placeholder="Поиск пользователей..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 text-sm sm:text-base"
                   />
                 </div>
               </div>

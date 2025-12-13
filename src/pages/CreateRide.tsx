@@ -150,9 +150,9 @@ const CreateRide = () => {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="container py-6 space-y-6">
+      <form onSubmit={handleSubmit} className="container py-4 sm:py-6 space-y-4 sm:space-y-6 pb-24 md:pb-6">
         {/* Route */}
-        <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card space-y-4">
           <h2 className="font-bold text-lg">Маршрут</h2>
           
           <Tabs defaultValue="form" className="w-full">
@@ -234,26 +234,28 @@ const CreateRide = () => {
                 </div>
                 <Tabs value={mapTab} onValueChange={(v) => setMapTab(v as 'from' | 'to')}>
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="from" className="gap-2">
-                      <MapPin className="w-4 h-4 text-success" />
-                      Откуда
+                    <TabsTrigger value="from" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
+                      <span className="hidden sm:inline">Откуда</span>
+                      <span className="sm:hidden">От</span>
                     </TabsTrigger>
-                    <TabsTrigger value="to" className="gap-2">
-                      <MapPin className="w-4 h-4 text-secondary" />
-                      Куда
+                    <TabsTrigger value="to" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-secondary" />
+                      <span className="hidden sm:inline">Куда</span>
+                      <span className="sm:hidden">До</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
                 {(mapTab === 'from' ? fromLocation : toLocation) && (
-                  <div className="p-3 bg-success-light rounded-lg border border-success/20">
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-success" />
-                      <span className="font-medium text-success">
+                  <div className="p-2 sm:p-3 bg-success-light rounded-lg border border-success/20">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-success shrink-0" />
+                      <span className="font-medium text-success break-words">
                         {(mapTab === 'from' ? fromLocation : toLocation)?.address || 
                          'Адрес не определен - введите вручную'}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                       Если адрес не определился автоматически, введите его вручную в поле "Город"
                     </p>
                   </div>
@@ -334,7 +336,8 @@ const CreateRide = () => {
                         });
                       }
                     }}
-                    height="400px"
+                    height="300px"
+                    className="sm:h-[400px]"
                   />
               
               <div className="space-y-2">
@@ -410,10 +413,10 @@ const CreateRide = () => {
         </div>
 
         {/* Price & Seats */}
-        <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card space-y-4">
           <h2 className="font-bold text-lg">Цена и места</h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Цена за место *</Label>
               <div className="relative">
@@ -455,7 +458,7 @@ const CreateRide = () => {
         </div>
 
         {/* Preferences */}
-        <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card space-y-4">
           <h2 className="font-bold text-lg">Правила поездки</h2>
           
           <div className="space-y-4">
@@ -501,7 +504,7 @@ const CreateRide = () => {
         </div>
 
         {/* Notes */}
-        <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-card space-y-4">
           <h2 className="font-bold text-lg">Дополнительно</h2>
           <Textarea
             placeholder="Дополнительная информация о поездке..."
@@ -516,12 +519,12 @@ const CreateRide = () => {
           type="submit" 
           variant="hero" 
           size="xl" 
-          className="w-full"
+          className="w-full min-h-[48px] sm:min-h-[56px]"
           disabled={createRide.isPending}
           loading={createRide.isPending}
           aria-label="Опубликовать поездку"
         >
-          Опубликовать поездку
+          <span className="text-base sm:text-lg">Опубликовать поездку</span>
         </Button>
       </form>
     </div>

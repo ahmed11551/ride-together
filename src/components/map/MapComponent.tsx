@@ -442,18 +442,19 @@ export const MapComponent = ({
       />
 
       {showControls && (
-        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex flex-col gap-2 z-10">
           {mode === 'select' && (
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={handleGeolocate}
-              className="bg-card/95 backdrop-blur-sm shadow-lg hover:shadow-xl border-2"
+              className="bg-card/95 backdrop-blur-sm shadow-lg hover:shadow-xl border-2 text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
               title="Определить моё местоположение"
             >
-              <MapPin className="w-4 h-4 mr-1" />
-              Моё местоположение
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Моё местоположение</span>
+              <span className="sm:hidden">Моё место</span>
             </Button>
           )}
           {selectedLocation && mode === 'select' && (
@@ -482,11 +483,11 @@ export const MapComponent = ({
       
       {/* Подсказка для режима выбора */}
       {mode === 'select' && !selectedLocation && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 border-2 border-primary/20">
-            <p className="text-sm font-medium text-foreground flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span>Кликните на карте, чтобы выбрать точку</span>
+        <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 z-10 max-w-[90%] sm:max-w-none">
+          <div className="bg-card/95 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 sm:px-4 sm:py-2 border-2 border-primary/20">
+            <p className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-primary shrink-0" />
+              <span className="text-center">Кликните на карте, чтобы выбрать точку</span>
             </p>
           </div>
         </div>
