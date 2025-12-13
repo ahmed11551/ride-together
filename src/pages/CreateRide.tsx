@@ -186,7 +186,7 @@ const CreateRide = () => {
                   />
                   {fromLocation && (
                     <p className="text-xs text-muted-foreground">
-                      📍 Выбрано на карте: {fromLocation.address || `${fromLocation.lat.toFixed(4)}, ${fromLocation.lng.toFixed(4)}`}
+                      📍 Выбрано на карте: {fromLocation.address || 'Адрес не определен - введите вручную'}
                     </p>
                   )}
                 </div>
@@ -196,7 +196,7 @@ const CreateRide = () => {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
                     <Input
-                      placeholder="Город прибытия"
+                      placeholder="Город прибытия (например: Санкт-Петербург, м. Московская)"
                       value={formData.to_city}
                       onChange={(e) => {
                         handleChange("to_city", e.target.value);
@@ -215,7 +215,7 @@ const CreateRide = () => {
                   />
                   {toLocation && (
                     <p className="text-xs text-muted-foreground">
-                      📍 Выбрано на карте: {toLocation.address || `${toLocation.lat.toFixed(4)}, ${toLocation.lng.toFixed(4)}`}
+                      📍 Выбрано на карте: {toLocation.address || 'Адрес не определен - введите вручную'}
                     </p>
                   )}
                 </div>
