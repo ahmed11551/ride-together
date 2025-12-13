@@ -184,3 +184,35 @@ export const useUpdateBookingStatus = () => {
     },
   });
 };
+
+/**
+ * Отправка уведомления пассажиру о подтверждении бронирования
+ */
+async function sendBookingConfirmedNotification(
+  rideId: string,
+  passengerId: string
+): Promise<void> {
+  try {
+    // Получаем информацию о поездке
+    const { data: ride } = await supabase
+      .from("rides")
+      .select("from_city, to_city")
+      .eq("id", rideId)
+      .single();
+
+    if (!ride) return;
+
+    // Импортируем функцию отправки уведомлений
+    const { notifyBookingConfirmed } = await import("@/lib/notifications");
+
+    // Отправляем уведомление пассажиру
+    await notifyBookingConfirmed(
+      passengerId,
+      rideId,
+      ride.from_city,
+      ride.to_city
+    );
+  } catch (error) {
+    console.error("Ошибка отправки уведомления о подтверждении:", error);
+  }
+}
