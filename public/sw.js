@@ -3,7 +3,6 @@ const CACHE_NAME = 'ride-together-v2';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/favicon.ico',
 ];
 
 // Установка Service Worker
