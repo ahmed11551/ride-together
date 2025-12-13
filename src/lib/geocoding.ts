@@ -67,16 +67,25 @@ export async function geocodeAddress(
   }
 }
 
+export interface ParsedAddress {
+  fullAddress: string;
+  city?: string;
+  street?: string;
+  metro?: string;
+  shortAddress: string; // Для отображения: "Москва, м. Бауманская" или "Москва, ул. Ленина"
+}
+
 /**
  * Reverse geocode coordinates to address using Yandex Maps Geocoding API
+ * Returns parsed address with city, street, metro information
  */
 export async function reverseGeocode(
   lat: number,
   lng: number
-): Promise<string | null> {
+): Promise<ParsedAddress | null> {
   if (!YANDEX_MAPS_API_KEY) {
     console.warn('Yandex Maps API key not configured');
-    return null;
+    return getFallbackAddress(lat, lng);
   }
 
   try {
@@ -85,7 +94,11 @@ export async function reverseGeocode(
     );
 
     if (!response.ok) {
-      throw new Error('Reverse geocoding failed');
+      // Если 403 или другая ошибка, используем fallback
+      if (response.status === 403) {
+        console.warn('Yandex Maps API: 403 Forbidden - возможно проблема с API ключом или квотой');
+      }
+      return getFallbackAddress(lat, lng);
     }
 
     const data = await response.json();
@@ -96,14 +109,97 @@ export async function reverseGeocode(
     ) {
       const feature = data.response.GeoObjectCollection.featureMember[0]
         .GeoObject;
-      return feature.metaDataProperty.GeocoderMetaData.text;
+      const fullAddress = feature.metaDataProperty.GeocoderMetaData.text;
+      const components = feature.metaDataProperty.GeocoderMetaData.Address?.Components || [];
+
+      // Извлекаем компоненты адреса
+      let city: string | undefined;
+      let street: string | undefined;
+      let metro: string | undefined;
+
+      components.forEach((component: any) => {
+        if (component.kind === 'locality' || component.kind === 'district') {
+          city = component.name;
+        } else if (component.kind === 'street') {
+          street = component.name;
+        } else if (component.kind === 'metro') {
+          metro = component.name;
+        }
+      });
+
+      // Если город не найден, берем из полного адреса
+      if (!city) {
+        city = fullAddress.split(',')[0];
+      }
+
+      // Формируем короткий адрес для отображения
+      const parts: string[] = [];
+      if (city) parts.push(city);
+      if (metro) parts.push(`м. ${metro}`);
+      if (street && !metro) parts.push(street);
+
+      const shortAddress = parts.length > 0 ? parts.join(', ') : fullAddress;
+
+      return {
+        fullAddress,
+        city,
+        street,
+        metro,
+        shortAddress,
+      };
     }
 
-    return null;
+    return getFallbackAddress(lat, lng);
   } catch (error) {
     console.error('Reverse geocoding error:', error);
-    return null;
+    return getFallbackAddress(lat, lng);
   }
+}
+
+/**
+ * Fallback для получения адреса при ошибке API
+ */
+function getFallbackAddress(lat: number, lng: number): ParsedAddress | null {
+  // Пытаемся определить город по координатам
+  const city = getCityByCoordinates(lat, lng);
+  
+  if (city) {
+    return {
+      fullAddress: city,
+      city,
+      shortAddress: city,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Определяет город по координатам (приблизительно)
+ */
+function getCityByCoordinates(lat: number, lng: number): string | null {
+  // Москва
+  if (lat >= 55.5 && lat <= 56.0 && lng >= 37.0 && lng <= 38.0) {
+    return 'Москва';
+  }
+  // Санкт-Петербург
+  if (lat >= 59.8 && lat <= 60.0 && lng >= 30.0 && lng <= 30.7) {
+    return 'Санкт-Петербург';
+  }
+  // Казань
+  if (lat >= 55.7 && lat <= 55.9 && lng >= 48.9 && lng <= 49.3) {
+    return 'Казань';
+  }
+  // Екатеринбург
+  if (lat >= 56.7 && lat <= 56.9 && lng >= 60.4 && lng <= 60.7) {
+    return 'Екатеринбург';
+  }
+  // Новосибирск
+  if (lat >= 54.9 && lat <= 55.1 && lng >= 82.8 && lng <= 83.1) {
+    return 'Новосибирск';
+  }
+
+  return null;
 }
 
 /**

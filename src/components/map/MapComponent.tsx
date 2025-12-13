@@ -141,24 +141,63 @@ export const MapComponent = ({
 
           setSelectedLocation(location);
 
-          // Получаем адрес через геокодер
-          window.ymaps.geocode([location.lat, location.lng])
+          // Получаем адрес через геокодер Yandex Maps
+          window.ymaps.geocode([location.lat, location.lng], {
+            kind: 'house',
+            results: 1
+          })
             .then((res: any) => {
               // Удаляем маркер загрузки
               map.geoObjects.remove(loadingMarker);
 
               const firstGeoObject = res.geoObjects.get(0);
-              const address = firstGeoObject
-                ? firstGeoObject.getAddressLine()
-                : null;
-              const locationWithAddress = { ...location, address };
+              let address: string | null = null;
+              let shortAddress: string | null = null;
+
+              if (firstGeoObject) {
+                address = firstGeoObject.getAddressLine();
+                
+                // Пытаемся извлечь понятный адрес (город, метро, улица)
+                const properties = firstGeoObject.properties.getAll();
+                const components: any = {};
+                
+                properties.forEach((prop: any) => {
+                  if (prop.name === 'metaDataProperty') {
+                    const meta = prop.value;
+                    if (meta.GeocoderMetaData?.Address?.Components) {
+                      meta.GeocoderMetaData.Address.Components.forEach((comp: any) => {
+                        if (comp.kind === 'locality' || comp.kind === 'district') {
+                          components.city = comp.name;
+                        } else if (comp.kind === 'street') {
+                          components.street = comp.name;
+                        } else if (comp.kind === 'metro') {
+                          components.metro = comp.name;
+                        }
+                      });
+                    }
+                  }
+                });
+
+                // Формируем короткий адрес
+                const parts: string[] = [];
+                if (components.city) parts.push(components.city);
+                if (components.metro) parts.push(`м. ${components.metro}`);
+                if (components.street && !components.metro) parts.push(components.street);
+                
+                shortAddress = parts.length > 0 ? parts.join(', ') : address;
+              }
+
+              const locationWithAddress = { 
+                ...location, 
+                address: shortAddress || address || 'Адрес не определен' 
+              };
 
               // Добавляем финальный маркер
               const marker = new window.ymaps.Placemark(
                 [location.lat, location.lng],
                 {
-                  iconCaption: address || 'Выбранная точка',
-                  balloonContent: address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
+                  iconCaption: shortAddress || address || 'Выбранная точка',
+                  balloonContent: address || shortAddress || 'Выберите точку на карте',
                 },
                 {
                   preset: 'islands#blueIcon',
@@ -173,7 +212,7 @@ export const MapComponent = ({
               }
             })
             .catch((error: any) => {
-              console.error('Geocoding error:', error);
+              console.warn('Yandex Maps geocoding error:', error);
               // Удаляем маркер загрузки
               map.geoObjects.remove(loadingMarker);
 
@@ -182,7 +221,7 @@ export const MapComponent = ({
                 [location.lat, location.lng],
                 {
                   iconCaption: 'Выбранная точка',
-                  balloonContent: `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
+                  balloonContent: 'Адрес не определен. Введите адрес вручную в форме.',
                 },
                 {
                   preset: 'islands#blueIcon',
@@ -191,9 +230,9 @@ export const MapComponent = ({
               map.geoObjects.add(marker);
               markerRef.current = marker;
 
-              setSelectedLocation(location);
+              setSelectedLocation({ ...location, address: 'Адрес не определен' });
               if (onLocationSelect) {
-                onLocationSelect(location);
+                onLocationSelect({ ...location, address: 'Адрес не определен' });
               }
             });
         });

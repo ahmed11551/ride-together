@@ -249,9 +249,12 @@ const CreateRide = () => {
                       <MapPin className="w-4 h-4 text-success" />
                       <span className="font-medium text-success">
                         {(mapTab === 'from' ? fromLocation : toLocation)?.address || 
-                         `${(mapTab === 'from' ? fromLocation : toLocation)?.lat.toFixed(4)}, ${(mapTab === 'from' ? fromLocation : toLocation)?.lng.toFixed(4)}`}
+                         'Адрес не определен - введите вручную'}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      💡 Если адрес не определился автоматически, введите его вручную в поле "Город"
+                    </p>
                   </div>
                 )}
               </div>
@@ -264,64 +267,70 @@ const CreateRide = () => {
                         if (mapTab === 'from') {
                           setFromLocation(location);
                           // Попытка получить адрес через reverse geocoding
-                          const address = await reverseGeocode(location.lat, location.lng);
-                          if (address) {
-                            const locationWithAddress = { ...location, address };
+                          const parsedAddress = await reverseGeocode(location.lat, location.lng);
+                          if (parsedAddress) {
+                            const locationWithAddress = { 
+                              ...location, 
+                              address: parsedAddress.shortAddress 
+                            };
                             setFromLocation(locationWithAddress);
-                            const city = address.split(',')[0];
+                            
+                            // Заполняем форму понятными данными
                             setFormData(prev => ({
                               ...prev,
-                              from_city: city,
-                              from_address: address,
+                              from_city: parsedAddress.city || parsedAddress.shortAddress,
+                              from_address: parsedAddress.shortAddress,
                             }));
-                          } else if (location.lat !== 0 && location.lng !== 0) {
-                            // Если геокодирование не удалось, используем координаты
+                          } else {
+                            // Если геокодирование не удалось, просим ввести вручную
                             setFormData(prev => ({
                               ...prev,
-                              from_city: `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+                              from_city: '',
                               from_address: '',
                             }));
+                            toast({
+                              title: 'Адрес не определен',
+                              description: 'Пожалуйста, введите адрес вручную в поле "Город"',
+                              variant: 'default',
+                            });
                           }
                         } else {
                           setToLocation(location);
-                          const address = await reverseGeocode(location.lat, location.lng);
-                          if (address) {
-                            const locationWithAddress = { ...location, address };
+                          const parsedAddress = await reverseGeocode(location.lat, location.lng);
+                          if (parsedAddress) {
+                            const locationWithAddress = { 
+                              ...location, 
+                              address: parsedAddress.shortAddress 
+                            };
                             setToLocation(locationWithAddress);
-                            const city = address.split(',')[0];
+                            
+                            // Заполняем форму понятными данными
                             setFormData(prev => ({
                               ...prev,
-                              to_city: city,
-                              to_address: address,
+                              to_city: parsedAddress.city || parsedAddress.shortAddress,
+                              to_address: parsedAddress.shortAddress,
                             }));
-                          } else if (location.lat !== 0 && location.lng !== 0) {
-                            // Если геокодирование не удалось, используем координаты
+                          } else {
+                            // Если геокодирование не удалось, просим ввести вручную
                             setFormData(prev => ({
                               ...prev,
-                              to_city: `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+                              to_city: '',
                               to_address: '',
                             }));
+                            toast({
+                              title: 'Адрес не определен',
+                              description: 'Пожалуйста, введите адрес вручную в поле "Город"',
+                              variant: 'default',
+                            });
                           }
                         }
                       } catch (error) {
                         console.error('Ошибка обработки выбранной локации:', error);
-                        // В случае ошибки все равно сохраняем координаты
-                        if (location.lat !== 0 && location.lng !== 0) {
-                          const coords = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
-                          if (mapTab === 'from') {
-                            setFormData(prev => ({
-                              ...prev,
-                              from_city: coords,
-                              from_address: '',
-                            }));
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              to_city: coords,
-                              to_address: '',
-                            }));
-                          }
-                        }
+                        toast({
+                          title: 'Ошибка определения адреса',
+                          description: 'Пожалуйста, введите адрес вручную',
+                          variant: 'destructive',
+                        });
                       }
                     }}
                     height="400px"
