@@ -26,7 +26,7 @@ export const useProfile = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, user_id, full_name, phone, avatar_url, bio, rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -55,34 +55,46 @@ export const useUpdateProfile = () => {
       // Если профиль не существует, создаем его
       if (!existingProfile) {
         const defaultName = updates.full_name || user.email?.split('@')[0] || 'Пользователь';
+        // Убираем поля, которые не должны быть в insert
+        const { display_name: _, ...insertFields } = updates;
         const { data, error } = await supabase
           .from("profiles")
           .insert({
             user_id: user.id,
             display_name: defaultName, // Обязательное поле
             full_name: updates.full_name || defaultName,
-            ...updates,
+            ...insertFields,
             updated_at: new Date().toISOString(),
           })
-          .select()
+          .select("id, user_id, full_name, phone, avatar_url, bio, rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Profile create error:', error);
+          throw error;
+        }
         return data;
       }
 
       // Обновляем существующий профиль
+      // Убираем поля, которые не должны обновляться напрямую
+      const { display_name, ...updateFields } = updates;
       const { data, error } = await supabase
         .from("profiles")
         .update({
-          ...updates,
+          ...updateFields,
+          // Обновляем display_name только если изменился full_name
+          ...(updates.full_name && { display_name: updates.full_name }),
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id)
-        .select()
+        .select("id, user_id, full_name, phone, avatar_url, bio, rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: (_, variables) => {
@@ -100,7 +112,7 @@ export const useProfileById = (userId: string | undefined) => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, user_id, full_name, phone, avatar_url, bio, rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
         .eq("user_id", userId)
         .maybeSingle();
 

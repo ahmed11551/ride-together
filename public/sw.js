@@ -14,11 +14,23 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Не кэшируем API запросы и другие динамические ресурсы
+  if (event.request.url.includes('/rest/v1/') || 
+      event.request.url.includes('/auth/v1/') ||
+      event.request.url.includes('/realtime/v1/') ||
+      event.request.url.includes('/storage/v1/')) {
+    return; // Пропускаем Service Worker для API запросов
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
         return response || fetch(event.request);
+      })
+      .catch(() => {
+        // Если ошибка, просто делаем обычный fetch
+        return fetch(event.request);
       })
   );
 });
