@@ -280,35 +280,38 @@ const RideDetails = () => {
 
       {/* Booking Footer */}
       {ride.status === "active" && ride.seats_available > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 glass border-t border-border p-4 z-40 safe-area-bottom">
-          <div className="container flex items-center justify-between gap-4">
-            <div>
-              <p className="text-2xl font-extrabold text-primary">{(ride.price * seats).toLocaleString()} ₽</p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="w-4 h-4" />
-                <span>{ride.seats_available} мест свободно</span>
+        <div className="fixed bottom-0 left-0 right-0 glass border-t border-border p-3 sm:p-4 z-40 safe-area-bottom">
+          <div className="container">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex-shrink-0">
+                <p className="text-xl sm:text-2xl font-extrabold text-primary">{(ride.price * seats).toLocaleString()} ₽</p>
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{ride.seats_available} мест свободно</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <select
-                value={seats}
-                onChange={(e) => setSeats(Number(e.target.value))}
-                className="h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary outline-none font-medium"
-              >
-                {Array.from({ length: ride.seats_available }, (_, i) => i + 1).map((num) => (
-                  <option key={num} value={num}>{num} {num === 1 ? "место" : "места"}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 sm:flex-initial">
+                <select
+                  value={seats}
+                  onChange={(e) => setSeats(Number(e.target.value))}
+                  className="h-10 sm:h-12 px-3 sm:px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary outline-none font-medium text-sm sm:text-base flex-shrink-0"
+                >
+                  {Array.from({ length: ride.seats_available }, (_, i) => i + 1).map((num) => (
+                    <option key={num} value={num}>{num} {num === 1 ? "место" : "места"}</option>
+                  ))}
+                </select>
 
-              <Button 
-                variant="hero" 
-                size="lg"
-                onClick={handleBook}
-                loading={createBooking.isPending}
-              >
-                Забронировать
-              </Button>
+                <Button 
+                  variant="hero" 
+                  size="lg"
+                  onClick={handleBook}
+                  loading={createBooking.isPending}
+                  className="flex-1 sm:flex-initial whitespace-nowrap min-w-0"
+                >
+                  <span className="truncate">Забронировать</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
