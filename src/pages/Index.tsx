@@ -1,13 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Header from "@/components/layout/Header";
+import BottomNav from "@/components/layout/BottomNav";
+import HeroSection from "@/components/home/HeroSection";
+import PopularRoutes from "@/components/home/PopularRoutes";
+import RidesList from "@/components/rides/RidesList";
+import HowItWorks from "@/components/home/HowItWorks";
+import DriverCTA from "@/components/home/DriverCTA";
+import { Helmet } from "react-helmet-async";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <>
+      <Helmet>
+        <title>RideConnect — Поиск попутчиков и совместные поездки</title>
+        <meta name="description" content="Найди попутчиков для поездки или предложи свой маршрут. Экономь до 75% на путешествиях с RideConnect — удобным сервисом совместных поездок в Telegram." />
+      </Helmet>
+      
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <Header />
+        
+        <main>
+          <HeroSection />
+          <PopularRoutes />
+          
+          <div className="container">
+            <RidesList />
+          </div>
+          
+          <HowItWorks />
+          <DriverCTA />
+        </main>
+
+        <BottomNav />
       </div>
-    </div>
+    </>
   );
 };
 
