@@ -260,7 +260,7 @@ const CreateRide = () => {
                 )}
               </div>
               
-              <MapComponent
+              <LazyMapComponent
                 mode="select"
                 initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
                 onLocationSelect={async (location) => {
