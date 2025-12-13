@@ -238,21 +238,69 @@ npm test -- --watch
 
 ## 🚀 Деплой
 
-### Vercel (рекомендуется)
+### Vercel (рекомендуется) ⚡
+
+Проект полностью настроен для деплоя на Vercel!
+
+#### Способ 1: Через Vercel Dashboard (Самый простой)
+
+1. **Откройте [vercel.com](https://vercel.com)** и войдите через GitHub
+
+2. **Импортируйте проект:**
+   - Нажмите "Add New..." → "Project"
+   - Выберите репозиторий `ahmed11551/ride-together`
+   - Vercel автоматически определит настройки из `vercel.json`
+
+3. **Настройте переменные окружения:**
+   
+   В разделе "Environment Variables" добавьте:
+   ```
+   VITE_SUPABASE_URL = https://xdlkilvotcnssarzugws.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg
+   VITE_MAPBOX_TOKEN = your-mapbox-token (опционально)
+   ```
+
+4. **Деплой:**
+   - Нажмите "Deploy"
+   - Дождитесь завершения сборки (~2-3 минуты)
+   - Получите ссылку на приложение!
+
+#### Способ 2: Через Vercel CLI
 
 1. Установите [Vercel CLI](https://vercel.com/cli):
 ```bash
 npm i -g vercel
 ```
 
-2. Задеплойте:
+2. Войдите в Vercel:
 ```bash
+vercel login
+```
+
+3. Задеплойте:
+```bash
+cd ride-together
 vercel
 ```
 
-3. Добавьте переменные окружения в Vercel Dashboard:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+4. Настройте переменные окружения:
+```bash
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_PUBLISHABLE_KEY
+vercel env add VITE_MAPBOX_TOKEN
+```
+
+5. Продакшн деплой:
+```bash
+vercel --prod
+```
+
+> 📖 **Подробная инструкция:** См. [VERCEL_DEPLOY.md](./VERCEL_DEPLOY.md)
+
+**После деплоя:**
+- ✅ Каждый push в `main` автоматически деплоится
+- ✅ Pull Requests получают preview деплои
+- ✅ Приложение доступно по адресу `https://ride-together.vercel.app`
 
 ### Netlify
 
