@@ -42,7 +42,7 @@ const Index = () => {
           <footer className="py-8 border-t border-border bg-muted/30">
             <div className="container text-center">
               <p className="text-sm text-muted-foreground">
-                © 2024 RideConnect. Все права защищены.
+                © 2025 RideConnect. Все права защищены. -Sebiev-
               </p>
             </div>
           </footer>
