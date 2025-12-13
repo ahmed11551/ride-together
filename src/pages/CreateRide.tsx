@@ -233,41 +233,76 @@ const CreateRide = () => {
                 </Tabs>
               </div>
               
-              <MapComponent
-                mode="select"
-                initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
-                onLocationSelect={async (location) => {
-                  if (mapTab === 'from') {
-                    setFromLocation(location);
-                    // Попытка получить адрес через reverse geocoding
-                    const address = await reverseGeocode(location.lat, location.lng);
-                    if (address) {
-                      const locationWithAddress = { ...location, address };
-                      setFromLocation(locationWithAddress);
-                      const city = address.split(',')[0];
-                      setFormData(prev => ({
-                        ...prev,
-                        from_city: city,
-                        from_address: address,
-                      }));
-                    }
-                  } else {
-                    setToLocation(location);
-                    const address = await reverseGeocode(location.lat, location.lng);
-                    if (address) {
-                      const locationWithAddress = { ...location, address };
-                      setToLocation(locationWithAddress);
-                      const city = address.split(',')[0];
-                      setFormData(prev => ({
-                        ...prev,
-                        to_city: city,
-                        to_address: address,
-                      }));
-                    }
-                  }
-                }}
-                height="400px"
-              />
+                  <MapComponent
+                    mode="select"
+                    initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
+                    onLocationSelect={async (location) => {
+                      try {
+                        if (mapTab === 'from') {
+                          setFromLocation(location);
+                          // Попытка получить адрес через reverse geocoding
+                          const address = await reverseGeocode(location.lat, location.lng);
+                          if (address) {
+                            const locationWithAddress = { ...location, address };
+                            setFromLocation(locationWithAddress);
+                            const city = address.split(',')[0];
+                            setFormData(prev => ({
+                              ...prev,
+                              from_city: city,
+                              from_address: address,
+                            }));
+                          } else if (location.lat !== 0 && location.lng !== 0) {
+                            // Если геокодирование не удалось, используем координаты
+                            setFormData(prev => ({
+                              ...prev,
+                              from_city: `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+                              from_address: '',
+                            }));
+                          }
+                        } else {
+                          setToLocation(location);
+                          const address = await reverseGeocode(location.lat, location.lng);
+                          if (address) {
+                            const locationWithAddress = { ...location, address };
+                            setToLocation(locationWithAddress);
+                            const city = address.split(',')[0];
+                            setFormData(prev => ({
+                              ...prev,
+                              to_city: city,
+                              to_address: address,
+                            }));
+                          } else if (location.lat !== 0 && location.lng !== 0) {
+                            // Если геокодирование не удалось, используем координаты
+                            setFormData(prev => ({
+                              ...prev,
+                              to_city: `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+                              to_address: '',
+                            }));
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Ошибка обработки выбранной локации:', error);
+                        // В случае ошибки все равно сохраняем координаты
+                        if (location.lat !== 0 && location.lng !== 0) {
+                          const coords = `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+                          if (mapTab === 'from') {
+                            setFormData(prev => ({
+                              ...prev,
+                              from_city: coords,
+                              from_address: '',
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              to_city: coords,
+                              to_address: '',
+                            }));
+                          }
+                        }
+                      }
+                    }}
+                    height="400px"
+                  />
               
               <p className="text-sm text-muted-foreground">
                 💡 Кликните на карте, чтобы выбрать точку {mapTab === 'from' ? 'отправления' : 'прибытия'}

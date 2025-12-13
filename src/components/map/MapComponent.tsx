@@ -92,7 +92,7 @@ export const MapComponent = ({
       const map = new window.ymaps.Map(mapRef.current, {
         center,
         zoom,
-        controls: ['zoomControl', 'fullscreenControl'],
+        controls: ['zoomControl', 'fullscreenControl', 'geolocationControl'],
       });
 
       mapInstanceRef.current = map;
@@ -126,55 +126,131 @@ export const MapComponent = ({
             map.geoObjects.remove(markerRef.current);
           }
 
-          // Добавляем новый маркер
-          const marker = new window.ymaps.Placemark(
+          // Добавляем временный маркер загрузки
+          const loadingMarker = new window.ymaps.Placemark(
             [location.lat, location.lng],
             {
-              iconCaption: 'Выбранная точка',
+              iconCaption: 'Загрузка...',
             },
             {
-              preset: 'islands#blueIcon',
+              preset: 'islands#grayIcon',
             }
           );
-          map.geoObjects.add(marker);
-          markerRef.current = marker;
+          map.geoObjects.add(loadingMarker);
+          markerRef.current = loadingMarker;
 
           setSelectedLocation(location);
 
           // Получаем адрес через геокодер
-          window.ymaps.geocode([location.lat, location.lng]).then((res: any) => {
-            const firstGeoObject = res.geoObjects.get(0);
-            const address = firstGeoObject
-              ? firstGeoObject.getAddressLine()
-              : null;
-            const locationWithAddress = { ...location, address };
-            setSelectedLocation(locationWithAddress);
-            if (onLocationSelect) {
-              onLocationSelect(locationWithAddress);
-            }
-          });
+          window.ymaps.geocode([location.lat, location.lng])
+            .then((res: any) => {
+              // Удаляем маркер загрузки
+              map.geoObjects.remove(loadingMarker);
+
+              const firstGeoObject = res.geoObjects.get(0);
+              const address = firstGeoObject
+                ? firstGeoObject.getAddressLine()
+                : null;
+              const locationWithAddress = { ...location, address };
+
+              // Добавляем финальный маркер
+              const marker = new window.ymaps.Placemark(
+                [location.lat, location.lng],
+                {
+                  iconCaption: address || 'Выбранная точка',
+                  balloonContent: address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
+                },
+                {
+                  preset: 'islands#blueIcon',
+                }
+              );
+              map.geoObjects.add(marker);
+              markerRef.current = marker;
+
+              setSelectedLocation(locationWithAddress);
+              if (onLocationSelect) {
+                onLocationSelect(locationWithAddress);
+              }
+            })
+            .catch((error: any) => {
+              console.error('Geocoding error:', error);
+              // Удаляем маркер загрузки
+              map.geoObjects.remove(loadingMarker);
+
+              // Даже если геокодирование не удалось, показываем маркер
+              const marker = new window.ymaps.Placemark(
+                [location.lat, location.lng],
+                {
+                  iconCaption: 'Выбранная точка',
+                  balloonContent: `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
+                },
+                {
+                  preset: 'islands#blueIcon',
+                }
+              );
+              map.geoObjects.add(marker);
+              markerRef.current = marker;
+
+              setSelectedLocation(location);
+              if (onLocationSelect) {
+                onLocationSelect(location);
+              }
+            });
         });
       }
     });
   }, [isLoaded, initialLocation, mode, onLocationSelect]);
 
   const handleGeolocate = useCallback(() => {
-    if (navigator.geolocation && mapInstanceRef.current) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const location: Location = { lat: latitude, lng: longitude };
+    if (!navigator.geolocation) {
+      // Показываем сообщение, что геолокация не поддерживается
+      if (window.ymaps && window.ymaps.balloon) {
+        // Можно показать баллун на карте
+      }
+      return;
+    }
 
-          mapInstanceRef.current.setCenter([latitude, longitude], 12);
+    if (!mapInstanceRef.current) {
+      return;
+    }
 
-          // Удаляем старый маркер
-          if (markerRef.current) {
-            mapInstanceRef.current.geoObjects.remove(markerRef.current);
-          }
+    // Показываем индикатор загрузки
+    const loadingMarker = new window.ymaps.Placemark(
+      mapInstanceRef.current.getCenter(),
+      {
+        iconCaption: 'Определение местоположения...',
+      },
+      {
+        preset: 'islands#grayIcon',
+      }
+    );
+    mapInstanceRef.current.geoObjects.add(loadingMarker);
 
-          // Добавляем новый маркер
-          if (window.ymaps) {
-            window.ymaps.geocode([latitude, longitude]).then((res: any) => {
+    const geoOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 10 секунд
+      maximumAge: 60000, // 1 минута
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        // Удаляем индикатор загрузки
+        mapInstanceRef.current.geoObjects.remove(loadingMarker);
+
+        const { latitude, longitude } = position.coords;
+        const location: Location = { lat: latitude, lng: longitude };
+
+        mapInstanceRef.current.setCenter([latitude, longitude], 12);
+
+        // Удаляем старый маркер
+        if (markerRef.current) {
+          mapInstanceRef.current.geoObjects.remove(markerRef.current);
+        }
+
+        // Добавляем новый маркер
+        if (window.ymaps) {
+          window.ymaps.geocode([latitude, longitude])
+            .then((res: any) => {
               const firstGeoObject = res.geoObjects.get(0);
               const address = firstGeoObject
                 ? firstGeoObject.getAddressLine()
@@ -197,14 +273,77 @@ export const MapComponent = ({
               if (onLocationSelect) {
                 onLocationSelect(locationWithAddress);
               }
+            })
+            .catch((error: any) => {
+              console.error('Geocoding error:', error);
+              // Даже если геокодирование не удалось, показываем маркер
+              const marker = new window.ymaps.Placemark(
+                [latitude, longitude],
+                {
+                  iconCaption: 'Моё местоположение',
+                },
+                {
+                  preset: 'islands#blueIcon',
+                }
+              );
+              mapInstanceRef.current.geoObjects.add(marker);
+              markerRef.current = marker;
+
+              setSelectedLocation(location);
+              if (onLocationSelect) {
+                onLocationSelect(location);
+              }
             });
-          }
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
         }
-      );
-    }
+      },
+      (error) => {
+        // Удаляем индикатор загрузки
+        mapInstanceRef.current.geoObjects.remove(loadingMarker);
+
+        // Обрабатываем разные типы ошибок
+        let errorMessage = 'Не удалось определить местоположение';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Доступ к геолокации запрещен. Разрешите доступ в настройках браузера';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Информация о местоположении недоступна';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Превышено время ожидания определения местоположения';
+            break;
+          default:
+            errorMessage = 'Ошибка определения местоположения';
+            break;
+        }
+
+        console.warn('Geolocation error:', error);
+        
+        // Показываем сообщение пользователю через баллун на карте
+        if (window.ymaps && mapInstanceRef.current) {
+          const errorMarker = new window.ymaps.Placemark(
+            mapInstanceRef.current.getCenter(),
+            {
+              balloonContent: errorMessage,
+            },
+            {
+              preset: 'islands#redIcon',
+            }
+          );
+          mapInstanceRef.current.geoObjects.add(errorMarker);
+          
+          // Автоматически открываем баллун
+          errorMarker.balloon.open();
+          
+          // Удаляем маркер через 5 секунд
+          setTimeout(() => {
+            mapInstanceRef.current.geoObjects.remove(errorMarker);
+          }, 5000);
+        }
+      },
+      geoOptions
+    );
   }, [onLocationSelect]);
 
   if (!YANDEX_MAPS_API_KEY) {
