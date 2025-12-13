@@ -345,7 +345,6 @@ const CreateRide = () => {
               {errors.price && (
                 <p className="text-sm text-destructive">{errors.price}</p>
               )}
-              </div>
             </div>
 
             <div className="space-y-2">
