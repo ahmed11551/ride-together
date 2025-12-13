@@ -1,4 +1,5 @@
 import { ArrowRight, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const popularRoutes = [
   { from: "Москва", to: "Санкт-Петербург", price: "от 1 500 ₽", count: 234 },
@@ -8,30 +9,38 @@ const popularRoutes = [
 ];
 
 const PopularRoutes = () => {
+  const navigate = useNavigate();
+
+  const handleRouteClick = (from: string, to: string) => {
+    navigate(`/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+  };
+
   return (
-    <section className="py-8 bg-muted/30">
+    <section className="py-8 bg-muted/40">
       <div className="container">
-        <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Популярные маршруты</h2>
+        <div className="flex items-center gap-2 mb-5">
+          <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-primary" />
+          </div>
+          <h2 className="text-lg md:text-xl font-bold text-foreground">Популярные маршруты</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {popularRoutes.map((route, index) => (
             <button
               key={index}
-              className="flex items-center justify-between p-4 bg-card rounded-xl shadow-sm hover:shadow-card transition-all duration-200 group text-left"
+              className="flex items-center justify-between p-4 bg-card rounded-xl shadow-xs hover:shadow-card transition-all duration-200 group text-left animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => handleRouteClick(route.from, route.to)}
             >
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-foreground">
-                  <span className="font-semibold">{route.from}</span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="font-semibold">{route.to}</span>
-                </div>
+              <div className="flex items-center gap-2 text-foreground min-w-0">
+                <span className="font-semibold truncate">{route.from}</span>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+                <span className="font-semibold truncate">{route.to}</span>
               </div>
               
-              <div className="text-right">
-                <p className="font-bold text-primary">{route.price}</p>
+              <div className="text-right shrink-0 ml-3">
+                <p className="font-bold text-primary text-sm">{route.price}</p>
                 <p className="text-xs text-muted-foreground">{route.count} поездок</p>
               </div>
             </button>

@@ -4,7 +4,9 @@ import { useSearchRides } from "@/hooks/useRides";
 import { Button } from "@/components/ui/button";
 import RideCard from "@/components/rides/RideCard";
 import SearchForm from "@/components/search/SearchForm";
-import { ArrowLeft, SlidersHorizontal, Search } from "lucide-react";
+import EmptyState from "@/components/ui/empty-state";
+import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
+import { ArrowLeft, SlidersHorizontal, Search, X } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -32,32 +34,32 @@ const SearchResults = () => {
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
-        <div className="container flex h-16 items-center gap-4">
+      <header className="sticky top-0 z-50 glass border-b border-border">
+        <div className="container flex h-16 items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex-1">
-            <p className="font-semibold text-foreground">
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-foreground truncate">
               {from || "Любой город"} → {to || "Любой город"}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {formattedDate} • {passengers} пассажир
+            <p className="text-xs text-muted-foreground">
+              {formattedDate} • {passengers} пассажир{passengers > 1 ? (passengers < 5 ? 'а' : 'ов') : ''}
             </p>
           </div>
           <Button 
-            variant="outline" 
+            variant={showFilters ? "soft" : "outline"} 
             size="icon"
             onClick={() => setShowFilters(!showFilters)}
           >
-            <SlidersHorizontal className="w-5 h-5" />
+            {showFilters ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
           </Button>
         </div>
       </header>
 
       {/* Filters */}
       {showFilters && (
-        <div className="container py-4 border-b border-border animate-slide-up">
+        <div className="container py-4 border-b border-border animate-slide-down">
           <SearchForm />
         </div>
       )}
@@ -66,44 +68,49 @@ const SearchResults = () => {
       <div className="container py-6">
         {isLoading ? (
           <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="h-5 w-40 bg-muted rounded-lg animate-shimmer" />
+            </div>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-card rounded-2xl h-48 animate-pulse" />
+              <RideCardSkeleton key={i} />
             ))}
           </div>
         ) : rides && rides.length > 0 ? (
           <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Найдено {rides.length} поездок
+            <p className="text-muted-foreground text-sm">
+              Найдено {rides.length} {rides.length === 1 ? 'поездка' : rides.length < 5 ? 'поездки' : 'поездок'}
             </p>
             
             {rides.map((ride, index) => (
               <div 
                 key={ride.id}
-                style={{ animationDelay: `${index * 50}ms` }}
-                className="animate-fade-in"
+                style={{ animationDelay: `${index * 60}ms` }}
+                className="animate-slide-up"
               >
                 <RideCard 
                   ride={{
-                    id: parseInt(ride.id.slice(0, 8), 16),
+                    id: ride.id,
                     driver: {
-                      name: (ride.driver as any)?.full_name || "Водитель",
-                      avatar: (ride.driver as any)?.avatar_url || `https://ui-avatars.com/api/?name=U&background=0d9488&color=fff`,
-                      rating: (ride.driver as any)?.rating || 5,
-                      trips: (ride.driver as any)?.trips_count || 0,
-                      verified: (ride.driver as any)?.is_verified || false,
+                      name: ride.driver?.full_name || "Водитель",
+                      avatar: ride.driver?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(ride.driver?.full_name || "U")}&background=0d9488&color=fff`,
+                      rating: ride.driver?.rating || 5,
+                      trips: ride.driver?.trips_count || 0,
+                      verified: ride.driver?.is_verified || false,
                     },
                     from: ride.from_address,
                     to: ride.to_address,
+                    fromCity: ride.from_city,
+                    toCity: ride.to_city,
                     date: ride.departure_date,
                     time: ride.departure_time.slice(0, 5),
                     duration: ride.estimated_duration || "—",
                     price: ride.price,
                     seats: ride.seats_available,
-                    features: [
-                      ...(ride.allow_music ? ["music"] : []),
-                      ...(!ride.allow_smoking ? ["noSmoking"] : []),
-                    ],
-                    car: "Автомобиль",
+                    features: {
+                      noSmoking: !ride.allow_smoking,
+                      music: ride.allow_music,
+                      pets: ride.allow_pets,
+                    },
                   }}
                   onSelect={() => navigate(`/ride/${ride.id}`)}
                 />
@@ -111,18 +118,15 @@ const SearchResults = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Search className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Поездки не найдены</h2>
-            <p className="text-muted-foreground mb-6 max-w-sm">
-              Попробуйте изменить параметры поиска или посмотрите другие даты
-            </p>
-            <Button onClick={() => setShowFilters(true)}>
-              Изменить поиск
-            </Button>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="Поездки не найдены"
+            description="Попробуйте изменить параметры поиска или посмотрите другие даты"
+            action={{
+              label: "Изменить поиск",
+              onClick: () => setShowFilters(true),
+            }}
+          />
         )}
       </div>
     </div>

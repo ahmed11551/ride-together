@@ -1,112 +1,109 @@
+import { useNavigate } from "react-router-dom";
+import { useRecentRides } from "@/hooks/useRides";
 import RideCard from "./RideCard";
-import { SlidersHorizontal } from "lucide-react";
+import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
+import EmptyState from "@/components/ui/empty-state";
+import { SlidersHorizontal, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const mockRides = [
-  {
-    id: 1,
-    driver: {
-      name: "Александр М.",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      rating: 4.9,
-      trips: 156,
-      verified: true,
-    },
-    from: "Москва, м. Тёплый Стан",
-    to: "Санкт-Петербург, Московский вокзал",
-    date: "2024-01-15",
-    time: "08:00",
-    duration: "≈ 7 часов",
-    price: 1800,
-    seats: 3,
-    features: ["noSmoking", "music"],
-    car: "Volkswagen Passat, серый",
-  },
-  {
-    id: 2,
-    driver: {
-      name: "Мария К.",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-      rating: 4.8,
-      trips: 89,
-      verified: true,
-    },
-    from: "Москва, м. Домодедовская",
-    to: "Санкт-Петербург, м. Звёздная",
-    date: "2024-01-15",
-    time: "09:30",
-    duration: "≈ 8 часов",
-    price: 1600,
-    seats: 2,
-    features: ["noSmoking", "chat"],
-    car: "Kia Ceed, белый",
-  },
-  {
-    id: 3,
-    driver: {
-      name: "Дмитрий В.",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
-      rating: 4.7,
-      trips: 234,
-      verified: true,
-    },
-    from: "Москва, МКАД (Ленинградка)",
-    to: "Санкт-Петербург, КАД",
-    date: "2024-01-15",
-    time: "10:00",
-    duration: "≈ 6.5 часов",
-    price: 2000,
-    seats: 1,
-    features: ["noSmoking", "music", "chat"],
-    car: "BMW 520d, чёрный",
-  },
-  {
-    id: 4,
-    driver: {
-      name: "Елена С.",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      rating: 5.0,
-      trips: 45,
-      verified: false,
-    },
-    from: "Москва, м. Речной вокзал",
-    to: "Санкт-Петербург, Пулково",
-    date: "2024-01-15",
-    time: "14:00",
-    duration: "≈ 7.5 часов",
-    price: 1500,
-    seats: 4,
-    features: ["chat"],
-    car: "Skoda Octavia, синий",
-  },
-];
-
 const RidesList = () => {
+  const navigate = useNavigate();
+  const { data: rides, isLoading } = useRecentRides();
+
+  if (isLoading) {
+    return (
+      <section className="py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-7 w-48 bg-muted rounded-lg animate-shimmer mb-2" />
+            <div className="h-5 w-32 bg-muted rounded-lg animate-shimmer" />
+          </div>
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <RideCardSkeleton key={i} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!rides || rides.length === 0) {
+    return (
+      <section className="py-8">
+        <EmptyState
+          icon={Search}
+          title="Поездок пока нет"
+          description="Станьте первым водителем или проверьте позже"
+          action={{
+            label: "Создать поездку",
+            onClick: () => navigate("/create-ride"),
+          }}
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Ближайшие поездки</h2>
-          <p className="text-muted-foreground">Найдено {mockRides.length} поездок</p>
+          <p className="text-muted-foreground">{rides.length} поездок доступно</p>
         </div>
         
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/search")}>
           <SlidersHorizontal className="w-4 h-4" />
           Фильтры
         </Button>
       </div>
 
       <div className="space-y-4">
-        {mockRides.map((ride, index) => (
+        {rides.slice(0, 5).map((ride, index) => (
           <div 
             key={ride.id}
-            style={{ animationDelay: `${index * 100}ms` }}
+            style={{ animationDelay: `${index * 80}ms` }}
             className="animate-slide-up"
           >
-            <RideCard ride={ride} />
+            <RideCard 
+              ride={{
+                id: ride.id,
+                driver: {
+                  name: ride.driver?.full_name || "Водитель",
+                  avatar: ride.driver?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(ride.driver?.full_name || "U")}&background=0d9488&color=fff`,
+                  rating: ride.driver?.rating || 5,
+                  trips: ride.driver?.trips_count || 0,
+                  verified: ride.driver?.is_verified || false,
+                },
+                from: ride.from_address,
+                to: ride.to_address,
+                fromCity: ride.from_city,
+                toCity: ride.to_city,
+                date: ride.departure_date,
+                time: ride.departure_time.slice(0, 5),
+                duration: ride.estimated_duration || "—",
+                price: ride.price,
+                seats: ride.seats_available,
+                features: {
+                  noSmoking: !ride.allow_smoking,
+                  music: ride.allow_music,
+                  pets: ride.allow_pets,
+                },
+              }}
+              onSelect={() => navigate(`/ride/${ride.id}`)}
+            />
           </div>
         ))}
       </div>
+
+      {rides.length > 5 && (
+        <div className="mt-6 text-center">
+          <Button variant="soft" onClick={() => navigate("/search")}>
+            Показать все поездки
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </section>
   );
 };
