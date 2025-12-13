@@ -86,12 +86,24 @@ export const useNotifications = () => {
     }
 
     try {
-      const subscription = await registration.pushManager.subscribe({
+      // Проверяем, есть ли уже подписка
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        await saveSubscription(existingSubscription, user.id);
+        return existingSubscription;
+      }
+
+      // VAPID ключ опционален - если нет, создаем подписку без него
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      const subscribeOptions: PushSubscriptionOptionsInit = {
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
-        ),
-      });
+      };
+
+      if (vapidKey) {
+        subscribeOptions.applicationServerKey = urlBase64ToUint8Array(vapidKey);
+      }
+
+      const subscription = await registration.pushManager.subscribe(subscribeOptions);
 
       // Сохраняем подписку в Supabase
       await saveSubscription(subscription, user.id);
