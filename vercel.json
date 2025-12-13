@@ -20,10 +20,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@vite_supabase_url",
-    "VITE_SUPABASE_PUBLISHABLE_KEY": "@vite_supabase_publishable_key",
-    "VITE_MAPBOX_TOKEN": "@vite_mapbox_token"
-  }
+  ]
 }

@@ -19,12 +19,20 @@
 
 3. **Настройте переменные окружения:**
    
-   В разделе "Environment Variables" добавьте:
+   ⚠️ **ВАЖНО:** В разделе "Environment Variables" добавьте переменные **БЕЗ пробелов вокруг `=`**:
+   
    ```
-   VITE_SUPABASE_URL = https://xdlkilvotcnssarzugws.supabase.co
-   VITE_SUPABASE_PUBLISHABLE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg
-   VITE_MAPBOX_TOKEN = your-mapbox-token-here (опционально)
+   VITE_SUPABASE_URL=https://xdlkilvotcnssarzugws.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg
+   VITE_MAPBOX_TOKEN=your-mapbox-token-here
    ```
+   
+   **Правила именования переменных:**
+   - ✅ Только буквы, цифры и подчеркивания
+   - ✅ Не должно начинаться с цифры
+   - ✅ Без пробелов и специальных символов (кроме `_`)
+   - ✅ Примеры правильных имен: `VITE_SUPABASE_URL`, `API_KEY`, `MY_VAR_123`
+   - ❌ Примеры неправильных: `VITE-SUPABASE-URL`, `123_VAR`, `VAR NAME`
 
 4. **Настройте Build Settings:**
    - Framework Preset: **Vite**
