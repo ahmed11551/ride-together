@@ -1,6 +1,7 @@
 import { MapPin, Clock, Star, Users, Cigarette, Music, Dog, ChevronRight, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface RideCardProps {
   ride: {
@@ -86,10 +87,12 @@ const RideCard = ({ ride, onSelect, className }: RideCardProps) => {
       <div className="p-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img 
-              src={ride.driver.avatar} 
+            <OptimizedImage
+              src={ride.driver.avatar}
               alt={ride.driver.name}
+              fallback={`https://ui-avatars.com/api/?name=${encodeURIComponent(ride.driver.name)}&background=0d9488&color=fff`}
               className="w-11 h-11 rounded-full object-cover border-2 border-border group-hover:border-primary transition-colors"
+              showPlaceholder={true}
             />
             {ride.driver.verified && (
               <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center ring-2 ring-card">
