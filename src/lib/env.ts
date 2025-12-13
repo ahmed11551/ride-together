@@ -109,12 +109,40 @@ function validateEnv(): Env {
  * Use this instead of import.meta.env directly
  * Lazy evaluation - validates only when first accessed
  */
-export const env = new Proxy({} as Env, {
-  get(_target, prop: string | symbol) {
-    const validated = validateEnv();
-    return validated[prop as keyof Env];
+let envInstance: Env | null = null;
+
+export const env = {
+  get VITE_SUPABASE_URL() {
+    return validateEnv().VITE_SUPABASE_URL;
   },
-});
+  get VITE_SUPABASE_PUBLISHABLE_KEY() {
+    return validateEnv().VITE_SUPABASE_PUBLISHABLE_KEY;
+  },
+  get VITE_YANDEX_MAPS_API_KEY() {
+    return validateEnv().VITE_YANDEX_MAPS_API_KEY;
+  },
+  get VITE_MAPBOX_TOKEN() {
+    return validateEnv().VITE_MAPBOX_TOKEN;
+  },
+  get VITE_GEOAPIFY_API_KEY() {
+    return validateEnv().VITE_GEOAPIFY_API_KEY;
+  },
+  get VITE_TELEGRAM_BOT_TOKEN() {
+    return validateEnv().VITE_TELEGRAM_BOT_TOKEN;
+  },
+  get VITE_VAPID_PUBLIC_KEY() {
+    return validateEnv().VITE_VAPID_PUBLIC_KEY;
+  },
+  get MODE() {
+    return validateEnv().MODE;
+  },
+  get DEV() {
+    return validateEnv().DEV;
+  },
+  get PROD() {
+    return validateEnv().PROD;
+  },
+} as Env;
 
 /**
  * Type-safe access to environment variables

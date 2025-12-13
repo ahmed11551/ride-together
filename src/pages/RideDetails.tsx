@@ -203,7 +203,9 @@ const RideDetails = () => {
                     <Star className="w-4 h-4 fill-current" />
                     <span className="font-semibold">{driver.rating || 5}</span>
                   </div>
-                  <span className="text-muted-foreground">{driver.trips_count || 0} поездок</span>
+                      <span className="text-muted-foreground">
+                        {driver.trips_count || 0} {(driver.trips_count || 0) === 1 ? 'поездка' : (driver.trips_count || 0) < 5 ? 'поездки' : 'поездок'}
+                      </span>
                 </div>
               </div>
 

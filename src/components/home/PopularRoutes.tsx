@@ -41,7 +41,9 @@ const PopularRoutes = () => {
               
               <div className="text-right shrink-0 ml-3">
                 <p className="font-bold text-primary text-sm">{route.price}</p>
-                <p className="text-xs text-muted-foreground">{route.count} поездок</p>
+                <p className="text-xs text-muted-foreground">
+                  {route.count} {route.count === 1 ? 'поездка' : route.count < 5 ? 'поездки' : 'поездок'}
+                </p>
               </div>
             </button>
           ))}

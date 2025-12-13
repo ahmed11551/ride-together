@@ -6,6 +6,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { DemoRides } from "@/components/home/DemoRides";
 import { SlidersHorizontal, Search, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { pluralizeRide } from "@/lib/pluralize";
 
 const RidesList = () => {
   const navigate = useNavigate();
@@ -53,7 +54,9 @@ const RidesList = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Ближайшие поездки</h2>
-          <p className="text-muted-foreground">{rides.length} поездок доступно</p>
+          <p className="text-muted-foreground">
+            {rides.length} {pluralizeRide(rides.length)} доступно
+          </p>
         </div>
         
         <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/search")}>

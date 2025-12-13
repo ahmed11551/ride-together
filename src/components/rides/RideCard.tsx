@@ -117,7 +117,7 @@ const RideCard = ({ ride, onSelect, className }: RideCardProps) => {
                 <Star className="w-3 h-3 fill-current" />
                 <span className="font-semibold">{ride.driver.rating.toFixed(1)}</span>
               </div>
-              <span className="text-muted-foreground">• {ride.driver.trips} поездок</span>
+              <span className="text-muted-foreground">• {ride.driver.trips} {ride.driver.trips === 1 ? 'поездка' : ride.driver.trips < 5 ? 'поездки' : 'поездок'}</span>
             </div>
           </div>
         </div>
