@@ -16,6 +16,9 @@ export default {
       fontFamily: {
         sans: ['Nunito', 'system-ui', 'sans-serif'],
       },
+      spacing: {
+        '13': '3.25rem',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -60,6 +63,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           light: "hsl(var(--warning-light))",
         },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          light: "hsl(var(--info-light))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -77,6 +84,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "calc(var(--radius) + 4px)",
         "2xl": "calc(var(--radius) + 8px)",
+        "3xl": "calc(var(--radius) + 16px)",
       },
       keyframes: {
         "accordion-down": {

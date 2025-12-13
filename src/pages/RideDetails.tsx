@@ -4,6 +4,7 @@ import { useRideById } from "@/hooks/useRides";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, 
@@ -17,10 +18,14 @@ import {
   Music,
   MessageCircle,
   Shield,
-  Phone
+  Phone,
+  Info,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton-loaders";
 
 const RideDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -57,8 +62,8 @@ const RideDetails = () => {
       });
 
       toast({
-        title: "Успешно!",
-        description: "Бронирование создано. Ожидайте подтверждения водителя.",
+        title: "Бронирование создано! 🎉",
+        description: "Ожидайте подтверждения от водителя",
       });
       navigate("/my-bookings");
     } catch (error: any) {
@@ -80,16 +85,31 @@ const RideDetails = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Загрузка...</div>
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
+          <div className="container flex h-16 items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Skeleton className="h-6 w-40" />
+          </div>
+        </header>
+        <div className="container py-6 space-y-6">
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   if (!ride) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Поездка не найдена</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
+        <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center">
+          <Info className="w-10 h-10 text-muted-foreground" />
+        </div>
+        <p className="text-muted-foreground text-center">Поездка не найдена</p>
         <Button onClick={() => navigate("/")}>На главную</Button>
       </div>
     );
@@ -99,36 +119,43 @@ const RideDetails = () => {
   const formattedDate = format(new Date(ride.departure_date), "d MMMM, EEEE", { locale: ru });
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
+      <header className="sticky top-0 z-50 glass border-b border-border">
         <div className="container flex h-16 items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-bold">Детали поездки</h1>
+          <div>
+            <h1 className="font-bold text-foreground">{ride.from_city} → {ride.to_city}</h1>
+            <p className="text-xs text-muted-foreground">{formattedDate}</p>
+          </div>
         </div>
       </header>
 
-      <div className="container py-6 space-y-6">
+      <div className="container py-6 space-y-5">
         {/* Route Card */}
-        <div className="bg-card rounded-2xl p-6 shadow-card animate-fade-in">
+        <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in">
           <div className="flex items-start gap-4">
-            <div className="flex flex-col items-center gap-1 pt-1">
-              <div className="w-4 h-4 rounded-full bg-success" />
-              <div className="w-0.5 h-16 bg-border" />
-              <div className="w-4 h-4 rounded-full bg-secondary" />
+            <div className="flex flex-col items-center gap-1 pt-1 shrink-0">
+              <div className="w-4 h-4 rounded-full bg-success ring-4 ring-success-light" />
+              <div className="w-0.5 h-20 bg-gradient-to-b from-success via-border to-secondary" />
+              <div className="w-4 h-4 rounded-full bg-secondary ring-4 ring-warning-light" />
             </div>
             
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 space-y-5">
               <div>
                 <p className="text-lg font-bold text-foreground">{ride.from_city}</p>
                 <p className="text-muted-foreground">{ride.from_address}</p>
-                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formattedDate}</span>
-                  <Clock className="w-4 h-4 ml-2" />
-                  <span>{ride.departure_time.slice(0, 5)}</span>
+                <div className="flex items-center gap-3 mt-2 text-sm">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formattedDate}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-foreground font-medium">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>{ride.departure_time.slice(0, 5)}</span>
+                  </div>
                 </div>
               </div>
               
@@ -136,8 +163,8 @@ const RideDetails = () => {
                 <p className="text-lg font-bold text-foreground">{ride.to_city}</p>
                 <p className="text-muted-foreground">{ride.to_address}</p>
                 {ride.estimated_duration && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Время в пути: {ride.estimated_duration}
+                  <p className="text-sm text-muted-foreground mt-2">
+                    ⏱ Время в пути: {ride.estimated_duration}
                   </p>
                 )}
               </div>
@@ -147,70 +174,88 @@ const RideDetails = () => {
 
         {/* Driver Card */}
         {driver && (
-          <div className="bg-card rounded-2xl p-6 shadow-card animate-fade-in" style={{ animationDelay: "100ms" }}>
-            <h2 className="font-bold text-lg mb-4">Водитель</h2>
+          <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "100ms" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-lg">Водитель</h2>
+              {driver.is_verified && (
+                <Badge variant="soft" className="gap-1">
+                  <Shield className="w-3 h-3" />
+                  Проверен
+                </Badge>
+              )}
+            </div>
             
             <div className="flex items-center gap-4">
               <div className="relative">
                 <img 
-                  src={driver.avatar_url || `https://ui-avatars.com/api/?name=${driver.full_name || "User"}&background=0d9488&color=fff`} 
+                  src={driver.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(driver.full_name || "U")}&background=0d9488&color=fff&size=80`} 
                   alt={driver.full_name || "Водитель"}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-border"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-border"
                 />
-                {driver.is_verified && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                    <Shield className="w-3 h-3 text-primary-foreground" />
-                  </div>
-                )}
               </div>
               
-              <div className="flex-1">
-                <p className="text-lg font-bold text-foreground">{driver.full_name || "Водитель"}</p>
-                <div className="flex items-center gap-3 text-sm">
+              <div className="flex-1 min-w-0">
+                <p className="text-lg font-bold text-foreground truncate">{driver.full_name || "Водитель"}</p>
+                <div className="flex items-center gap-3 text-sm mt-1">
                   <div className="flex items-center gap-1 text-warning">
                     <Star className="w-4 h-4 fill-current" />
-                    <span className="font-medium">{driver.rating || 5}</span>
+                    <span className="font-semibold">{driver.rating || 5}</span>
                   </div>
                   <span className="text-muted-foreground">{driver.trips_count || 0} поездок</span>
                 </div>
               </div>
 
-              <Button variant="outline" size="icon">
+              <Button variant="soft" size="icon" className="shrink-0">
                 <MessageCircle className="w-5 h-5" />
               </Button>
             </div>
 
             {driver.bio && (
-              <p className="mt-4 text-muted-foreground">{driver.bio}</p>
+              <p className="mt-4 text-muted-foreground text-sm bg-muted/50 rounded-xl p-3">{driver.bio}</p>
             )}
           </div>
         )}
 
         {/* Preferences */}
-        <div className="bg-card rounded-2xl p-6 shadow-card animate-fade-in" style={{ animationDelay: "150ms" }}>
+        <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "150ms" }}>
           <h2 className="font-bold text-lg mb-4">Правила поездки</h2>
           
-          <div className="grid grid-cols-3 gap-4">
-            <div className={`flex flex-col items-center p-3 rounded-xl ${ride.allow_smoking ? 'bg-success-light text-success' : 'bg-muted text-muted-foreground'}`}>
-              <Cigarette className="w-5 h-5 mb-1" />
-              <span className="text-xs text-center">{ride.allow_smoking ? "Можно" : "Нельзя"}</span>
+          <div className="grid grid-cols-3 gap-3">
+            <div className={`flex flex-col items-center p-4 rounded-xl transition-colors ${!ride.allow_smoking ? 'bg-success-light' : 'bg-muted'}`}>
+              <Cigarette className={`w-5 h-5 mb-2 ${!ride.allow_smoking ? 'text-success' : 'text-muted-foreground'}`} />
+              {!ride.allow_smoking ? (
+                <CheckCircle className="w-4 h-4 text-success mb-1" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground mb-1" />
+              )}
+              <span className="text-xs text-center font-medium">{ride.allow_smoking ? "Можно курить" : "Без курения"}</span>
             </div>
             
-            <div className={`flex flex-col items-center p-3 rounded-xl ${ride.allow_pets ? 'bg-success-light text-success' : 'bg-muted text-muted-foreground'}`}>
-              <Dog className="w-5 h-5 mb-1" />
-              <span className="text-xs text-center">{ride.allow_pets ? "С питомцами" : "Без питомцев"}</span>
+            <div className={`flex flex-col items-center p-4 rounded-xl transition-colors ${ride.allow_pets ? 'bg-info-light' : 'bg-muted'}`}>
+              <Dog className={`w-5 h-5 mb-2 ${ride.allow_pets ? 'text-info' : 'text-muted-foreground'}`} />
+              {ride.allow_pets ? (
+                <CheckCircle className="w-4 h-4 text-info mb-1" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground mb-1" />
+              )}
+              <span className="text-xs text-center font-medium">{ride.allow_pets ? "С питомцами" : "Без питомцев"}</span>
             </div>
             
-            <div className={`flex flex-col items-center p-3 rounded-xl ${ride.allow_music ? 'bg-success-light text-success' : 'bg-muted text-muted-foreground'}`}>
-              <Music className="w-5 h-5 mb-1" />
-              <span className="text-xs text-center">{ride.allow_music ? "С музыкой" : "Без музыки"}</span>
+            <div className={`flex flex-col items-center p-4 rounded-xl transition-colors ${ride.allow_music ? 'bg-primary-light' : 'bg-muted'}`}>
+              <Music className={`w-5 h-5 mb-2 ${ride.allow_music ? 'text-primary' : 'text-muted-foreground'}`} />
+              {ride.allow_music ? (
+                <CheckCircle className="w-4 h-4 text-primary mb-1" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground mb-1" />
+              )}
+              <span className="text-xs text-center font-medium">{ride.allow_music ? "Музыка" : "Без музыки"}</span>
             </div>
           </div>
         </div>
 
         {/* Notes */}
         {ride.notes && (
-          <div className="bg-card rounded-2xl p-6 shadow-card animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "200ms" }}>
             <h2 className="font-bold text-lg mb-2">Дополнительно</h2>
             <p className="text-muted-foreground">{ride.notes}</p>
           </div>
@@ -219,13 +264,13 @@ const RideDetails = () => {
 
       {/* Booking Footer */}
       {ride.status === "active" && ride.seats_available > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border p-4 z-40">
+        <div className="fixed bottom-0 left-0 right-0 glass border-t border-border p-4 z-40 safe-area-bottom">
           <div className="container flex items-center justify-between gap-4">
             <div>
-              <p className="text-2xl font-bold text-primary">{ride.price} ₽</p>
+              <p className="text-2xl font-extrabold text-primary">{(ride.price * seats).toLocaleString()} ₽</p>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="w-4 h-4" />
-                <span>{ride.seats_available} мест</span>
+                <span>{ride.seats_available} мест свободно</span>
               </div>
             </div>
 
@@ -233,10 +278,10 @@ const RideDetails = () => {
               <select
                 value={seats}
                 onChange={(e) => setSeats(Number(e.target.value))}
-                className="h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary outline-none"
+                className="h-12 px-4 rounded-xl bg-muted border-2 border-transparent focus:border-primary outline-none font-medium"
               >
                 {Array.from({ length: ride.seats_available }, (_, i) => i + 1).map((num) => (
-                  <option key={num} value={num}>{num} место</option>
+                  <option key={num} value={num}>{num} {num === 1 ? "место" : "места"}</option>
                 ))}
               </select>
 
@@ -244,9 +289,9 @@ const RideDetails = () => {
                 variant="hero" 
                 size="lg"
                 onClick={handleBook}
-                disabled={createBooking.isPending}
+                loading={createBooking.isPending}
               >
-                {createBooking.isPending ? "..." : `Забронировать ${ride.price * seats} ₽`}
+                Забронировать
               </Button>
             </div>
           </div>
