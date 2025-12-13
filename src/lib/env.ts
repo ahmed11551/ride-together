@@ -60,6 +60,9 @@ function validateEnv(): Env {
     VITE_GEOAPIFY_API_KEY: import.meta.env.VITE_GEOAPIFY_API_KEY,
     VITE_TELEGRAM_BOT_TOKEN: import.meta.env.VITE_TELEGRAM_BOT_TOKEN,
     VITE_VAPID_PUBLIC_KEY: import.meta.env.VITE_VAPID_PUBLIC_KEY,
+    VITE_SENTRY_DSN: import.meta.env.VITE_SENTRY_DSN,
+    VITE_GA_MEASUREMENT_ID: import.meta.env.VITE_GA_MEASUREMENT_ID,
+    VITE_APP_VERSION: import.meta.env.VITE_APP_VERSION,
     MODE: import.meta.env.MODE,
     DEV: import.meta.env.DEV,
     PROD: import.meta.env.PROD,
@@ -137,6 +140,15 @@ export const env = {
   },
   get VITE_VAPID_PUBLIC_KEY() {
     return validateEnv().VITE_VAPID_PUBLIC_KEY;
+  },
+  get VITE_SENTRY_DSN() {
+    return validateEnv().VITE_SENTRY_DSN;
+  },
+  get VITE_GA_MEASUREMENT_ID() {
+    return validateEnv().VITE_GA_MEASUREMENT_ID;
+  },
+  get VITE_APP_VERSION() {
+    return validateEnv().VITE_APP_VERSION;
   },
   get MODE() {
     return validateEnv().MODE;
