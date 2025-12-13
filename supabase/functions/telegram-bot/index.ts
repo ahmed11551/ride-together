@@ -94,6 +94,8 @@ async function handleStartCommand(chatId: number, userId: number, username?: str
 • Создать поездку
 • Управлять бронированиями
 • Получать уведомления
+• Поддержка и помощь
+• Оставить отзыв
 
 🎁 <b>Сейчас все бесплатно!</b>
 Подпишитесь на бота, чтобы получать:
@@ -101,7 +103,7 @@ async function handleStartCommand(chatId: number, userId: number, username?: str
 • Напоминания о бронированиях
 • Специальные предложения
 
-Нажмите кнопку ниже, чтобы открыть приложение:`;
+Используйте меню ниже для навигации:`;
 
   await sendTelegramMessage({
     chat_id: chatId,
@@ -127,8 +129,22 @@ async function handleStartCommand(chatId: number, userId: number, username?: str
         ],
         [
           {
-            text: "💎 Получить Premium",
+            text: "💬 Поддержка",
+            callback_data: "support",
+          },
+          {
+            text: "⭐ Отзывы",
+            callback_data: "reviews",
+          },
+        ],
+        [
+          {
+            text: "💎 Premium",
             callback_data: "premium",
+          },
+          {
+            text: "⚙️ Настройки",
+            callback_data: "settings",
           },
         ],
       ],
@@ -299,6 +315,37 @@ serve(async (req) => {
               "• Напоминания о бронированиях\n" +
               "• Важные обновления",
           });
+        } else if (text.startsWith("/support")) {
+          await handleCallbackQuery({ data: "support", from: message.from } as any, chatId);
+        } else if (text.startsWith("/review")) {
+          await handleCallbackQuery({ data: "reviews", from: message.from } as any, chatId);
+        } else if (text.startsWith("/ticket")) {
+          // Handle ticket creation from text
+          const ticketText = text.replace("/ticket", "").trim();
+          if (ticketText) {
+            // Create ticket
+            const ticketNumber = generateTicketNumber();
+            await supabase
+              .from("support_tickets")
+              .insert({
+                telegram_user_id: userId,
+                telegram_username: message.from.username,
+                ticket_number: ticketNumber,
+                subject: "Тикет из бота",
+                message: ticketText,
+                category: "general",
+              });
+
+            await sendTelegramMessage({
+              chat_id: chatId,
+              text: `✅ Тикет создан!\n\n` +
+                `Номер: ${ticketNumber}\n` +
+                `Мы ответим в течение 24 часов.\n\n` +
+                `Проверить статус: /tickets`,
+            });
+          } else {
+            await handleCallbackQuery({ data: "create_ticket", from: message.from } as any, chatId);
+          }
         } else {
           await sendTelegramMessage({
             chat_id: chatId,
