@@ -108,9 +108,9 @@ export interface TelegramWebApp {
   headerColor: string;
   backgroundColor: string;
   isClosingConfirmationEnabled: boolean;
-  BackButton: typeof BackButton;
-  MainButton: typeof MainButton;
-  HapticFeedback: typeof HapticFeedback;
+  BackButton: Window['Telegram']['WebApp']['BackButton'];
+  MainButton: Window['Telegram']['WebApp']['MainButton'];
+  HapticFeedback: Window['Telegram']['WebApp']['HapticFeedback'];
   ready: () => void;
   expand: () => void;
   close: () => void;
@@ -161,7 +161,7 @@ export const TelegramProvider = ({ children }: TelegramProviderProps) => {
 
   useEffect(() => {
     // Проверяем, запущено ли приложение в Telegram
-    const tg = (window as any).Telegram?.WebApp;
+    const tg = window.Telegram?.WebApp;
     if (tg) {
       setIsTelegram(true);
       
@@ -171,21 +171,21 @@ export const TelegramProvider = ({ children }: TelegramProviderProps) => {
 
       // Создаем объект с методами Telegram WebApp
       const webAppInstance: TelegramWebApp = {
-        initData: initDataRaw,
-        initDataUnsafe: initData,
+        initData: tg.initData,
+        initDataUnsafe: tg.initDataUnsafe,
         version: tg.version || '6.0',
         platform: tg.platform || 'unknown',
         colorScheme: tg.colorScheme || 'light',
-        themeParams: themeParams || {},
+        themeParams: tg.themeParams || {},
         isExpanded: tg.isExpanded || false,
-        viewportHeight: viewport.height,
-        viewportStableHeight: viewport.stableHeight,
+        viewportHeight: tg.viewportHeight,
+        viewportStableHeight: tg.viewportStableHeight,
         headerColor: tg.headerColor || '#ffffff',
         backgroundColor: tg.backgroundColor || '#ffffff',
         isClosingConfirmationEnabled: tg.isClosingConfirmationEnabled || false,
-        BackButton,
-        MainButton,
-        HapticFeedback,
+        BackButton: tg.BackButton,
+        MainButton: tg.MainButton,
+        HapticFeedback: tg.HapticFeedback,
         ready: () => tg.ready(),
         expand: () => tg.expand(),
         close: () => tg.close(),
@@ -259,4 +259,3 @@ export const TelegramProvider = ({ children }: TelegramProviderProps) => {
     </TelegramContext.Provider>
   );
 };
-
