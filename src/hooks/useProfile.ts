@@ -54,11 +54,13 @@ export const useUpdateProfile = () => {
 
       // Если профиль не существует, создаем его
       if (!existingProfile) {
+        const defaultName = updates.full_name || user.email?.split('@')[0] || 'Пользователь';
         const { data, error } = await supabase
           .from("profiles")
           .insert({
             user_id: user.id,
-            display_name: updates.full_name || user.email?.split('@')[0] || 'Пользователь',
+            display_name: defaultName, // Обязательное поле
+            full_name: updates.full_name || defaultName,
             ...updates,
             updated_at: new Date().toISOString(),
           })
