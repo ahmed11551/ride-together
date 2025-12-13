@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyRides, useUpdateRide } from "@/hooks/useRides";
+import { useMyRides, useUpdateRide, useCleanupOldRides } from "@/hooks/useRides";
 import { useUpdateBookingStatus } from "@/hooks/useBookings";
 import { RideBookings } from "@/components/rides/RideBookings";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ const MyRides = () => {
   const { data: rides, isLoading } = useMyRides();
   const updateRide = useUpdateRide();
   const updateBookingStatus = useUpdateBookingStatus();
+  const cleanupOldRides = useCleanupOldRides();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -197,7 +198,33 @@ const MyRides = () => {
             {/* Past Rides */}
             {pastRides.length > 0 && (
               <section>
-                <h2 className="text-lg font-bold mb-4">Завершённые</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold">Завершённые</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const deletedCount = await cleanupOldRides.mutateAsync();
+                        toast({
+                          title: "Очистка завершена",
+                          description: `Удалено ${deletedCount} старых поездок (старше 30 дней)`,
+                        });
+                      } catch (error) {
+                        logError(error, "cleanupOldRides");
+                        const friendlyError = getUserFriendlyError(error);
+                        toast({
+                          variant: "destructive",
+                          title: friendlyError.title,
+                          description: friendlyError.description,
+                        });
+                      }
+                    }}
+                    disabled={cleanupOldRides.isPending}
+                  >
+                    {cleanupOldRides.isPending ? "Очистка..." : "Очистить старые"}
+                  </Button>
+                </div>
                 <div className="space-y-4">
                   {pastRides.map((ride) => (
                     <div 
@@ -210,6 +237,11 @@ const MyRides = () => {
                         {ride.status === "cancelled" && (
                           <span className="text-destructive flex items-center gap-1">
                             <XCircle className="w-4 h-4" /> Отменена
+                          </span>
+                        )}
+                        {ride.status === "completed" && (
+                          <span className="text-success flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" /> Завершена
                           </span>
                         )}
                       </div>

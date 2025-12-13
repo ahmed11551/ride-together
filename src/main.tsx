@@ -63,13 +63,29 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   // Обработка ошибок Promise rejection от Service Worker
   window.addEventListener('unhandledrejection', (event) => {
     // Игнорируем ошибки от расширений браузера
-    if (event.reason && typeof event.reason === 'object' && event.reason.message) {
-      if (event.reason.message.includes('Receiving end does not exist')) {
+    if (event.reason) {
+      const errorMessage = typeof event.reason === 'object' && event.reason.message 
+        ? event.reason.message 
+        : String(event.reason);
+      
+      if (errorMessage.includes('Receiving end does not exist') || 
+          errorMessage.includes('Extension context invalidated')) {
         event.preventDefault(); // Предотвращаем вывод ошибки в консоль
         return;
       }
     }
   });
+
+  // Обработка ошибок от Service Worker в консоли
+  const originalConsoleError = console.error;
+  console.error = function(...args) {
+    const message = args.join(' ');
+    if (message.includes('Receiving end does not exist') || 
+        message.includes('Extension context invalidated')) {
+      return; // Игнорируем эти ошибки
+    }
+    originalConsoleError.apply(console, args);
+  };
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
