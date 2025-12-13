@@ -7,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TelegramProvider } from "@/contexts/TelegramContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Analytics } from "@/components/Analytics";
 import { logError } from "@/lib/error-handler";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -43,6 +44,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <Analytics />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />

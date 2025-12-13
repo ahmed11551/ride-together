@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, Home } from "lucide-react";
 import { getErrorBoundaryFallback } from "@/lib/error-handler-enhanced";
 import { logError } from "@/lib/error-handler";
+import { captureException } from "@/lib/sentry";
 
 interface Props {
   children: ReactNode;
@@ -39,8 +40,11 @@ export class ErrorBoundary extends Component<Props, State> {
     // Log error using enhanced error handler
     logError(error, `ErrorBoundary: ${errorInfo.componentStack}`);
     
-    // In production, you might want to send this to an error tracking service
-    // e.g., Sentry.captureException(error, { contexts: { react: errorInfo } });
+    // Send to Sentry
+    captureException(error, {
+      componentStack: errorInfo.componentStack,
+      type: 'reactErrorBoundary',
+    });
   }
 
   handleReset = (): void => {

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setSentryUser, clearSentryUser } from "@/lib/sentry";
+import { trackUserAction } from "@/lib/analytics";
 
 interface AuthContextType {
   user: User | null;
@@ -32,6 +34,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Update Sentry user context
+        if (session?.user) {
+          setSentryUser(
+            session.user.id,
+            session.user.email,
+            session.user.user_metadata?.full_name
+          );
+        } else {
+          clearSentryUser();
+        }
       }
     );
 
@@ -39,6 +52,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Update Sentry user context
+      if (session?.user) {
+        setSentryUser(
+          session.user.id,
+          session.user.email,
+          session.user.user_metadata?.full_name
+        );
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -57,6 +79,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
+
+    // Track analytics
+    if (!error) {
+      trackUserAction.signUp("email");
+    }
     
     return { error: error as Error | null };
   };
@@ -66,12 +93,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
     });
+
+    // Track analytics
+    if (!error) {
+      trackUserAction.signIn("email");
+    }
     
     return { error: error as Error | null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    
+    // Track analytics
+    trackUserAction.signOut();
+    
+    // Clear Sentry user context
+    clearSentryUser();
   };
 
   return (

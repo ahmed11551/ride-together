@@ -20,6 +20,11 @@ const envSchema = z.object({
   VITE_TELEGRAM_BOT_TOKEN: z.string().optional(),
   VITE_VAPID_PUBLIC_KEY: z.string().optional(),
 
+  // Monitoring and Analytics (optional)
+  VITE_SENTRY_DSN: z.string().url().optional().or(z.literal('')),
+  VITE_GA_MEASUREMENT_ID: z.string().optional(),
+  VITE_APP_VERSION: z.string().optional(),
+
   // Environment mode
   MODE: z.enum(['development', 'production', 'test']).default('development'),
   DEV: z.boolean().default(true),

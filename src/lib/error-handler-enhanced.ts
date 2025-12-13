@@ -4,6 +4,7 @@
  */
 
 import { logError, getUserFriendlyError } from './error-handler';
+import { captureException, captureMessage } from './sentry';
 
 export interface AppError {
   code: string;
@@ -66,6 +67,10 @@ export async function handleAsyncError<T>(
     );
     
     logError(appError, context ? JSON.stringify(context) : undefined);
+    
+    // Send to Sentry
+    captureException(appError, { ...context, errorCode: errorCode });
+    
     throw appError;
   }
 }
@@ -88,6 +93,10 @@ export function handleSyncError<T>(
     );
     
     logError(appError, context ? JSON.stringify(context) : undefined);
+    
+    // Send to Sentry
+    captureException(appError, { ...context, errorCode: errorCode });
+    
     throw appError;
   }
 }
@@ -100,6 +109,13 @@ export function setupGlobalErrorHandlers(): void {
   window.addEventListener('unhandledrejection', (event) => {
     logError(event.reason, 'Unhandled Promise Rejection');
     
+    // Send to Sentry
+    if (event.reason instanceof Error) {
+      captureException(event.reason, { type: 'unhandledRejection' });
+    } else {
+      captureMessage(`Unhandled Promise Rejection: ${String(event.reason)}`, 'error');
+    }
+    
     // Prevent default browser error handling
     event.preventDefault();
     
@@ -111,6 +127,13 @@ export function setupGlobalErrorHandlers(): void {
   // Handle general errors
   window.addEventListener('error', (event) => {
     logError(event.error || event.message, 'Global Error Handler');
+    
+    // Send to Sentry
+    if (event.error) {
+      captureException(event.error, { type: 'globalError' });
+    } else {
+      captureMessage(`Global Error: ${event.message}`, 'error');
+    }
     
     // Show user-friendly error
     const friendlyError = getUserFriendlyError(event.error || event.message);
