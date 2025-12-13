@@ -56,10 +56,11 @@ export const useUpdateProfile = () => {
       if (!existingProfile) {
         const defaultName = updates.full_name || user.email?.split('@')[0] || 'Пользователь';
         // Убираем поля, которые не должны быть в insert
-        const { display_name: _, ...insertFields } = updates;
+        const { display_name: _, id: __, ...insertFields } = updates;
         const { data, error } = await supabase
           .from("profiles")
           .insert({
+            id: crypto.randomUUID(), // Генерируем UUID для id
             user_id: user.id,
             display_name: defaultName, // Обязательное поле
             full_name: updates.full_name || defaultName,
