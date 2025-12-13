@@ -75,6 +75,14 @@ export const useCreateBooking = () => {
         .single();
 
       if (error) throw error;
+
+      // Отправляем уведомление водителю (асинхронно, не блокируем)
+      if (data) {
+        sendBookingNotification(rideId, data.id, user.id, seats).catch((err) => {
+          console.error('Ошибка отправки уведомления о бронировании:', err);
+        });
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -83,6 +91,44 @@ export const useCreateBooking = () => {
     },
   });
 };
+
+/**
+ * Отправка уведомления водителю о новом бронировании
+ */
+async function sendBookingNotification(
+  rideId: string,
+  bookingId: string,
+  passengerId: string,
+  seats: number
+): Promise<void> {
+  try {
+    // Получаем информацию о поездке
+    const { data: ride } = await supabase
+      .from("rides")
+      .select("driver_id")
+      .eq("id", rideId)
+      .single();
+
+    if (!ride) return;
+
+    // Получаем информацию о пассажире
+    const { data: passengerProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", passengerId)
+      .maybeSingle();
+
+    const passengerName = passengerProfile?.full_name || "Пассажир";
+
+    // Импортируем функцию отправки уведомлений
+    const { notifyNewBooking } = await import("@/lib/notifications");
+
+    // Отправляем уведомление водителю
+    await notifyNewBooking(ride.driver_id, bookingId, passengerName, seats);
+  } catch (error) {
+    console.error("Ошибка отправки уведомления о бронировании:", error);
+  }
+}
 
 export const useUpdateBookingStatus = () => {
   const queryClient = useQueryClient();
@@ -119,6 +165,14 @@ export const useUpdateBookingStatus = () => {
         // Но на всякий случай обновим кэш
         queryClient.invalidateQueries({ queryKey: ["rides", currentBooking.ride_id] });
         queryClient.invalidateQueries({ queryKey: ["ride", currentBooking.ride_id] });
+
+        // Отправляем уведомление пассажиру о подтверждении (асинхронно)
+        sendBookingConfirmedNotification(
+          currentBooking.ride_id,
+          data.passenger_id
+        ).catch((err) => {
+          console.error('Ошибка отправки уведомления о подтверждении:', err);
+        });
       }
 
       return data;

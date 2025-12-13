@@ -113,10 +113,80 @@ export const useSendMessage = () => {
         .single();
 
       if (error) throw error;
+
+      // Отправляем уведомления получателям (асинхронно, не блокируем)
+      if (data) {
+        sendMessageNotifications(rideId, user.id, content).catch((err) => {
+          console.error('Ошибка отправки уведомлений:', err);
+        });
+      }
+
       return data;
     },
   });
 };
+
+/**
+ * Отправка уведомлений о новом сообщении всем участникам поездки
+ */
+async function sendMessageNotifications(
+  rideId: string,
+  senderId: string,
+  messageContent: string
+): Promise<void> {
+  try {
+    // Получаем информацию о поездке и отправителе
+    const { data: ride } = await supabase
+      .from("rides")
+      .select("driver_id")
+      .eq("id", rideId)
+      .single();
+
+    if (!ride) return;
+
+    // Получаем информацию об отправителе
+    const { data: senderProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", senderId)
+      .maybeSingle();
+
+    const senderName = senderProfile?.full_name || "Пользователь";
+
+    // Получаем всех участников чата (водитель + забронировавшие пассажиры)
+    const { data: bookings } = await supabase
+      .from("bookings")
+      .select("passenger_id")
+      .eq("ride_id", rideId)
+      .in("status", ["pending", "confirmed"]);
+
+    const recipientIds = new Set<string>();
+    
+    // Добавляем водителя (если не отправитель)
+    if (ride.driver_id !== senderId) {
+      recipientIds.add(ride.driver_id);
+    }
+
+    // Добавляем пассажиров (если не отправитель)
+    bookings?.forEach((booking) => {
+      if (booking.passenger_id !== senderId) {
+        recipientIds.add(booking.passenger_id);
+      }
+    });
+
+    // Импортируем функцию отправки уведомлений
+    const { notifyNewMessage } = await import("@/lib/notifications");
+
+    // Отправляем уведомления всем получателям
+    await Promise.allSettled(
+      Array.from(recipientIds).map((recipientId) =>
+        notifyNewMessage(recipientId, rideId, senderName, messageContent)
+      )
+    );
+  } catch (error) {
+    console.error("Ошибка отправки уведомлений о сообщении:", error);
+  }
+}
 
 export const useCanAccessChat = (rideId: string | undefined) => {
   const { user } = useAuth();
