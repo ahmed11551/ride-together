@@ -83,6 +83,7 @@ cp .env.example .env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key-here
 VITE_MAPBOX_TOKEN=your-mapbox-token-here
+VITE_GEOAPIFY_API_KEY=your-geoapify-api-key-here
 ```
 
 **Где найти эти значения:**

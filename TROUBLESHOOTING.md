@@ -29,6 +29,10 @@ Please check your .env file and ensure VITE_SUPABASE_PUBLISHABLE_KEY is set.
      * **Name:** `VITE_SUPABASE_PUBLISHABLE_KEY`
        **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg`
        **Environment:** Выберите все (Production, Preview, Development)
+     
+     * **Name:** `VITE_GEOAPIFY_API_KEY` (опционально, для карт и маршрутов)
+       **Value:** `6c75034c3c87419cb5b408a967c925e4`
+       **Environment:** Выберите все (Production, Preview, Development)
 
 3. **Передеплойте проект:**
    - После сохранения переменных перейдите в **Deployments**

@@ -42,9 +42,21 @@
 
 #### Переменная 3: `VITE_MAPBOX_TOKEN` (опционально)
 
-- **Name:** `VITE_MAPBOX_TOKEN`
-- **Value:** Ваш токен Mapbox (если используете карты)
+- **Ключ (Key):** `VITE_MAPBOX_TOKEN`
+- **Значение (Value):** Ваш токен Mapbox (если используете карты)
 - **Environment:** Выберите все (Production, Preview, Development)
+
+#### Переменная 4: `VITE_GEOAPIFY_API_KEY` (опционально)
+
+⚠️ **ВАЖНО: Не перепутайте местами!**
+
+- **Ключ (Key):** `VITE_GEOAPIFY_API_KEY` ← Имя переменной
+- **Значение (Value):** `6c75034c3c87419cb5b408a967c925e4` ← Ваш API ключ Geoapify
+- **Environment:** Выберите все (Production, Preview, Development)
+
+**НЕ ПУТАЙТЕ:**
+- ❌ Ключ = API ключ (это вызовет ошибку!)
+- ✅ Ключ = `VITE_GEOAPIFY_API_KEY`, Значение = `6c75034c3c87419cb5b408a967c925e4`
 
 ### 3. Сохраните и передеплойте
 
