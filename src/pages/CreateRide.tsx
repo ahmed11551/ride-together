@@ -167,7 +167,7 @@ const CreateRide = () => {
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
                     <Input
-                      placeholder="Город отправления"
+                      placeholder="Город отправления (например: Москва, м. Бауманская)"
                       value={formData.from_city}
                       onChange={(e) => {
                         handleChange("from_city", e.target.value);
