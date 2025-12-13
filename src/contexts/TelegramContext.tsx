@@ -183,81 +183,102 @@ export const TelegramProvider = ({ children }: TelegramProviderProps) => {
     // Проверяем, запущено ли приложение в Telegram
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      setIsTelegram(true);
-      
-      // Инициализируем WebApp
-      tg.ready();
-      tg.expand();
+      try {
+        setIsTelegram(true);
+        
+        // Инициализируем WebApp
+        tg.ready();
+        tg.expand();
 
-      // Создаем объект с методами Telegram WebApp
-      const webAppInstance: TelegramWebApp = {
-        initData: tg.initData,
-        initDataUnsafe: tg.initDataUnsafe,
-        version: tg.version || '6.0',
-        platform: tg.platform || 'unknown',
-        colorScheme: tg.colorScheme || 'light',
-        themeParams: tg.themeParams || {},
-        isExpanded: tg.isExpanded || false,
-        viewportHeight: tg.viewportHeight,
-        viewportStableHeight: tg.viewportStableHeight,
-        headerColor: tg.headerColor || '#ffffff',
-        backgroundColor: tg.backgroundColor || '#ffffff',
-        isClosingConfirmationEnabled: tg.isClosingConfirmationEnabled || false,
-        BackButton: tg.BackButton,
-        MainButton: tg.MainButton,
-        HapticFeedback: tg.HapticFeedback,
-        ready: () => tg.ready(),
-        expand: () => tg.expand(),
-        close: () => tg.close(),
-        enableClosingConfirmation: () => tg.enableClosingConfirmation(),
-        disableClosingConfirmation: () => tg.disableClosingConfirmation(),
-        onEvent: (eventType: string, eventHandler: () => void) => tg.onEvent(eventType, eventHandler),
-        offEvent: (eventType: string, eventHandler: () => void) => tg.offEvent(eventType, eventHandler),
-        sendData: (data: string) => tg.sendData(data),
-        openLink: (url: string, options?: { try_instant_view?: boolean }) => tg.openLink(url, options),
-        openTelegramLink: (url: string) => tg.openTelegramLink(url),
-        openInvoice: (url: string, callback?: (status: string) => void) => tg.openInvoice(url, callback),
-        showPopup: (params: { title?: string; message: string; buttons?: Array<{ id?: string; type: 'default' | 'ok' | 'close' | 'cancel' | 'destructive'; text: string }> }, callback?: (id: string) => void) => tg.showPopup(params, callback),
-        showAlert: (message: string, callback?: () => void) => tg.showAlert(message, callback),
-        showConfirm: (message: string, callback?: (confirmed: boolean) => void) => tg.showConfirm(message, callback),
-        showScanQrPopup: (params: { text?: string }, callback?: (data: string) => void) => tg.showScanQrPopup(params, callback),
-        closeScanQrPopup: () => tg.closeScanQrPopup(),
-        readTextFromClipboard: (callback?: (text: string) => void) => tg.readTextFromClipboard(callback),
-        requestWriteAccess: (callback?: (granted: boolean) => void) => tg.requestWriteAccess(callback),
-        requestContact: (callback?: (granted: boolean, contact?: { phone_number: string; first_name: string; last_name?: string; user_id?: number }) => void) => tg.requestContact(callback),
-      };
+        // Создаем объект с методами Telegram WebApp
+        const webAppInstance: TelegramWebApp = {
+          initData: tg.initData || '',
+          initDataUnsafe: tg.initDataUnsafe || {},
+          version: tg.version || '6.0',
+          platform: tg.platform || 'unknown',
+          colorScheme: tg.colorScheme || 'light',
+          themeParams: tg.themeParams || {},
+          isExpanded: tg.isExpanded || false,
+          viewportHeight: tg.viewportHeight || window.innerHeight,
+          viewportStableHeight: tg.viewportStableHeight || window.innerHeight,
+          headerColor: tg.headerColor || '#ffffff',
+          backgroundColor: tg.backgroundColor || '#ffffff',
+          isClosingConfirmationEnabled: tg.isClosingConfirmationEnabled || false,
+          BackButton: tg.BackButton || {
+            show: () => {},
+            hide: () => {},
+            onClick: () => {},
+            offClick: () => {},
+          },
+          MainButton: tg.MainButton || {
+            setText: () => {},
+            show: () => {},
+            hide: () => {},
+            enable: () => {},
+            disable: () => {},
+            showProgress: () => {},
+            hideProgress: () => {},
+            setParams: () => {},
+            onClick: () => {},
+            offClick: () => {},
+          },
+          HapticFeedback: tg.HapticFeedback || {
+            impactOccurred: () => {},
+            notificationOccurred: () => {},
+            selectionChanged: () => {},
+          },
+          ready: () => tg.ready(),
+          expand: () => tg.expand(),
+          close: () => tg.close(),
+          enableClosingConfirmation: () => tg.enableClosingConfirmation(),
+          disableClosingConfirmation: () => tg.disableClosingConfirmation(),
+          onEvent: (eventType: string, eventHandler: () => void) => tg.onEvent(eventType, eventHandler),
+          offEvent: (eventType: string, eventHandler: () => void) => tg.offEvent(eventType, eventHandler),
+          sendData: (data: string) => tg.sendData(data),
+          openLink: (url: string, options?: { try_instant_view?: boolean }) => tg.openLink(url, options),
+          openTelegramLink: (url: string) => tg.openTelegramLink(url),
+          openInvoice: (url: string, callback?: (status: string) => void) => tg.openInvoice(url, callback),
+          showPopup: (params: { title?: string; message: string; buttons?: Array<{ id?: string; type: 'default' | 'ok' | 'close' | 'cancel' | 'destructive'; text: string }> }, callback?: (id: string) => void) => tg.showPopup(params, callback),
+          showAlert: (message: string, callback?: () => void) => tg.showAlert(message, callback),
+          showConfirm: (message: string, callback?: (confirmed: boolean) => void) => tg.showConfirm(message, callback),
+          showScanQrPopup: (params: { text?: string }, callback?: (data: string) => void) => tg.showScanQrPopup(params, callback),
+          closeScanQrPopup: () => tg.closeScanQrPopup(),
+          readTextFromClipboard: (callback?: (text: string) => void) => tg.readTextFromClipboard(callback),
+          requestWriteAccess: (callback?: (granted: boolean) => void) => tg.requestWriteAccess(callback),
+          requestContact: (callback?: (granted: boolean, contact?: { phone_number: string; first_name: string; last_name?: string; user_id?: number }) => void) => tg.requestContact(callback),
+        };
 
-      setWebApp(webAppInstance);
+        setWebApp(webAppInstance);
 
-      // Получаем данные пользователя
-      if (tg.initDataUnsafe?.user) {
-        setUser(tg.initDataUnsafe.user);
-      }
+        // Получаем данные пользователя
+        if (tg.initDataUnsafe?.user) {
+          setUser(tg.initDataUnsafe.user);
+        }
 
-      // Применяем тему Telegram
-      const theme = tg.themeParams || {};
-      if (theme.bg_color) {
-        document.documentElement.style.setProperty('--tg-theme-bg-color', theme.bg_color);
-      }
-      if (theme.text_color) {
-        document.documentElement.style.setProperty('--tg-theme-text-color', theme.text_color);
-      }
-      if (theme.hint_color) {
-        document.documentElement.style.setProperty('--tg-theme-hint-color', theme.hint_color);
-      }
-      if (theme.link_color) {
-        document.documentElement.style.setProperty('--tg-theme-link-color', theme.link_color);
-      }
-      if (theme.button_color) {
-        document.documentElement.style.setProperty('--tg-theme-button-color', theme.button_color);
-      }
-      if (theme.button_text_color) {
-        document.documentElement.style.setProperty('--tg-theme-button-text-color', theme.button_text_color);
-      }
+        // Применяем тему Telegram
+        const theme = tg.themeParams || {};
+        if (theme.bg_color) {
+          document.documentElement.style.setProperty('--tg-theme-bg-color', theme.bg_color);
+        }
+        if (theme.text_color) {
+          document.documentElement.style.setProperty('--tg-theme-text-color', theme.text_color);
+        }
+        if (theme.hint_color) {
+          document.documentElement.style.setProperty('--tg-theme-hint-color', theme.hint_color);
+        }
+        if (theme.link_color) {
+          document.documentElement.style.setProperty('--tg-theme-link-color', theme.link_color);
+        }
+        if (theme.button_color) {
+          document.documentElement.style.setProperty('--tg-theme-button-color', theme.button_color);
+        }
+        if (theme.button_text_color) {
+          document.documentElement.style.setProperty('--tg-theme-button-text-color', theme.button_text_color);
+        }
 
-      // Скрываем адресную строку и настраиваем viewport
-      document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight}px`);
-      document.documentElement.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
+        // Скрываем адресную строку и настраиваем viewport
+        document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight || window.innerHeight}px`);
+        document.documentElement.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight || window.innerHeight}px`);
 
         setIsReady(true);
 
