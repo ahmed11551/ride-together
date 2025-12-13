@@ -121,7 +121,7 @@ async function sendBookingNotification(
     const passengerName = passengerProfile?.full_name || "Пассажир";
 
     // Импортируем функцию отправки уведомлений
-    const { notifyNewBooking } = await import("@/lib/notifications");
+    // Уведомление отправляется через статический импорт
 
     // Отправляем уведомление водителю
     await notifyNewBooking(ride.driver_id, bookingId, passengerName, seats);
@@ -203,7 +203,7 @@ async function sendBookingConfirmedNotification(
     if (!ride) return;
 
     // Импортируем функцию отправки уведомлений
-    const { notifyBookingConfirmed } = await import("@/lib/notifications");
+    // Уведомление отправляется через статический импорт
 
     // Отправляем уведомление пассажиру
     await notifyBookingConfirmed(

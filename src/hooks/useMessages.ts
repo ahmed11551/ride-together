@@ -175,7 +175,7 @@ async function sendMessageNotifications(
     });
 
     // Импортируем функцию отправки уведомлений
-    const { notifyNewMessage } = await import("@/lib/notifications");
+    // Уведомление отправляется через статический импорт
 
     // Отправляем уведомления всем получателям
     await Promise.allSettled(
