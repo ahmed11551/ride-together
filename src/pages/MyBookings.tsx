@@ -5,6 +5,7 @@ import { useMyBookings, useUpdateBookingStatus } from "@/hooks/useBookings";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -175,11 +176,12 @@ const MyBookings = () => {
                 <div className="space-y-4">
                   {pastBookings.map((booking) => {
                     const ride = booking.ride as any;
+                    const isCompleted = booking.status === "completed";
                     
                     return (
                       <div 
                         key={booking.id}
-                        className="bg-card rounded-2xl p-5 shadow-card opacity-60"
+                        className="bg-card rounded-2xl p-5 shadow-card"
                       >
                         <div className="flex items-center justify-between mb-3">
                           <Badge variant={statusLabels[booking.status].variant}>
@@ -190,9 +192,15 @@ const MyBookings = () => {
                               format(new Date(ride.departure_date), "d MMM yyyy", { locale: ru })}
                           </span>
                         </div>
-                        <p className="font-medium">
+                        <p className="font-medium mb-3">
                           {ride?.from_city} → {ride?.to_city}
                         </p>
+                        {isCompleted && ride?.id && (
+                          <ReviewPrompt
+                            rideId={ride.id}
+                            rideTitle={`${ride?.from_city} → ${ride?.to_city}`}
+                          />
+                        )}
                       </div>
                     );
                   })}

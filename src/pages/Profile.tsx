@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { useIsAdmin } from "@/hooks/useReports";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,13 +18,15 @@ import {
   LogOut,
   Edit2,
   Check,
-  X
+  X,
+  Shield
 } from "lucide-react";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { user, signOut, loading: authLoading } = useAuth();
   const { data: profile, isLoading } = useProfile();
+  const { data: isAdmin } = useIsAdmin();
   const updateProfile = useUpdateProfile();
   const { toast } = useToast();
 
@@ -219,6 +222,15 @@ const Profile = () => {
             <Calendar className="w-5 h-5 text-primary" />
             <span className="flex-1 font-medium">Мои бронирования</span>
           </button>
+          {isAdmin && (
+            <button 
+              className="w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors text-left border-t border-border"
+              onClick={() => navigate("/admin")}
+            >
+              <Shield className="w-5 h-5 text-primary" />
+              <span className="flex-1 font-medium">Админ панель</span>
+            </button>
+          )}
         </div>
 
         {/* Sign Out */}

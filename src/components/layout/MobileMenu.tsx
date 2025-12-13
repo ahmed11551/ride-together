@@ -1,7 +1,8 @@
-import { X, Search, PlusCircle, Car, User, Settings, HelpCircle, LogIn, LogOut } from "lucide-react";
+import { X, Search, PlusCircle, Car, User, Settings, HelpCircle, LogIn, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useReports";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface MobileMenuProps {
 const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
 
   if (!isOpen) return null;
 
@@ -31,6 +33,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
     ...(user ? [
       { icon: Car, label: "Мои поездки", href: "/my-rides" },
       { icon: User, label: "Профиль", href: "/profile" },
+      ...(isAdmin ? [{ icon: Shield, label: "Админ панель", href: "/admin" }] : []),
     ] : []),
   ];
 

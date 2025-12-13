@@ -8,6 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyError, logError } from "@/lib/error-handler";
+import { createRideSchema, type CreateRideFormData } from "@/lib/validation";
+import { MapComponent, type Location } from "@/components/map/MapComponent";
+import { reverseGeocode } from "@/lib/geocoding";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -26,13 +31,13 @@ const CreateRide = () => {
   const createRide = useCreateRide();
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateRideFormData>({
     from_city: "",
     from_address: "",
     to_city: "",
     to_address: "",
     departure_date: "",
-    departure_time: "",
+    departure_time: "08:00",
     estimated_duration: "",
     price: "",
     seats_total: "4",
@@ -42,6 +47,11 @@ const CreateRide = () => {
     allow_music: true,
     notes: "",
   });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fromLocation, setFromLocation] = useState<Location | null>(null);
+  const [toLocation, setToLocation] = useState<Location | null>(null);
+  const [mapTab, setMapTab] = useState<'from' | 'to'>('from');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -59,12 +69,23 @@ const CreateRide = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     
-    if (!formData.from_city || !formData.to_city || !formData.departure_date || !formData.price) {
+    // Validate form
+    const validationResult = createRideSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const newErrors: Record<string, string> = {};
+      validationResult.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          newErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      
       toast({
         variant: "destructive",
-        title: "Ошибка",
-        description: "Заполните все обязательные поля",
+        title: "Ошибка валидации",
+        description: "Проверьте правильность заполнения полей",
       });
       return;
     }
@@ -93,10 +114,12 @@ const CreateRide = () => {
       });
       navigate("/my-rides");
     } catch (error) {
+      logError(error, "createRide");
+      const friendlyError = getUserFriendlyError(error);
       toast({
         variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось создать поездку",
+        title: friendlyError.title,
+        description: friendlyError.description,
       });
     }
   };
@@ -126,6 +149,13 @@ const CreateRide = () => {
         <div className="bg-card rounded-2xl p-6 shadow-card space-y-4">
           <h2 className="font-bold text-lg">Маршрут</h2>
           
+          <Tabs defaultValue="form" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="form">Форма</TabsTrigger>
+              <TabsTrigger value="map">Карта</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="form" className="space-y-4 mt-4">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Откуда *</Label>
@@ -134,15 +164,26 @@ const CreateRide = () => {
                 <Input
                   placeholder="Город отправления"
                   value={formData.from_city}
-                  onChange={(e) => handleChange("from_city", e.target.value)}
-                  className="pl-10"
+                  onChange={(e) => {
+                    handleChange("from_city", e.target.value);
+                    if (errors.from_city) setErrors(prev => ({ ...prev, from_city: "" }));
+                  }}
+                  className={`pl-10 ${errors.from_city ? "border-destructive" : ""}`}
                 />
               </div>
+              {errors.from_city && (
+                <p className="text-sm text-destructive">{errors.from_city}</p>
+              )}
               <Input
                 placeholder="Точный адрес (опционально)"
                 value={formData.from_address}
                 onChange={(e) => handleChange("from_address", e.target.value)}
               />
+              {fromLocation && (
+                <p className="text-xs text-muted-foreground">
+                  📍 Выбрано на карте: {fromLocation.address || `${fromLocation.lat.toFixed(4)}, ${fromLocation.lng.toFixed(4)}`}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -152,17 +193,82 @@ const CreateRide = () => {
                 <Input
                   placeholder="Город прибытия"
                   value={formData.to_city}
-                  onChange={(e) => handleChange("to_city", e.target.value)}
-                  className="pl-10"
+                  onChange={(e) => {
+                    handleChange("to_city", e.target.value);
+                    if (errors.to_city) setErrors(prev => ({ ...prev, to_city: "" }));
+                  }}
+                  className={`pl-10 ${errors.to_city ? "border-destructive" : ""}`}
                 />
               </div>
+              {errors.to_city && (
+                <p className="text-sm text-destructive">{errors.to_city}</p>
+              )}
               <Input
                 placeholder="Точный адрес (опционально)"
                 value={formData.to_address}
                 onChange={(e) => handleChange("to_address", e.target.value)}
               />
+              {toLocation && (
+                <p className="text-xs text-muted-foreground">
+                  📍 Выбрано на карте: {toLocation.address || `${toLocation.lat.toFixed(4)}, ${toLocation.lng.toFixed(4)}`}
+                </p>
+              )}
             </div>
           </div>
+            </TabsContent>
+            
+            <TabsContent value="map" className="mt-4 space-y-4">
+              <div className="space-y-2">
+                <Label>Выберите точку на карте</Label>
+                <Tabs value={mapTab} onValueChange={(v) => setMapTab(v as 'from' | 'to')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="from">Откуда</TabsTrigger>
+                    <TabsTrigger value="to">Куда</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+              
+              <MapComponent
+                mode="select"
+                initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
+                onLocationSelect={async (location) => {
+                  if (mapTab === 'from') {
+                    setFromLocation(location);
+                    // Попытка получить адрес через reverse geocoding
+                    const address = await reverseGeocode(location.lat, location.lng);
+                    if (address) {
+                      const locationWithAddress = { ...location, address };
+                      setFromLocation(locationWithAddress);
+                      const city = address.split(',')[0];
+                      setFormData(prev => ({
+                        ...prev,
+                        from_city: city,
+                        from_address: address,
+                      }));
+                    }
+                  } else {
+                    setToLocation(location);
+                    const address = await reverseGeocode(location.lat, location.lng);
+                    if (address) {
+                      const locationWithAddress = { ...location, address };
+                      setToLocation(locationWithAddress);
+                      const city = address.split(',')[0];
+                      setFormData(prev => ({
+                        ...prev,
+                        to_city: city,
+                        to_address: address,
+                      }));
+                    }
+                  }
+                }}
+                height="400px"
+              />
+              
+              <p className="text-sm text-muted-foreground">
+                💡 Кликните на карте, чтобы выбрать точку {mapTab === 'from' ? 'отправления' : 'прибытия'}
+              </p>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Date & Time */}
@@ -177,11 +283,17 @@ const CreateRide = () => {
                 <Input
                   type="date"
                   value={formData.departure_date}
-                  onChange={(e) => handleChange("departure_date", e.target.value)}
-                  className="pl-10"
+                  onChange={(e) => {
+                    handleChange("departure_date", e.target.value);
+                    if (errors.departure_date) setErrors(prev => ({ ...prev, departure_date: "" }));
+                  }}
+                  className={`pl-10 ${errors.departure_date ? "border-destructive" : ""}`}
                   min={new Date().toISOString().split("T")[0]}
                 />
               </div>
+              {errors.departure_date && (
+                <p className="text-sm text-destructive">{errors.departure_date}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -221,10 +333,18 @@ const CreateRide = () => {
                   type="number"
                   placeholder="1500"
                   value={formData.price}
-                  onChange={(e) => handleChange("price", e.target.value)}
-                  className="pl-10"
-                  min="0"
+                  onChange={(e) => {
+                    handleChange("price", e.target.value);
+                    if (errors.price) setErrors(prev => ({ ...prev, price: "" }));
+                  }}
+                  className={`pl-10 ${errors.price ? "border-destructive" : ""}`}
+                  min="1"
+                  max="100000"
                 />
+              </div>
+              {errors.price && (
+                <p className="text-sm text-destructive">{errors.price}</p>
+              )}
               </div>
             </div>
 

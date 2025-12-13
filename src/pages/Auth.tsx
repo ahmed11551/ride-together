@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Car, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { getUserFriendlyError, logError } from "@/lib/error-handler";
 
 const loginSchema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -69,19 +70,13 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login")) {
-            toast({
-              variant: "destructive",
-              title: "Ошибка входа",
-              description: "Неверный email или пароль",
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Ошибка",
-              description: error.message,
-            });
-          }
+          logError(error, "signIn");
+          const friendlyError = getUserFriendlyError(error);
+          toast({
+            variant: "destructive",
+            title: friendlyError.title,
+            description: friendlyError.description,
+          });
         } else {
           toast({
             title: "Добро пожаловать!",
@@ -92,19 +87,13 @@ const Auth = () => {
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          if (error.message.includes("already registered")) {
-            toast({
-              variant: "destructive",
-              title: "Ошибка регистрации",
-              description: "Пользователь с таким email уже существует",
-            });
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Ошибка",
-              description: error.message,
-            });
-          }
+          logError(error, "signUp");
+          const friendlyError = getUserFriendlyError(error);
+          toast({
+            variant: "destructive",
+            title: friendlyError.title,
+            description: friendlyError.description,
+          });
         } else {
           toast({
             title: "Регистрация успешна!",
@@ -113,6 +102,14 @@ const Auth = () => {
           navigate("/");
         }
       }
+    } catch (error) {
+      logError(error, "handleSubmit");
+      const friendlyError = getUserFriendlyError(error);
+      toast({
+        variant: "destructive",
+        title: friendlyError.title,
+        description: friendlyError.description,
+      });
     } finally {
       setLoading(false);
     }

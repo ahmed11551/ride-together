@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RideChat from "@/components/chat/RideChat";
+import { ReportDialog } from "@/components/reports/ReportDialog";
+import { getUserFriendlyError, logError } from "@/lib/error-handler";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -67,20 +69,14 @@ const RideDetails = () => {
         description: "Ожидайте подтверждения от водителя",
       });
       navigate("/my-bookings");
-    } catch (error: any) {
-      if (error.message?.includes("duplicate")) {
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Вы уже забронировали эту поездку",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Не удалось создать бронирование",
-        });
-      }
+    } catch (error) {
+      logError(error, "createBooking");
+      const friendlyError = getUserFriendlyError(error);
+      toast({
+        variant: "destructive",
+        title: friendlyError.title,
+        description: friendlyError.description,
+      });
     }
   };
 
@@ -206,9 +202,18 @@ const RideDetails = () => {
                 </div>
               </div>
 
-              <Button variant="soft" size="icon" className="shrink-0">
-                <MessageCircle className="w-5 h-5" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="soft" size="icon" className="shrink-0">
+                  <MessageCircle className="w-5 h-5" />
+                </Button>
+                {user && driver.user_id !== user.id && (
+                  <ReportDialog
+                    reportedUserId={ride.driver_id}
+                    rideId={ride.id}
+                    rideTitle={`${ride.from_city} → ${ride.to_city}`}
+                  />
+                )}
+              </div>
             </div>
 
             {driver.bio && (

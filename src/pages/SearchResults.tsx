@@ -6,7 +6,9 @@ import RideCard from "@/components/rides/RideCard";
 import SearchForm from "@/components/search/SearchForm";
 import EmptyState from "@/components/ui/empty-state";
 import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
-import { ArrowLeft, SlidersHorizontal, Search, X } from "lucide-react";
+import { RidesMap } from "@/components/map/RidesMap";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, SlidersHorizontal, Search, X, Map as MapIcon, List } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -76,47 +78,70 @@ const SearchResults = () => {
             ))}
           </div>
         ) : rides && rides.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">
-              Найдено {rides.length} {rides.length === 1 ? 'поездка' : rides.length < 5 ? 'поездки' : 'поездок'}
-            </p>
+          <Tabs defaultValue="list" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-muted-foreground text-sm">
+                Найдено {rides.length} {rides.length === 1 ? 'поездка' : rides.length < 5 ? 'поездки' : 'поездок'}
+              </p>
+              <TabsList>
+                <TabsTrigger value="list" className="gap-2">
+                  <List className="w-4 h-4" />
+                  Список
+                </TabsTrigger>
+                <TabsTrigger value="map" className="gap-2">
+                  <MapIcon className="w-4 h-4" />
+                  Карта
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            {rides.map((ride, index) => (
-              <div 
-                key={ride.id}
-                style={{ animationDelay: `${index * 60}ms` }}
-                className="animate-slide-up"
-              >
-                <RideCard 
-                  ride={{
-                    id: ride.id,
-                    driver: {
-                      name: ride.driver?.full_name || "Водитель",
-                      avatar: ride.driver?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(ride.driver?.full_name || "U")}&background=0d9488&color=fff`,
-                      rating: ride.driver?.rating || 5,
-                      trips: ride.driver?.trips_count || 0,
-                      verified: ride.driver?.is_verified || false,
-                    },
-                    from: ride.from_address,
-                    to: ride.to_address,
-                    fromCity: ride.from_city,
-                    toCity: ride.to_city,
-                    date: ride.departure_date,
-                    time: ride.departure_time.slice(0, 5),
-                    duration: ride.estimated_duration || "—",
-                    price: ride.price,
-                    seats: ride.seats_available,
-                    features: {
-                      noSmoking: !ride.allow_smoking,
-                      music: ride.allow_music,
-                      pets: ride.allow_pets,
-                    },
-                  }}
-                  onSelect={() => navigate(`/ride/${ride.id}`)}
-                />
+            <TabsContent value="list" className="space-y-4 mt-4">
+              {rides.map((ride, index) => (
+                <div 
+                  key={ride.id}
+                  style={{ animationDelay: `${index * 60}ms` }}
+                  className="animate-slide-up"
+                >
+                  <RideCard 
+                    ride={{
+                      id: ride.id,
+                      driver: {
+                        name: ride.driver?.full_name || "Водитель",
+                        avatar: ride.driver?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(ride.driver?.full_name || "U")}&background=0d9488&color=fff`,
+                        rating: ride.driver?.rating || 5,
+                        trips: ride.driver?.trips_count || 0,
+                        verified: ride.driver?.is_verified || false,
+                      },
+                      from: ride.from_address,
+                      to: ride.to_address,
+                      fromCity: ride.from_city,
+                      toCity: ride.to_city,
+                      date: ride.departure_date,
+                      time: ride.departure_time.slice(0, 5),
+                      duration: ride.estimated_duration || "—",
+                      price: ride.price,
+                      seats: ride.seats_available,
+                      features: {
+                        noSmoking: !ride.allow_smoking,
+                        music: ride.allow_music,
+                        pets: ride.allow_pets,
+                      },
+                    }}
+                    onSelect={() => navigate(`/ride/${ride.id}`)}
+                  />
+                </div>
+              ))}
+            </TabsContent>
+            
+            <TabsContent value="map" className="mt-4">
+              <div className="bg-card rounded-2xl p-4 shadow-card">
+                <RidesMap rides={rides} height="600px" />
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  💡 Наведите на маркер, чтобы увидеть детали поездки
+                </p>
               </div>
-            ))}
-          </div>
+            </TabsContent>
+          </Tabs>
         ) : (
           <EmptyState
             icon={Search}

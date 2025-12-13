@@ -2,8 +2,12 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyRides, useUpdateRide } from "@/hooks/useRides";
+import { useUpdateBookingStatus } from "@/hooks/useBookings";
+import { RideBookings } from "@/components/rides/RideBookings";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyError, logError } from "@/lib/error-handler";
 import { 
   ArrowLeft, 
   Plus, 
@@ -12,7 +16,10 @@ import {
   Clock, 
   Users,
   MoreVertical,
-  XCircle
+  XCircle,
+  CheckCircle,
+  User,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -28,6 +35,7 @@ const MyRides = () => {
   const { user, loading: authLoading } = useAuth();
   const { data: rides, isLoading } = useMyRides();
   const updateRide = useUpdateRide();
+  const updateBookingStatus = useUpdateBookingStatus();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,11 +50,30 @@ const MyRides = () => {
       toast({
         title: "Поездка отменена",
       });
-    } catch {
+    } catch (error) {
+      logError(error, "cancelRide");
+      const friendlyError = getUserFriendlyError(error);
       toast({
         variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отменить поездку",
+        title: friendlyError.title,
+        description: friendlyError.description,
+      });
+    }
+  };
+
+  const handleBookingStatus = async (bookingId: string, status: "confirmed" | "cancelled") => {
+    try {
+      await updateBookingStatus.mutateAsync({ id: bookingId, status });
+      toast({
+        title: status === "confirmed" ? "Бронирование подтверждено" : "Бронирование отменено",
+      });
+    } catch (error) {
+      logError(error, "updateBookingStatus");
+      const friendlyError = getUserFriendlyError(error);
+      toast({
+        variant: "destructive",
+        title: friendlyError.title,
+        description: friendlyError.description,
       });
     }
   };
@@ -119,6 +146,11 @@ const MyRides = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </div>
+
+                      {/* Bookings for this ride */}
+                      <div className="mt-4">
+                        <RideBookings rideId={ride.id} />
                       </div>
 
                       <div className="flex items-center gap-3 mb-3">
