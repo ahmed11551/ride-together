@@ -253,7 +253,7 @@ const CreateRide = () => {
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      💡 Если адрес не определился автоматически, введите его вручную в поле "Город"
+                      Если адрес не определился автоматически, введите его вручную в поле "Город"
                     </p>
                   </div>
                 )}
@@ -339,7 +339,7 @@ const CreateRide = () => {
               <div className="space-y-2">
                 <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
                   <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-xs font-bold text-primary">💡</span>
+                    <span className="text-xs font-bold text-primary">Подсказка:</span>
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium text-foreground">

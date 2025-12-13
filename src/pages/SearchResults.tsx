@@ -144,7 +144,7 @@ const SearchResults = () => {
               <div className="bg-card rounded-2xl p-4 shadow-card">
                 <RidesMap rides={rides} height="600px" />
                 <p className="text-sm text-muted-foreground mt-4 text-center">
-                  💡 Наведите на маркер, чтобы увидеть детали поездки
+                  Наведите на маркер, чтобы увидеть детали поездки
                 </p>
               </div>
             </TabsContent>
