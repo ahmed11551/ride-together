@@ -1,8 +1,9 @@
 /**
  * Geocoding utilities for converting addresses to coordinates and vice versa
+ * Using Yandex Maps Geocoding API
  */
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '';
 
 export interface GeocodeResult {
   lat: number;
@@ -12,21 +13,22 @@ export interface GeocodeResult {
 }
 
 /**
- * Geocode an address to coordinates using Mapbox Geocoding API
+ * Geocode an address to coordinates using Yandex Maps Geocoding API
  */
 export async function geocodeAddress(
   address: string
 ): Promise<GeocodeResult | null> {
-  if (!MAPBOX_TOKEN) {
-    console.warn('Mapbox token not configured');
-    return null;
+  if (!YANDEX_MAPS_API_KEY) {
+    console.warn('Yandex Maps API key not configured');
+    // Fallback to city coordinates
+    return getCityCoordinatesFallback(address);
   }
 
   try {
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+      `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_MAPS_API_KEY}&geocode=${encodeURIComponent(
         address
-      )}.json?access_token=${MAPBOX_TOKEN}&country=ru&language=ru&limit=1`
+      )}&format=json&results=1&lang=ru_RU`
     );
 
     if (!response.ok) {
@@ -35,47 +37,51 @@ export async function geocodeAddress(
 
     const data = await response.json();
 
-    if (data.features && data.features.length > 0) {
-      const feature = data.features[0];
-      const [lng, lat] = feature.center;
-      const placeName = feature.place_name;
-
-      // Extract city name
-      const context = feature.context?.find((ctx: any) =>
-        ctx.id.startsWith('place')
-      );
-      const city = context?.text || placeName.split(',')[0];
+    if (
+      data.response?.GeoObjectCollection?.featureMember &&
+      data.response.GeoObjectCollection.featureMember.length > 0
+    ) {
+      const feature = data.response.GeoObjectCollection.featureMember[0]
+        .GeoObject;
+      const [lng, lat] = feature.Point.pos.split(' ').map(Number);
+      const addressText = feature.metaDataProperty.GeocoderMetaData.text;
+      const city =
+        feature.metaDataProperty.GeocoderMetaData.Address?.Components?.find(
+          (c: any) => c.kind === 'locality'
+        )?.name || addressText.split(',')[0];
 
       return {
         lat,
         lng,
-        address: placeName,
+        address: addressText,
         city,
       };
     }
 
-    return null;
+    // Fallback to city coordinates
+    return getCityCoordinatesFallback(address);
   } catch (error) {
     console.error('Geocoding error:', error);
-    return null;
+    // Fallback to city coordinates
+    return getCityCoordinatesFallback(address);
   }
 }
 
 /**
- * Reverse geocode coordinates to address
+ * Reverse geocode coordinates to address using Yandex Maps Geocoding API
  */
 export async function reverseGeocode(
   lat: number,
   lng: number
 ): Promise<string | null> {
-  if (!MAPBOX_TOKEN) {
-    console.warn('Mapbox token not configured');
+  if (!YANDEX_MAPS_API_KEY) {
+    console.warn('Yandex Maps API key not configured');
     return null;
   }
 
   try {
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&country=ru&language=ru&limit=1`
+      `https://geocode-maps.yandex.ru/1.x/?apikey=${YANDEX_MAPS_API_KEY}&geocode=${lng},${lat}&format=json&results=1&lang=ru_RU`
     );
 
     if (!response.ok) {
@@ -84,8 +90,13 @@ export async function reverseGeocode(
 
     const data = await response.json();
 
-    if (data.features && data.features.length > 0) {
-      return data.features[0].place_name;
+    if (
+      data.response?.GeoObjectCollection?.featureMember &&
+      data.response.GeoObjectCollection.featureMember.length > 0
+    ) {
+      const feature = data.response.GeoObjectCollection.featureMember[0]
+        .GeoObject;
+      return feature.metaDataProperty.GeocoderMetaData.text;
     }
 
     return null;
@@ -129,3 +140,20 @@ export function getCityCoordinates(cityName: string): {
   return cityCoordinates[normalized] || null;
 }
 
+/**
+ * Fallback function for geocoding using city coordinates
+ */
+function getCityCoordinatesFallback(
+  address: string
+): GeocodeResult | null {
+  const coords = getCityCoordinates(address);
+  if (coords) {
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      address,
+      city: address,
+    };
+  }
+  return null;
+}
