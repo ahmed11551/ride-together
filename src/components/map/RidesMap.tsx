@@ -6,7 +6,7 @@ import type { RideWithDriver } from '@/hooks/useRides';
 import { getCityCoordinates } from '@/lib/geocoding';
 import { env } from '@/lib/env';
 
-const YANDEX_MAPS_API_KEY = import.meta.env.VITE_YANDEX_MAPS_API_KEY || '';
+const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
 
 interface RidesMapProps {
   rides: RideWithDriver[];
