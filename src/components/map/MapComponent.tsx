@@ -79,15 +79,19 @@ export const MapComponent = ({
   if (!MAPBOX_TOKEN) {
     return (
       <div
-        className={`bg-muted rounded-lg flex items-center justify-center ${className}`}
+        className={`bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/20 ${className}`}
         style={{ height }}
       >
-        <div className="text-center p-4">
-          <p className="text-muted-foreground mb-2">
-            Mapbox token не настроен
+        <div className="text-center p-6 max-w-sm">
+          <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium mb-2">
+            Карта недоступна
           </p>
-          <p className="text-sm text-muted-foreground">
-            Добавьте VITE_MAPBOX_TOKEN в .env файл
+          <p className="text-sm text-muted-foreground mb-4">
+            Для отображения карты необходимо настроить Mapbox токен
+          </p>
+          <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+            Добавьте <code className="bg-background px-1 rounded">VITE_MAPBOX_TOKEN</code> в переменные окружения
           </p>
         </div>
       </div>
