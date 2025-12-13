@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import RideChat from "@/components/chat/RideChat";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -260,6 +261,11 @@ const RideDetails = () => {
             <p className="text-muted-foreground">{ride.notes}</p>
           </div>
         )}
+
+        {/* Chat */}
+        <div className="animate-fade-in" style={{ animationDelay: "250ms" }}>
+          <RideChat rideId={ride.id} driverId={ride.driver_id} />
+        </div>
       </div>
 
       {/* Booking Footer */}
