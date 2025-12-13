@@ -61,6 +61,14 @@ const ERROR_MESSAGES: Record<string, ErrorMessage> = {
     title: 'Конфликт данных',
     description: 'Профиль уже существует. Попробуйте обновить страницу.',
   },
+  'PGRST301': {
+    title: 'Конфликт данных',
+    description: 'Профиль уже существует. Попробуйте обновить страницу.',
+  },
+  'duplicate': {
+    title: 'Конфликт данных',
+    description: 'Профиль уже существует. Попробуйте обновить страницу.',
+  },
   // Network errors
   'Failed to fetch': {
     title: 'Ошибка соединения',
