@@ -40,22 +40,55 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/rest/v1/') || 
       event.request.url.includes('/auth/v1/') ||
       event.request.url.includes('/realtime/v1/') ||
-      event.request.url.includes('/storage/v1/')) {
-    return; // Пропускаем Service Worker для API запросов
+      event.request.url.includes('/storage/v1/') ||
+      event.request.url.includes('chrome-extension://') ||
+      event.request.url.includes('moz-extension://') ||
+      event.request.url.includes('safari-extension://')) {
+    return; // Пропускаем Service Worker для API запросов и расширений браузера
   }
   
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request).catch(() => {
+  // Игнорируем запросы от расширений браузера
+  if (event.request.url.startsWith('chrome-extension://') ||
+      event.request.url.startsWith('moz-extension://') ||
+      event.request.url.startsWith('safari-extension://')) {
+    return;
+  }
+  
+  try {
+    event.respondWith(
+      caches.match(event.request)
+        .then((response) => {
+          // Return cached version or fetch from network
+          return response || fetch(event.request).catch((error) => {
           // Если сеть недоступна и нет кэша, возвращаем offline страницу
           if (event.request.destination === 'document') {
             return caches.match('/index.html');
           }
+          // Для других запросов возвращаем ошибку
+          throw error;
         });
       })
-  );
+        .catch((error) => {
+          // Обработка ошибок кэша
+          console.error('Service Worker fetch error:', error);
+          // Пытаемся вернуть из сети
+          return fetch(event.request).catch(() => {
+            // Если и сеть недоступна, возвращаем offline страницу для документов
+            if (event.request.destination === 'document') {
+              return caches.match('/index.html');
+            }
+            // Для остальных - возвращаем ошибку
+            return new Response('Network error', { status: 503 });
+          });
+        })
+    );
+  } catch (error) {
+    // Игнорируем ошибки от расширений браузера
+    if (error.message && error.message.includes('Receiving end does not exist')) {
+      return;
+    }
+    console.error('Service Worker error:', error);
+  }
 });
 
 // Обработка push-уведомлений
