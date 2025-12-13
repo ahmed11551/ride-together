@@ -108,9 +108,29 @@ export interface TelegramWebApp {
   headerColor: string;
   backgroundColor: string;
   isClosingConfirmationEnabled: boolean;
-  BackButton: Window['Telegram']['WebApp']['BackButton'];
-  MainButton: Window['Telegram']['WebApp']['MainButton'];
-  HapticFeedback: Window['Telegram']['WebApp']['HapticFeedback'];
+  BackButton: {
+    show: () => void;
+    hide: () => void;
+    onClick: (callback: () => void) => void;
+    offClick: (callback: () => void) => void;
+  };
+  MainButton: {
+    setText: (text: string) => void;
+    show: () => void;
+    hide: () => void;
+    enable: () => void;
+    disable: () => void;
+    showProgress: () => void;
+    hideProgress: () => void;
+    setParams: (params: { color?: string; text_color?: string }) => void;
+    onClick: (callback: () => void) => void;
+    offClick: (callback: () => void) => void;
+  };
+  HapticFeedback: {
+    impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+    notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
+    selectionChanged: () => void;
+  };
   ready: () => void;
   expand: () => void;
   close: () => void;
@@ -239,13 +259,21 @@ export const TelegramProvider = ({ children }: TelegramProviderProps) => {
       document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight}px`);
       document.documentElement.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
 
-      setIsReady(true);
+        setIsReady(true);
 
-      // Обработка изменений viewport
-      tg.onEvent('viewportChanged', () => {
-        document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight}px`);
-        document.documentElement.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
-      });
+        // Обработка изменений viewport
+        if (tg.onEvent) {
+          tg.onEvent('viewportChanged', () => {
+            document.documentElement.style.setProperty('--tg-viewport-height', `${tg.viewportHeight || window.innerHeight}px`);
+            document.documentElement.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight || window.innerHeight}px`);
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing Telegram WebApp:', error);
+        // Если ошибка при инициализации Telegram - продолжаем как обычное веб-приложение
+        setIsTelegram(false);
+        setIsReady(true);
+      }
     } else {
       // Не в Telegram - работаем как обычное веб-приложение
       setIsTelegram(false);
