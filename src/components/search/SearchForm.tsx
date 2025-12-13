@@ -1,8 +1,10 @@
 import { MapPin, Calendar, Users, ArrowRight, ArrowDownUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SearchForm = () => {
+  const navigate = useNavigate();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
@@ -14,9 +16,17 @@ const SearchForm = () => {
     setTo(temp);
   };
 
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (date) params.set("date", date);
+    params.set("passengers", passengers.toString());
+    navigate(`/search?${params.toString()}`);
+  };
+
   return (
     <div className="relative bg-card rounded-2xl shadow-card p-6 space-y-4">
-      {/* From/To Fields */}
       <div className="relative space-y-3">
         <div className="relative">
           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
@@ -48,7 +58,6 @@ const SearchForm = () => {
         </div>
       </div>
 
-      {/* Date and Passengers */}
       <div className="grid grid-cols-2 gap-3">
         <div className="relative">
           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -76,8 +85,7 @@ const SearchForm = () => {
         </div>
       </div>
 
-      {/* Search Button */}
-      <Button variant="hero" size="lg" className="w-full">
+      <Button variant="hero" size="lg" className="w-full" onClick={handleSearch}>
         Найти поездку
         <ArrowRight className="w-5 h-5" />
       </Button>
