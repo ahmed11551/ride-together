@@ -1,5 +1,6 @@
-import { MapPin, Clock, Star, Users, Cigarette, Music, Dog, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Star, Users, Cigarette, Music, Dog, ChevronRight, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface RideCardProps {
   ride: {
@@ -98,7 +99,19 @@ const RideCard = ({ ride, onSelect, className }: RideCardProps) => {
           </div>
           
           <div>
-            <p className="font-semibold text-foreground text-sm">{ride.driver.name}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-foreground text-sm">{ride.driver.name}</p>
+              {ride.driver.verified && (
+                <Badge 
+                  variant="soft" 
+                  className="gap-1 px-1.5 py-0 text-[10px] bg-primary/10 text-primary border-primary/20"
+                  title="Проверенный водитель - документы верифицированы"
+                >
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  Проверен
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="flex items-center gap-0.5 text-warning">
                 <Star className="w-3 h-3 fill-current" />
