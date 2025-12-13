@@ -13,7 +13,7 @@ export interface NotificationPayload {
   icon?: string;
   badge?: string;
   requireInteraction?: boolean;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -34,13 +34,15 @@ export async function sendPushNotification(
       .maybeSingle();
 
     if (subError || !subscriptionData) {
-      console.warn('Подписка не найдена для пользователя:', payload.userId);
+      const { logger } = await import('./logger');
+      logger.warn('Подписка не найдена для пользователя', { userId: payload.userId });
       return false;
     }
 
     // Здесь должна быть отправка через сервер/Edge Function
     // Пока просто логируем
-    console.log('Уведомление для отправки:', {
+    const { logger } = await import('./logger');
+    logger.debug('Уведомление для отправки', {
       subscription: subscriptionData.subscription,
       payload,
     });
@@ -56,7 +58,8 @@ export async function sendPushNotification(
 
     return true;
   } catch (error) {
-    console.error('Ошибка отправки уведомления:', error);
+    const { logger } = await import('./logger');
+    logger.error('Ошибка отправки уведомления', error);
     return false;
   }
 }

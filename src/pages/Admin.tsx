@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAllReports, useUpdateReport, useBanUser, useIsAdmin } from "@/hooks/useReports";
-import { useAllUsers } from "@/hooks/useUsers";
+import { useAllReports, useUpdateReport, useBanUser, useIsAdmin, type Report } from "@/hooks/useReports";
+import { useAllUsers, type UserProfile } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -241,7 +241,7 @@ const Admin = () => {
 };
 
 interface ReportCardProps {
-  report: any;
+  report: Report;
   onUpdateStatus: (id: string, status: string, notes?: string) => void;
   onBanUser: (userId: string, isBanned: boolean) => void;
 }
@@ -356,7 +356,7 @@ const ReportCard = ({ report, onUpdateStatus, onBanUser }: ReportCardProps) => {
 };
 
 interface UserCardProps {
-  user: any;
+  user: UserProfile;
   onBanUser: (userId: string, isBanned: boolean) => void;
 }
 

@@ -21,7 +21,8 @@ export async function geocodeAddress(
   address: string
 ): Promise<GeocodeResult | null> {
   if (!YANDEX_MAPS_API_KEY) {
-    console.warn('Yandex Maps API key not configured');
+    const { logger } = await import('./logger');
+    logger.warn('Yandex Maps API key not configured');
     // Fallback to city coordinates
     return getCityCoordinatesFallback(address);
   }
@@ -49,7 +50,7 @@ export async function geocodeAddress(
       const addressText = feature.metaDataProperty.GeocoderMetaData.text;
       const city =
         feature.metaDataProperty.GeocoderMetaData.Address?.Components?.find(
-          (c: any) => c.kind === 'locality'
+          (c: { kind: string; name: string }) => c.kind === 'locality'
         )?.name || addressText.split(',')[0];
 
       return {
@@ -63,7 +64,8 @@ export async function geocodeAddress(
     // Fallback to city coordinates
     return getCityCoordinatesFallback(address);
   } catch (error) {
-    console.error('Geocoding error:', error);
+    const { logger } = await import('./logger');
+    logger.error('Geocoding error', error);
     // Fallback to city coordinates
     return getCityCoordinatesFallback(address);
   }
@@ -98,7 +100,8 @@ export async function reverseGeocode(
     if (!response.ok) {
       // Если 403 или другая ошибка, используем fallback
       if (response.status === 403) {
-        console.warn('Yandex Maps API: 403 Forbidden - возможно проблема с API ключом или квотой');
+        const { logger } = await import('./logger');
+        logger.warn('Yandex Maps API: 403 Forbidden - возможно проблема с API ключом или квотой');
       }
       return getFallbackAddress(lat, lng);
     }
@@ -119,7 +122,7 @@ export async function reverseGeocode(
       let street: string | undefined;
       let metro: string | undefined;
 
-      components.forEach((component: any) => {
+      components.forEach((component: { kind: string; name: string }) => {
         if (component.kind === 'locality' || component.kind === 'district') {
           city = component.name;
         } else if (component.kind === 'street') {
@@ -153,7 +156,8 @@ export async function reverseGeocode(
 
     return getFallbackAddress(lat, lng);
   } catch (error) {
-    console.error('Reverse geocoding error:', error);
+    const { logger } = await import('./logger');
+    logger.error('Reverse geocoding error', error);
     return getFallbackAddress(lat, lng);
   }
 }

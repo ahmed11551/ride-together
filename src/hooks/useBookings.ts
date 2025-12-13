@@ -16,7 +16,16 @@ export interface Booking {
 }
 
 export interface BookingWithRide extends Booking {
-  ride?: any;
+  ride?: {
+    id: string;
+    from_city: string;
+    to_city: string;
+    departure_date: string;
+    departure_time: string;
+    price: number;
+    seats_available: number;
+    driver_id: string;
+  };
 }
 
 export const useMyBookings = () => {

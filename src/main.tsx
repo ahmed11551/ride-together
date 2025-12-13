@@ -19,28 +19,31 @@ if (import.meta.env.PROD) {
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('Service Worker registered:', registration);
+      .then(async (registration) => {
+        const { logger } = await import('./lib/logger');
+        logger.debug('Service Worker registered', { registration });
         
         // Проверяем обновления Service Worker
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
+            newWorker.addEventListener('statechange', async () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // Новый Service Worker доступен, можно обновить страницу
-                console.log('New Service Worker available');
+                const { logger } = await import('./lib/logger');
+                logger.debug('New Service Worker available');
               }
             });
           }
         });
       })
-      .catch((error) => {
+      .catch(async (error) => {
         // Игнорируем ошибки от расширений браузера
         if (error.message && error.message.includes('Receiving end does not exist')) {
           return;
         }
-        console.warn('Service Worker registration failed:', error);
+        const { logger } = await import('./lib/logger');
+        logger.warn('Service Worker registration failed', error);
       });
   });
   
@@ -56,7 +59,9 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     }
     // Логируем только реальные ошибки
     if (import.meta.env.DEV) {
-      console.warn('Service Worker message error:', event);
+      import('./lib/logger').then(({ logger }) => {
+        logger.warn('Service Worker message error', event);
+      });
     }
   });
 

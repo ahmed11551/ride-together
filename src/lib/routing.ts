@@ -26,7 +26,8 @@ export async function buildRoute(
   to: RoutePoint
 ): Promise<Route | null> {
   if (!YANDEX_MAPS_API_KEY) {
-    console.warn('Yandex Maps API key not configured');
+    const { logger } = await import('./logger');
+    logger.warn('Yandex Maps API key not configured');
     // Return simple straight line route
     return {
       points: [from, to],
@@ -41,7 +42,8 @@ export async function buildRoute(
     );
 
     if (!response.ok) {
-      console.warn('Routing API error:', response.status);
+      const { logger } = await import('./logger');
+      logger.warn('Routing API error', { status: response.status });
       // Return simple straight line route as fallback
       return {
         points: [from, to],
@@ -58,7 +60,7 @@ export async function buildRoute(
 
       // Extract route points from geometry
       if (leg.steps) {
-        leg.steps.forEach((step: any) => {
+        leg.steps.forEach((step: { geometry?: string }) => {
           if (step.geometry) {
             // Decode polyline if needed
             const stepPoints = decodePolyline(step.geometry);
