@@ -19,7 +19,8 @@ import {
   XCircle,
   CheckCircle,
   User,
-  AlertCircle
+  AlertCircle,
+  MessageCircle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -141,6 +142,10 @@ const MyRides = () => {
                             <DropdownMenuItem onClick={() => navigate(`/ride/${ride.id}`)}>
                               Подробнее
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/ride/${ride.id}`)}>
+                              <MessageCircle className="w-4 h-4 mr-2" />
+                              Открыть чат
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
                               onClick={() => handleCancel(ride.id)}
@@ -170,7 +175,18 @@ const MyRides = () => {
                           <Users className="w-4 h-4" />
                           <span>{ride.seats_available} / {ride.seats_total} мест</span>
                         </div>
-                        <span className="text-xl font-bold text-primary">{ride.price} ₽</span>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/ride/${ride.id}`)}
+                            title="Открыть чат с пассажирами"
+                          >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            Чат
+                          </Button>
+                          <span className="text-xl font-bold text-primary">{ride.price} ₽</span>
+                        </div>
                       </div>
                     </div>
                   ))}
