@@ -45,10 +45,10 @@ export const useTelegramAuth = () => {
           const { error: updateError } = await supabase
             .from('profiles')
             .update({
-              telegram_username: telegramUser.username,
-              telegram_first_name: telegramUser.first_name,
-              telegram_last_name: telegramUser.last_name,
-              telegram_photo_url: telegramUser.photo_url,
+              telegram_username: telegramUser.username || null,
+              telegram_first_name: telegramUser.first_name || null,
+              telegram_last_name: telegramUser.last_name || null,
+              telegram_photo_url: telegramUser.photo_url || null,
               updated_at: new Date().toISOString(),
             })
             .eq('telegram_id', telegramUser.id.toString());
@@ -57,21 +57,70 @@ export const useTelegramAuth = () => {
             throw updateError;
           }
 
-          // Входим через существующий аккаунт
-          // Здесь нужно будет реализовать логику входа через Telegram
-          // Пока просто показываем сообщение
-          toast({
-            title: 'Добро пожаловать!',
-            description: `Привет, ${telegramUser.first_name}!`,
-          });
+          // Если есть user_id, значит пользователь уже авторизован через Supabase Auth
+          if (existingProfile.user_id && !supabaseUser) {
+            // Пользователь существует, но не авторизован - нужно войти
+            // Для этого используем email из профиля, если он есть
+            // Или просто обновляем данные и показываем сообщение
+            toast({
+              title: 'Добро пожаловать!',
+              description: `Привет, ${telegramUser.first_name}! Ваш профиль обновлен.`,
+            });
+          } else {
+            toast({
+              title: 'Добро пожаловать!',
+              description: `Привет, ${telegramUser.first_name}!`,
+            });
+          }
         } else {
-          // Новый пользователь - создаем профиль
-          // Для этого нужно сначала создать аккаунт в Supabase Auth
-          // Пока просто показываем сообщение
-          toast({
-            title: 'Новый пользователь',
-            description: 'Для полной регистрации заполните профиль',
+          // Новый пользователь - создаем профиль через Supabase Auth
+          // Создаем уникальный email на основе telegram_id
+          const telegramEmail = `telegram_${telegramUser.id}@telegram.local`;
+          const randomPassword = crypto.randomUUID(); // Временный пароль
+          
+          // Создаем аккаунт в Supabase Auth
+          const { data: authData, error: signUpError } = await supabase.auth.signUp({
+            email: telegramEmail,
+            password: randomPassword,
+            options: {
+              data: {
+                full_name: `${telegramUser.first_name} ${telegramUser.last_name || ''}`.trim(),
+                telegram_id: telegramUser.id.toString(),
+              },
+            },
           });
+
+          if (signUpError) {
+            throw signUpError;
+          }
+
+          if (authData.user) {
+            // Создаем профиль
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authData.user.id,
+                user_id: authData.user.id,
+                telegram_id: telegramUser.id.toString(),
+                telegram_username: telegramUser.username || null,
+                telegram_first_name: telegramUser.first_name || null,
+                telegram_last_name: telegramUser.last_name || null,
+                telegram_photo_url: telegramUser.photo_url || null,
+                full_name: `${telegramUser.first_name} ${telegramUser.last_name || ''}`.trim(),
+                display_name: telegramUser.first_name,
+                email: telegramEmail,
+                avatar_url: telegramUser.photo_url || null,
+              });
+
+            if (profileError) {
+              throw profileError;
+            }
+
+            toast({
+              title: 'Добро пожаловать!',
+              description: `Привет, ${telegramUser.first_name}! Ваш аккаунт создан.`,
+            });
+          }
         }
       } catch (error) {
         logError(error, 'telegramAuth');

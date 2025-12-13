@@ -6,8 +6,12 @@ import RidesList from "@/components/rides/RidesList";
 import HowItWorks from "@/components/home/HowItWorks";
 import DriverCTA from "@/components/home/DriverCTA";
 import { Helmet } from "react-helmet-async";
+import { useTelegramAuth } from "@/hooks/useTelegramAuth";
 
 const Index = () => {
+  // Автоматическая авторизация через Telegram, если приложение запущено в Telegram
+  useTelegramAuth();
+
   return (
     <>
       <Helmet>
