@@ -175,9 +175,15 @@ const RideDetails = () => {
           </div>
         </div>
 
+        {/* Route Map */}
+        <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <h2 className="font-bold text-lg mb-4">Маршрут</h2>
+          <RideRouteMap ride={ride} height="300px" />
+        </div>
+
         {/* Driver Card */}
         {driver && (
-          <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "100ms" }}>
+          <div className="bg-card rounded-2xl p-5 shadow-card animate-fade-in" style={{ animationDelay: "150ms" }}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-lg">Водитель</h2>
               {driver.is_verified && (
