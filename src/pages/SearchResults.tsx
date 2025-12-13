@@ -1,33 +1,50 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useSearchRides } from "@/hooks/useRides";
+import { useSearchRidesPaginated } from "@/hooks/useRidesPaginated";
 import { Button } from "@/components/ui/button";
 import RideCard from "@/components/rides/RideCard";
 import SearchForm from "@/components/search/SearchForm";
 import EmptyState from "@/components/ui/empty-state";
 import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
 import { RidesMap } from "@/components/map/RidesMap";
+import { Pagination } from "@/components/ui/pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, SlidersHorizontal, Search, X, Map as MapIcon, List } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 const SearchResults = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
   const date = searchParams.get("date") || "";
   const passengers = parseInt(searchParams.get("passengers") || "1");
 
-  const { data: rides, isLoading } = useSearchRides({
-    from,
-    to,
-    date,
-    passengers,
-  });
+  const { data: paginatedData, isLoading } = useSearchRidesPaginated(
+    {
+      from,
+      to,
+      date,
+      passengers,
+    },
+    {
+      page: currentPage,
+      pageSize: 10,
+    }
+  );
+
+  const rides = paginatedData?.data || [];
+  const totalPages = paginatedData?.totalPages || 0;
+  const total = paginatedData?.total || 0;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const formattedDate = date 
     ? format(new Date(date), "d MMMM", { locale: ru })
@@ -88,7 +105,8 @@ const SearchResults = () => {
           <Tabs defaultValue="list" className="w-full">
             <div className="flex items-center justify-between mb-4">
               <p className="text-muted-foreground text-sm">
-                Найдено {rides.length} {rides.length === 1 ? 'поездка' : rides.length < 5 ? 'поездки' : 'поездок'}
+                Найдено {total} {total === 1 ? 'поездка' : total < 5 ? 'поездки' : 'поездок'}
+                {totalPages > 1 && ` • Страница ${currentPage} из ${totalPages}`}
               </p>
               <TabsList>
                 <TabsTrigger value="list" className="gap-2">
@@ -138,6 +156,16 @@ const SearchResults = () => {
                   />
                 </div>
               ))}
+              
+              {totalPages > 1 && (
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="map" className="mt-4">
