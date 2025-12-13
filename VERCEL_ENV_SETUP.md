@@ -18,15 +18,27 @@
 
 #### Переменная 1: `VITE_SUPABASE_URL`
 
-- **Name:** `VITE_SUPABASE_URL`
-- **Value:** `https://xdlkilvotcnssarzugws.supabase.co`
+⚠️ **ВАЖНО: Не перепутайте местами!**
+
+- **Ключ (Key):** `VITE_SUPABASE_URL` ← Имя переменной (только буквы, цифры, подчеркивания)
+- **Значение (Value):** `https://xdlkilvotcnssarzugws.supabase.co` ← URL вашего проекта
 - **Environment:** Выберите все (Production, Preview, Development)
+
+**НЕ ПУТАЙТЕ:** 
+- ❌ Ключ = URL (это вызовет ошибку!)
+- ✅ Ключ = `VITE_SUPABASE_URL`, Значение = URL
 
 #### Переменная 2: `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-- **Name:** `VITE_SUPABASE_PUBLISHABLE_KEY`
-- **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg`
+⚠️ **ВАЖНО: Не перепутайте местами!**
+
+- **Ключ (Key):** `VITE_SUPABASE_PUBLISHABLE_KEY` ← Имя переменной (только буквы, цифры, подчеркивания)
+- **Значение (Value):** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkbGtpbHZvdGNuc3Nhcnp1Z3dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3OTU1MzksImV4cCI6MjA4MDM3MTUzOX0.yrfb04FoSZEWmuq-pqJ57KZe27QG5bczqjMyO1yfAfg` ← Ваш Anon Key
 - **Environment:** Выберите все (Production, Preview, Development)
+
+**НЕ ПУТАЙТЕ:**
+- ❌ Ключ = длинный токен (это вызовет ошибку!)
+- ✅ Ключ = `VITE_SUPABASE_PUBLISHABLE_KEY`, Значение = токен
 
 #### Переменная 3: `VITE_MAPBOX_TOKEN` (опционально)
 
