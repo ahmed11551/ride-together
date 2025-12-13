@@ -7,6 +7,7 @@ import { LazyRidesMap } from "@/components/map/LazyRidesMap";
 import { DemoChat } from "@/components/home/DemoChat";
 import HowItWorks from "@/components/home/HowItWorks";
 import DriverCTA from "@/components/home/DriverCTA";
+import { SubscribePrompt } from "@/components/telegram/SubscribePrompt";
 import { Helmet } from "react-helmet-async";
 import { useTelegramAuth } from "@/hooks/useTelegramAuth";
 import { useRecentRides } from "@/hooks/useRides";
@@ -38,6 +39,11 @@ const Index = () => {
           <PopularRoutes />
           
           <div className="container">
+            {/* Telegram Subscribe Prompt */}
+            <div className="mb-6">
+              <SubscribePrompt showInWebApp={true} />
+            </div>
+
             {rides && rides.length > 0 ? (
               <Tabs defaultValue="list" className="w-full mb-8">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
