@@ -163,6 +163,9 @@ const MyBookings = () => {
                               variant="outline" 
                               className="text-destructive"
                               onClick={() => handleCancel(booking.id)}
+                              disabled={updateStatus.isPending}
+                              loading={updateStatus.isPending}
+                              aria-label="Отменить бронирование"
                             >
                               <XCircle className="w-4 h-4 mr-2" />
                               Отменить

@@ -434,8 +434,10 @@ const CreateRide = () => {
           size="xl" 
           className="w-full"
           disabled={createRide.isPending}
+          loading={createRide.isPending}
+          aria-label="Опубликовать поездку"
         >
-          {createRide.isPending ? "Создание..." : "Опубликовать поездку"}
+          Опубликовать поездку
         </Button>
       </form>
     </div>
