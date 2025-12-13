@@ -223,20 +223,43 @@ const CreateRide = () => {
             </TabsContent>
             
             <TabsContent value="map" className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label>Выберите точку на карте</Label>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Выберите точку на карте</Label>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>Кликните на карте</span>
+                  </div>
+                </div>
                 <Tabs value={mapTab} onValueChange={(v) => setMapTab(v as 'from' | 'to')}>
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="from">Откуда</TabsTrigger>
-                    <TabsTrigger value="to">Куда</TabsTrigger>
+                    <TabsTrigger value="from" className="gap-2">
+                      <MapPin className="w-4 h-4 text-success" />
+                      Откуда
+                    </TabsTrigger>
+                    <TabsTrigger value="to" className="gap-2">
+                      <MapPin className="w-4 h-4 text-secondary" />
+                      Куда
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
+                {(mapTab === 'from' ? fromLocation : toLocation) && (
+                  <div className="p-3 bg-success-light rounded-lg border border-success/20">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-success" />
+                      <span className="font-medium text-success">
+                        {(mapTab === 'from' ? fromLocation : toLocation)?.address || 
+                         `${(mapTab === 'from' ? fromLocation : toLocation)?.lat.toFixed(4)}, ${(mapTab === 'from' ? fromLocation : toLocation)?.lng.toFixed(4)}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               
-                  <MapComponent
-                    mode="select"
-                    initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
-                    onLocationSelect={async (location) => {
+              <MapComponent
+                mode="select"
+                initialLocation={mapTab === 'from' ? fromLocation || undefined : toLocation || undefined}
+                onLocationSelect={async (location) => {
                       try {
                         if (mapTab === 'from') {
                           setFromLocation(location);
@@ -304,9 +327,23 @@ const CreateRide = () => {
                     height="400px"
                   />
               
-              <p className="text-sm text-muted-foreground">
-                💡 Кликните на карте, чтобы выбрать точку {mapTab === 'from' ? 'отправления' : 'прибытия'}
-              </p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-xs font-bold text-primary">💡</span>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Как выбрать точку на карте:
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                      <li>Кликните на карте, чтобы выбрать точку {mapTab === 'from' ? 'отправления' : 'прибытия'}</li>
+                      <li>Используйте кнопку "📍 Моё местоположение" для автоматического определения</li>
+                      <li>Адрес будет автоматически заполнен в форме</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>
