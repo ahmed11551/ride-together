@@ -1,53 +1,18 @@
-import crypto from 'crypto';
-
 /**
- * Проверка валидности данных от Telegram Web App
+ * Парсинг initData от Telegram
+ * 
+ * ВАЖНО: Проверка валидности данных должна выполняться на сервере!
+ * Эта функция только парсит данные для клиента.
  * 
  * @param initData - Строка initData от Telegram
- * @param botToken - Токен бота
- * @returns true если данные валидны, false в противном случае
+ * @returns Объект с данными пользователя или null
  */
-export function validateTelegramWebAppData(initData: string, botToken: string): boolean {
-  try {
-    // Парсим initData
-    const urlParams = new URLSearchParams(initData);
-    const hash = urlParams.get('hash');
-    
-    if (!hash) {
-      return false;
-    }
-
-    // Удаляем hash из параметров
-    urlParams.delete('hash');
-
-    // Сортируем параметры по ключу
-    const dataCheckString = Array.from(urlParams.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => `${key}=${value}`)
-      .join('\n');
-
-    // Создаем секретный ключ
-    const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
-      .update(botToken)
-      .digest();
-
-    // Вычисляем хеш
-    const calculatedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(dataCheckString)
-      .digest('hex');
-
-    // Сравниваем хеши
-    return calculatedHash === hash;
-  } catch (error) {
-    console.error('Error validating Telegram Web App data:', error);
-    return false;
-  }
-}
 
 /**
  * Парсинг initData от Telegram
+ * 
+ * ВАЖНО: Проверка валидности данных должна выполняться на сервере!
+ * Эта функция только парсит данные для клиента.
  * 
  * @param initData - Строка initData от Telegram
  * @returns Объект с данными пользователя или null
@@ -86,4 +51,38 @@ export function parseTelegramInitData(initData: string): {
     return null;
   }
 }
+
+/**
+ * ВАЖНО: Проверка валидности данных от Telegram должна выполняться на сервере!
+ * 
+ * Для проверки на сервере используйте следующий алгоритм:
+ * 
+ * 1. Парсите initData и извлеките hash
+ * 2. Создайте dataCheckString из всех параметров кроме hash, отсортированных по ключу
+ * 3. Создайте secretKey = HMAC-SHA256('WebAppData', botToken)
+ * 4. Вычислите calculatedHash = HMAC-SHA256(secretKey, dataCheckString)
+ * 5. Сравните calculatedHash с hash из initData
+ * 
+ * Пример для Node.js:
+ * ```typescript
+ * import crypto from 'crypto';
+ * 
+ * function validateTelegramWebAppData(initData: string, botToken: string): boolean {
+ *   const urlParams = new URLSearchParams(initData);
+ *   const hash = urlParams.get('hash');
+ *   if (!hash) return false;
+ *   
+ *   urlParams.delete('hash');
+ *   const dataCheckString = Array.from(urlParams.entries())
+ *     .sort(([a], [b]) => a.localeCompare(b))
+ *     .map(([key, value]) => `${key}=${value}`)
+ *     .join('\n');
+ *   
+ *   const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+ *   const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+ *   
+ *   return calculatedHash === hash;
+ * }
+ * ```
+ */
 
