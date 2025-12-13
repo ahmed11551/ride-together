@@ -65,19 +65,30 @@ const RidesList = () => {
   }
 
   return (
-    <section className="py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Ближайшие поездки</h2>
-          <p className="text-muted-foreground">
-            {total} {pluralizeRide(total)} доступно
-            {totalPages > 1 && ` • Страница ${currentPage} из ${totalPages}`}
-          </p>
+    <section className="py-6 md:py-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
+            <Search className="w-5 h-5 md:w-6 md:h-6 text-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Ближайшие поездки</h2>
+            <p className="text-sm md:text-base text-muted-foreground">
+              {total} {pluralizeRide(total)} доступно
+              {totalPages > 1 && ` • Страница ${currentPage} из ${totalPages}`}
+            </p>
+          </div>
         </div>
         
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/search")}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="gap-2 w-full sm:w-auto" 
+          onClick={() => navigate("/search")}
+        >
           <SlidersHorizontal className="w-4 h-4" />
-          Фильтры
+          <span className="hidden sm:inline">Фильтры</span>
+          <span className="sm:hidden">Все фильтры</span>
         </Button>
       </div>
 

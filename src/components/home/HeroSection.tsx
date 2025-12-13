@@ -34,9 +34,13 @@ const HeroSection = () => {
           </p>
         </div>
 
-        {/* Search Form */}
-        <div className="max-w-xl mx-auto mb-10 animate-slide-up" style={{ animationDelay: "100ms" }}>
-          <SearchForm />
+        {/* Search Form - более заметная */}
+        <div className="max-w-2xl mx-auto mb-8 md:mb-10 animate-slide-up" style={{ animationDelay: "100ms" }}>
+          <div className="relative">
+            <SearchForm />
+            {/* Декоративный элемент для привлечения внимания */}
+            <div className="absolute -top-2 -right-2 w-4 h-4 bg-warning rounded-full animate-pulse hidden md:block" />
+          </div>
         </div>
 
         {/* Features */}

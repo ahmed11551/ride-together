@@ -44,6 +44,7 @@ const Index = () => {
               <SubscribePrompt showInWebApp={true} />
             </div>
 
+            {/* Ближайшие поездки - всегда показываем, даже если пусто */}
             {rides && rides.length > 0 ? (
               <Tabs defaultValue="list" className="w-full mb-8">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -61,7 +62,7 @@ const Index = () => {
                   <RidesList />
                 </TabsContent>
 
-                <TabsContent value="map" className="h-[500px]">
+                <TabsContent value="map" className="h-[500px] md:h-[600px]">
                   <LazyRidesMap rides={rides} height="500px" />
                 </TabsContent>
               </Tabs>

@@ -1,4 +1,6 @@
-import { MapPin, Clock, Star, Users, Cigarette, Music, Dog, ChevronRight, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, Star, Users, Cigarette, Music, Dog, ChevronRight, ShieldCheck, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { OptimizedImage } from "@/components/ui/optimized-image";
@@ -63,9 +65,17 @@ const RideCard = ({ ride, onSelect, className }: RideCardProps) => {
             <div>
               <p className="font-bold text-sm sm:text-base text-foreground truncate">{ride.fromCity}</p>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">{ride.from}</p>
-              <div className="flex items-center gap-1.5 sm:gap-2 mt-1 text-xs sm:text-sm text-muted-foreground">
-                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="font-medium">{ride.time}</span>
+              <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
+                <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="font-medium">
+                    {format(new Date(ride.date), "d MMM", { locale: ru })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground">
+                  <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="font-medium">{ride.time}</span>
+                </div>
               </div>
             </div>
             

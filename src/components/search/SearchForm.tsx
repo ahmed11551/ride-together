@@ -26,7 +26,7 @@ const SearchForm = () => {
   };
 
   return (
-    <div className="relative bg-card rounded-2xl shadow-lg border border-border/50 p-5 md:p-6 space-y-4">
+    <div className="relative bg-card rounded-2xl shadow-lg border border-border/50 p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4">
       {/* From/To Fields */}
       <div className="relative space-y-3">
         <div className="relative group">
@@ -105,11 +105,11 @@ const SearchForm = () => {
       <Button 
         variant="hero" 
         size="lg" 
-        className="w-full" 
+        className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold shadow-lg hover:shadow-xl transition-all" 
         onClick={handleSearch}
         aria-label="Найти поездки по заданным параметрам"
       >
-        <SearchIcon className="w-5 h-5" aria-hidden="true" />
+        <SearchIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2" aria-hidden="true" />
         Найти поездку
       </Button>
     </div>

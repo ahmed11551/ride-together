@@ -25,11 +25,11 @@ const PopularRoutes = () => {
           <h2 className="text-lg md:text-xl font-bold text-foreground">Популярные маршруты</h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {popularRoutes.map((route, index) => (
             <button
               key={index}
-              className="flex items-center justify-between p-4 bg-card rounded-xl shadow-xs hover:shadow-card transition-all duration-200 group text-left animate-fade-in"
+              className="flex items-center justify-between p-4 md:p-5 bg-card rounded-xl shadow-xs hover:shadow-card hover:scale-[1.02] transition-all duration-200 group text-left animate-fade-in border border-border/50 hover:border-primary/30"
               style={{ animationDelay: `${index * 50}ms` }}
               onClick={() => handleRouteClick(route.from, route.to)}
             >
