@@ -1,4 +1,4 @@
-import { Car, Menu, User, LogIn } from "lucide-react";
+import { Menu, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,9 +19,6 @@ const Header = () => {
             onClick={() => navigate("/")}
             aria-label="Перейти на главную страницу"
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl gradient-primary" aria-hidden="true">
-              <Car className="w-5 h-5 text-primary-foreground" />
-            </div>
             <span className="text-xl font-bold text-foreground">RideConnect</span>
           </button>
 

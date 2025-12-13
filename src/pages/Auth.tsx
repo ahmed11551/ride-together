@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car, Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { getUserFriendlyError, logError } from "@/lib/error-handler";
@@ -130,11 +130,7 @@ const Auth = () => {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
-          {/* Logo */}
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4">
-              <Car className="w-8 h-8 text-primary-foreground" />
-            </div>
             <h1 className="text-2xl font-bold text-foreground">
               {isLogin ? "Вход в аккаунт" : "Регистрация"}
             </h1>
