@@ -137,7 +137,12 @@ const CreateRide = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container flex h-16 items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate(-1)}
+            aria-label="Вернуться назад"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold">Создать поездку</h1>

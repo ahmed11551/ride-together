@@ -88,7 +88,12 @@ const Profile = () => {
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/")}
+              aria-label="Вернуться на главную"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1 className="text-xl font-bold">Профиль</h1>

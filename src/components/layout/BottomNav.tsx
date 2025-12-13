@@ -21,28 +21,37 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom"
+      role="navigation"
+      aria-label="Мобильная навигация"
+    >
       <div className="flex items-center justify-around py-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => handleNav(tab.path)}
-            className={cn(
-              "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
-              location.pathname === tab.path 
-                ? "text-primary" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <div className={cn(
-              "p-1.5 rounded-lg transition-colors",
-              location.pathname === tab.path && "bg-primary-light"
-            )}>
-              <tab.icon className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isActive = location.pathname === tab.path;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleNav(tab.path)}
+              className={cn(
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200 min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                isActive
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label={tab.label}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <div className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isActive && "bg-primary-light"
+              )}>
+                <tab.icon className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <span className="text-xs font-medium">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

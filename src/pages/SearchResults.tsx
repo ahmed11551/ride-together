@@ -38,7 +38,12 @@ const SearchResults = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border">
         <div className="container flex h-16 items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/")}
+            aria-label="Вернуться на главную"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1 min-w-0">
@@ -53,6 +58,8 @@ const SearchResults = () => {
             variant={showFilters ? "soft" : "outline"} 
             size="icon"
             onClick={() => setShowFilters(!showFilters)}
+            aria-label={showFilters ? "Скрыть фильтры" : "Показать фильтры"}
+            aria-expanded={showFilters}
           >
             {showFilters ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
           </Button>

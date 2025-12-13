@@ -34,10 +34,19 @@ const RideCard = ({ ride, onSelect, className }: RideCardProps) => {
   return (
     <div 
       className={cn(
-        "bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden cursor-pointer group",
+        "bg-card rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden cursor-pointer group focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2",
         className
       )}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Поездка из ${ride.fromCity} в ${ride.toCity}, цена ${ride.price.toLocaleString()} ₽`}
     >
       {/* Route Section */}
       <div className="p-5 border-b border-border">

@@ -159,10 +159,15 @@ const Auth = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="pl-10"
+                    aria-invalid={!!errors.fullName}
+                    aria-describedby={errors.fullName ? "fullName-error" : undefined}
+                    autoComplete="name"
                   />
                 </div>
                 {errors.fullName && (
-                  <p className="text-sm text-destructive">{errors.fullName}</p>
+                  <p id="fullName-error" className="text-sm text-destructive" role="alert" aria-live="polite">
+                    {errors.fullName}
+                  </p>
                 )}
               </div>
             )}
@@ -178,10 +183,15 @@ const Auth = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  autoComplete="email"
                 />
               </div>
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
+                <p id="email-error" className="text-sm text-destructive" role="alert" aria-live="polite">
+                  {errors.email}
+                </p>
               )}
             </div>
 
@@ -196,10 +206,15 @@ const Auth = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? "password-error" : undefined}
+                  autoComplete={isLogin ? "current-password" : "new-password"}
                 />
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
+                <p id="password-error" className="text-sm text-destructive" role="alert" aria-live="polite">
+                  {errors.password}
+                </p>
               )}
             </div>
 
@@ -209,8 +224,10 @@ const Auth = () => {
               size="lg" 
               className="w-full"
               disabled={loading}
+              loading={loading}
+              aria-label={isLogin ? "Войти в аккаунт" : "Зарегистрировать новый аккаунт"}
             >
-              {loading ? "Загрузка..." : (isLogin ? "Войти" : "Зарегистрироваться")}
+              {isLogin ? "Войти" : "Зарегистрироваться"}
             </Button>
           </form>
 

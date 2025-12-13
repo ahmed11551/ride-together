@@ -15,8 +15,12 @@ interface EmptyStateProps {
 
 const EmptyState = ({ icon: Icon, title, description, action, className }: EmptyStateProps) => {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in", className)}>
-      <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-6 animate-bounce-soft">
+    <div 
+      className={cn("flex flex-col items-center justify-center py-16 px-4 text-center animate-fade-in", className)}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="w-20 h-20 rounded-2xl bg-muted flex items-center justify-center mb-6 animate-bounce-soft" aria-hidden="true">
         <Icon className="w-10 h-10 text-muted-foreground" />
       </div>
       
@@ -24,7 +28,11 @@ const EmptyState = ({ icon: Icon, title, description, action, className }: Empty
       <p className="text-muted-foreground max-w-sm mb-6">{description}</p>
       
       {action && (
-        <Button variant="hero" onClick={action.onClick}>
+        <Button 
+          variant="hero" 
+          onClick={action.onClick}
+          aria-label={action.label}
+        >
           {action.label}
         </Button>
       )}

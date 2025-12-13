@@ -19,10 +19,15 @@ const Index = () => {
         <meta name="description" content="Найди попутчиков для поездки или предложи свой маршрут. Экономь до 75% на путешествиях с RideConnect — удобным сервисом совместных поездок." />
       </Helmet>
       
+      {/* Skip to main content link for accessibility */}
+      <a href="#main-content" className="skip-link">
+        Перейти к основному содержимому
+      </a>
+      
       <div className="min-h-screen bg-background pb-24 md:pb-0">
         <Header />
         
-        <main className="page-transition">
+        <main id="main-content" className="page-transition" role="main">
           <HeroSection />
           <PopularRoutes />
           

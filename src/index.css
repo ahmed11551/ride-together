@@ -239,3 +239,31 @@
 .shadow-card {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
 }
+
+.shadow-card-hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Accessibility improvements */
+@layer utilities {
+  /* Skip link for keyboard navigation */
+  .skip-link {
+    @apply absolute -top-40 left-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-lg focus:top-4 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  /* Better focus indicators */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Improved contrast for better readability */
+  .text-muted-foreground {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Loading states */
+  .loading-shimmer {
+    @apply animate-shimmer bg-gradient-to-r from-muted via-muted/50 to-muted;
+    background-size: 200% 100%;
+  }
+}

@@ -38,25 +38,40 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 animate-fade-in">
-      <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
+    <div 
+      className="fixed inset-0 z-50 animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Мобильное меню"
+    >
+      <div 
+        className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
       
       <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-card shadow-lg animate-slide-up">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <span className="font-bold text-lg">Меню</span>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            aria-label="Закрыть меню"
+          >
             <X className="w-5 h-5" />
           </Button>
         </div>
         
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2" role="navigation" aria-label="Мобильное меню">
           {menuItems.map((item) => (
             <button
               key={item.label}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-accent transition-colors text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-foreground hover:bg-accent transition-colors text-left min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               onClick={() => handleNav(item.href)}
+              aria-label={item.label}
             >
-              <item.icon className="w-5 h-5 text-primary" />
+              <item.icon className="w-5 h-5 text-primary" aria-hidden="true" />
               <span className="font-medium">{item.label}</span>
             </button>
           ))}

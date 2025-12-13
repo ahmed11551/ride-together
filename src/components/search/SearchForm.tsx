@@ -39,14 +39,17 @@ const SearchForm = () => {
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             className="w-full h-13 pl-14 pr-4 rounded-xl bg-muted/50 border-2 border-transparent focus:border-primary focus:bg-card outline-none transition-all text-foreground placeholder:text-muted-foreground font-medium"
+            aria-label="Город отправления"
+            autoComplete="off"
           />
         </div>
 
         <button 
           onClick={swapLocations}
-          className="absolute right-4 top-[3.5rem] z-10 w-9 h-9 rounded-full bg-card border-2 border-border flex items-center justify-center hover:border-primary hover:text-primary hover:scale-110 transition-all shadow-sm"
+          className="absolute right-4 top-[3.5rem] z-10 w-9 h-9 rounded-full bg-card border-2 border-border flex items-center justify-center hover:border-primary hover:text-primary hover:scale-110 transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          aria-label="Поменять местами города отправления и прибытия"
         >
-          <ArrowDownUp className="w-4 h-4" />
+          <ArrowDownUp className="w-4 h-4" aria-hidden="true" />
         </button>
 
         <div className="relative group">
@@ -59,6 +62,8 @@ const SearchForm = () => {
             value={to}
             onChange={(e) => setTo(e.target.value)}
             className="w-full h-13 pl-14 pr-4 rounded-xl bg-muted/50 border-2 border-transparent focus:border-primary focus:bg-card outline-none transition-all text-foreground placeholder:text-muted-foreground font-medium"
+            aria-label="Город прибытия"
+            autoComplete="off"
           />
         </div>
       </div>
@@ -97,8 +102,14 @@ const SearchForm = () => {
       </div>
 
       {/* Search Button */}
-      <Button variant="hero" size="lg" className="w-full" onClick={handleSearch}>
-        <SearchIcon className="w-5 h-5" />
+      <Button 
+        variant="hero" 
+        size="lg" 
+        className="w-full" 
+        onClick={handleSearch}
+        aria-label="Найти поездки по заданным параметрам"
+      >
+        <SearchIcon className="w-5 h-5" aria-hidden="true" />
         Найти поездку
       </Button>
     </div>
