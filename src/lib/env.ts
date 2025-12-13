@@ -79,11 +79,21 @@ function validateEnv(): Env {
 
       if (missingVars.length > 0) {
         const errorMessage = `Missing required environment variables:\n${missingVars.map((v) => `  - ${v}`).join('\n')}\n\nPlease check your .env file.`;
-        console.error(errorMessage);
+        // Use logger for errors
+        import('./logger').then(({ logger }) => {
+          logger.error(errorMessage);
+          if (import.meta.env.PROD) {
+            logger.error('Application may not work correctly without these variables.');
+          }
+        }).catch(() => {
+          // Fallback to console if logger fails
+          if (import.meta.env.DEV) {
+            console.error(errorMessage);
+          }
+        });
         
         if (import.meta.env.PROD) {
           // In production, log but don't throw to prevent app crash
-          console.error('Application may not work correctly without these variables.');
           // Return partial env as fallback
           cachedEnv = rawEnv as Env;
           return cachedEnv;
@@ -93,10 +103,20 @@ function validateEnv(): Env {
         }
       } else {
         const errorMessage = `Invalid environment variables:\n${error.errors.map((e) => `  - ${e.path.join('.')}: ${e.message}`).join('\n')}`;
-        console.error(errorMessage);
+        // Use logger for errors
+        import('./logger').then(({ logger }) => {
+          logger.error(errorMessage);
+          if (import.meta.env.PROD) {
+            logger.error('Application may not work correctly with invalid variables.');
+          }
+        }).catch(() => {
+          // Fallback to console if logger fails
+          if (import.meta.env.DEV) {
+            console.error(errorMessage);
+          }
+        });
         
         if (import.meta.env.PROD) {
-          console.error('Application may not work correctly with invalid variables.');
           // Return partial env as fallback
           cachedEnv = rawEnv as Env;
           return cachedEnv;

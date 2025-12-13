@@ -22,9 +22,11 @@ interface MapComponentProps {
   showControls?: boolean;
 }
 
+import type { YandexMapsAPI, YandexMapsMap, YandexMapsPlacemark } from '@/lib/yandex-maps-types';
+
 declare global {
   interface Window {
-    ymaps: any;
+    ymaps: YandexMapsAPI;
   }
 }
 
@@ -37,8 +39,8 @@ export const MapComponent = ({
   showControls = true,
 }: MapComponentProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapInstanceRef = useRef<YandexMapsMap | null>(null);
+  const markerRef = useRef<YandexMapsPlacemark | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     initialLocation || null
@@ -65,7 +67,9 @@ export const MapComponent = ({
       window.ymaps.ready(() => setIsLoaded(true));
     };
     script.onerror = () => {
-      console.error('Failed to load Yandex Maps API');
+      import('@/lib/logger').then(({ logger }) => {
+        logger.error('Failed to load Yandex Maps API');
+      });
     };
     document.head.appendChild(script);
 
@@ -122,7 +126,7 @@ export const MapComponent = ({
 
       // Обработчик клика на карте
       if (mode === 'select') {
-        map.events.add('click', (e: any) => {
+        map.events.add('click', (e: { get: (key: string) => number[] }) => {
           const coords = e.get('coords');
           const location: Location = {
             lat: coords[0],
@@ -220,7 +224,9 @@ export const MapComponent = ({
               }
             })
             .catch((error: any) => {
-              console.warn('Yandex Maps geocoding error:', error);
+              import('@/lib/logger').then(({ logger }) => {
+                logger.warn('Yandex Maps geocoding error', error);
+              });
               // Удаляем маркер загрузки
               map.geoObjects.remove(loadingMarker);
 
@@ -322,7 +328,9 @@ export const MapComponent = ({
               }
             })
             .catch((error: any) => {
-              console.error('Geocoding error:', error);
+              import('@/lib/logger').then(({ logger }) => {
+                logger.error('Geocoding error', error);
+              });
               // Даже если геокодирование не удалось, показываем маркер
               const marker = new window.ymaps.Placemark(
                 [latitude, longitude],
@@ -365,7 +373,9 @@ export const MapComponent = ({
             break;
         }
 
-        console.warn('Geolocation error:', error);
+        import('@/lib/logger').then(({ logger }) => {
+          logger.warn('Geolocation error', error);
+        });
         
         // Показываем сообщение пользователю через баллун на карте
         if (window.ymaps && mapInstanceRef.current) {

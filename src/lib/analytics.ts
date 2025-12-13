@@ -23,7 +23,7 @@ export function initAnalytics() {
   const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
   if (!measurementId) {
-    console.log("Google Analytics: Not initialized (measurement ID not provided)");
+    // Silent in production, no need to log
     return;
   }
 
@@ -51,9 +51,12 @@ export function initAnalytics() {
     });
 
     isInitialized = true;
-    console.log("Google Analytics: Initialized successfully");
+    // Google Analytics initialized successfully (silent)
   } catch (error) {
-    console.error("Google Analytics: Initialization failed", error);
+    // Log to console only in development
+    if (import.meta.env.DEV) {
+      console.error("Google Analytics: Initialization failed", error);
+    }
   }
 }
 

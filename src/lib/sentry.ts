@@ -12,7 +12,7 @@ export function initSentry() {
 
   // Only initialize in production or if DSN is provided
   if (!dsn || environment === "development") {
-    console.log("Sentry: Not initialized (development mode or DSN not provided)");
+    // Silent in production, no need to log
     return;
   }
 
@@ -59,9 +59,12 @@ export function initSentry() {
       },
     });
 
-    console.log("Sentry: Initialized successfully");
+    // Sentry initialized successfully (silent)
   } catch (error) {
-    console.error("Sentry: Initialization failed", error);
+    // Log to console only in development
+    if (environment === "development") {
+      console.error("Sentry: Initialization failed", error);
+    }
   }
 }
 

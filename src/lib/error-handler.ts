@@ -109,15 +109,19 @@ export function getUserFriendlyError(error: unknown): ErrorMessage {
 }
 
 /**
- * Logs error to console in development mode
+ * Logs error to console in development mode or Sentry in production
  * @param error - Error to log
  * @param context - Additional context about where error occurred
  */
 export function logError(error: unknown, context?: string): void {
-  if (import.meta.env.DEV) {
-    console.error(`[Error${context ? ` in ${context}` : ''}]:`, error);
-  }
-  // In production, you might want to send this to an error tracking service
-  // e.g., Sentry.captureException(error, { tags: { context } });
+  // Use centralized logger (imported dynamically to avoid circular dependencies)
+  import('./logger').then(({ logError: loggerError }) => {
+    loggerError(error, context);
+  }).catch(() => {
+    // Fallback to console if logger fails to load
+    if (import.meta.env.DEV) {
+      console.error(`[Error${context ? ` in ${context}` : ''}]:`, error);
+    }
+  });
 }
 
