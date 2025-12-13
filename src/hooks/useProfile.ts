@@ -76,11 +76,12 @@ export const useUpdateProfile = () => {
           .single();
 
         if (error) {
-          console.error('Profile create/update error:', error);
+          const { logger } = await import('@/lib/logger');
+          logger.error('Profile create/update error', error);
           
           // Если ошибка 409 (Conflict) или 23505 (Unique violation), пробуем обновить
           if (error.code === '23505' || error.code === 'PGRST301' || error.message?.includes('duplicate')) {
-            console.log('Profile already exists, trying to update...');
+            logger.debug('Profile already exists, trying to update...');
             // Пробуем обновить существующий профиль
             const { data: updatedData, error: updateError } = await supabase
               .from("profiles")
@@ -94,7 +95,8 @@ export const useUpdateProfile = () => {
               .single();
             
             if (updateError) {
-              console.error('Profile update error after conflict:', updateError);
+              const { logger } = await import('@/lib/logger');
+              logger.error('Profile update error after conflict', updateError);
               throw updateError;
             }
             return updatedData;
@@ -126,7 +128,8 @@ export const useUpdateProfile = () => {
         .single();
 
       if (error) {
-        console.error('Profile update error:', error);
+        const { logger } = await import('@/lib/logger');
+        logger.error('Profile update error', error);
         
         // Если ошибка foreign key constraint, значит пользователь не существует в auth.users
         if (error.code === '23503') {
@@ -135,7 +138,7 @@ export const useUpdateProfile = () => {
         
         // Если профиль не найден (возможно был удален), создаем заново
         if (error.code === 'PGRST116') {
-          console.log('Profile not found, creating new one...');
+          logger.debug('Profile not found, creating new one...');
           const defaultName = updates.full_name || user.email?.split('@')[0] || 'Пользователь';
           const { data: newData, error: createError } = await supabase
             .from("profiles")
@@ -154,7 +157,8 @@ export const useUpdateProfile = () => {
             .single();
           
           if (createError) {
-            console.error('Profile create error after update failed:', createError);
+            const { logger } = await import('@/lib/logger');
+            logger.error('Profile create error after update failed', createError);
             throw createError;
           }
           return newData;

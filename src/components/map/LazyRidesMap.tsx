@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { RideWithDriver } from "@/hooks/useRides";
 
 // Lazy load RidesMap component
 const RidesMap = lazy(() => import("./RidesMap").then(module => ({ default: module.RidesMap })));
 
 interface LazyRidesMapProps {
-  rides: any[];
+  rides: RideWithDriver[];
   height?: string;
 }
 

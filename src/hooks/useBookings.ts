@@ -80,7 +80,9 @@ export const useCreateBooking = () => {
       // Отправляем уведомление водителю (асинхронно, не блокируем)
       if (data) {
         sendBookingNotification(rideId, data.id, user.id, seats).catch((err) => {
-          console.error('Ошибка отправки уведомления о бронировании:', err);
+          import('@/lib/logger').then(({ logger }) => {
+            logger.error('Ошибка отправки уведомления о бронировании', err);
+          });
         });
       }
 
@@ -127,7 +129,9 @@ async function sendBookingNotification(
     // Отправляем уведомление водителю
     await notifyNewBooking(ride.driver_id, bookingId, passengerName, seats);
   } catch (error) {
-    console.error("Ошибка отправки уведомления о бронировании:", error);
+    import('@/lib/logger').then(({ logger }) => {
+      logger.error("Ошибка отправки уведомления о бронировании", error);
+    });
   }
 }
 
@@ -172,7 +176,9 @@ export const useUpdateBookingStatus = () => {
           currentBooking.ride_id,
           data.passenger_id
         ).catch((err) => {
-          console.error('Ошибка отправки уведомления о подтверждении:', err);
+          import('@/lib/logger').then(({ logger }) => {
+            logger.error('Ошибка отправки уведомления о подтверждении', err);
+          });
         });
       }
 
@@ -214,6 +220,8 @@ async function sendBookingConfirmedNotification(
       ride.to_city
     );
   } catch (error) {
-    console.error("Ошибка отправки уведомления о подтверждении:", error);
+    import('@/lib/logger').then(({ logger }) => {
+      logger.error("Ошибка отправки уведомления о подтверждении", error);
+    });
   }
 }

@@ -6,6 +6,7 @@ import type { RideWithDriver } from '@/hooks/useRides';
 import { getCityCoordinates } from '@/lib/geocoding';
 import { buildRoute, formatDistance, formatDuration } from '@/lib/routing';
 import { env } from '@/lib/env';
+import type { YandexMapsAPI, YandexMapsMap, YandexMapsPlacemark, YandexMapsPolyline } from '@/lib/yandex-maps-types';
 
 const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
 
@@ -17,16 +18,16 @@ interface RidesMapProps {
 
 declare global {
   interface Window {
-    ymaps: any;
+    ymaps: YandexMapsAPI;
   }
 }
 
 export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapProps) => {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const routesRef = useRef<any[]>([]);
+  const mapInstanceRef = useRef<YandexMapsMap | null>(null);
+  const markersRef = useRef<YandexMapsPlacemark[]>([]);
+  const routesRef = useRef<YandexMapsPolyline[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const markers = useMemo(() => {
@@ -100,7 +101,9 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
       window.ymaps.ready(() => setIsLoaded(true));
     };
     script.onerror = () => {
-      console.error('Failed to load Yandex Maps API');
+      import('@/lib/logger').then(({ logger }) => {
+        logger.error('Failed to load Yandex Maps API');
+      });
     };
     document.head.appendChild(script);
 
@@ -211,7 +214,9 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
             routesRef.current.push(polyline);
           }
         } catch (error) {
-          console.error('Error building route:', error);
+          import('@/lib/logger').then(({ logger }) => {
+            logger.error('Error building route', error);
+          });
           // Если не удалось построить маршрут, рисуем прямую линию
           const polyline = new window.ymaps.Polyline(
             [

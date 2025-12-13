@@ -4,6 +4,7 @@ import { getCityCoordinates } from '@/lib/geocoding';
 import { buildRoute, formatDistance, formatDuration } from '@/lib/routing';
 import { env } from '@/lib/env';
 import type { Ride } from '@/hooks/useRides';
+import type { YandexMapsAPI, YandexMapsMap, YandexMapsPolyline } from '@/lib/yandex-maps-types';
 
 const YANDEX_MAPS_API_KEY = env.VITE_YANDEX_MAPS_API_KEY || '';
 
@@ -15,7 +16,7 @@ interface RideRouteMapProps {
 
 declare global {
   interface Window {
-    ymaps: any;
+    ymaps: YandexMapsAPI;
   }
 }
 
@@ -25,8 +26,8 @@ declare global {
  */
 export function RideRouteMap({ ride, height = '400px', className = '' }: RideRouteMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const routeRef = useRef<any>(null);
+  const mapInstanceRef = useRef<YandexMapsMap | null>(null);
+  const routeRef = useRef<YandexMapsPolyline | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [routeInfo, setRouteInfo] = useState<{ distance: string; duration: string } | null>(null);
 
@@ -53,7 +54,9 @@ export function RideRouteMap({ ride, height = '400px', className = '' }: RideRou
       window.ymaps.ready(() => setIsLoaded(true));
     };
     script.onerror = () => {
-      console.error('Failed to load Yandex Maps API');
+      import('@/lib/logger').then(({ logger }) => {
+        logger.error('Failed to load Yandex Maps API');
+      });
     };
     document.head.appendChild(script);
 
@@ -160,7 +163,9 @@ export function RideRouteMap({ ride, height = '400px', className = '' }: RideRou
           routeRef.current = polyline;
         }
       } catch (error) {
-        console.error('Error building route:', error);
+        import('@/lib/logger').then(({ logger }) => {
+          logger.error('Error building route', error);
+        });
         // Рисуем прямую линию при ошибке
         const polyline = new window.ymaps.Polyline(
           [

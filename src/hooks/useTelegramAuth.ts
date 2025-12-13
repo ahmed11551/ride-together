@@ -116,10 +116,11 @@ export const useTelegramAuth = () => {
               });
 
             if (profileError) {
-              console.error('Profile creation error:', profileError);
+              const { logger } = await import('@/lib/logger');
+              logger.error('Profile creation error', profileError);
               // Если профиль уже существует (дубликат), пытаемся обновить
               if (profileError.code === '23505') { // Unique violation
-                console.log('Profile already exists, updating...');
+                logger.debug('Profile already exists, updating...');
                 const { error: updateError } = await supabase
                   .from('profiles')
                   .update({
@@ -147,7 +148,8 @@ export const useTelegramAuth = () => {
         }
       } catch (error) {
         logError(error, 'telegramAuth');
-        console.error('Telegram auth error details:', error);
+        const { logger } = await import('@/lib/logger');
+        logger.error('Telegram auth error', error);
         
         // Более детальная обработка ошибок
         let errorMessage = 'Произошла ошибка при авторизации';

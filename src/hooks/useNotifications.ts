@@ -30,7 +30,8 @@ export const useNotifications = () => {
    */
   const requestPermission = async (): Promise<boolean> => {
     if (!('Notification' in window)) {
-      console.warn('Браузер не поддерживает уведомления');
+      const { logger } = await import('@/lib/logger');
+      logger.warn('Браузер не поддерживает уведомления');
       return false;
     }
 
@@ -39,7 +40,8 @@ export const useNotifications = () => {
     }
 
     if (Notification.permission === 'denied') {
-      console.warn('Разрешение на уведомления отклонено');
+      const { logger } = await import('@/lib/logger');
+      logger.warn('Разрешение на уведомления отклонено');
       return false;
     }
 
@@ -48,7 +50,8 @@ export const useNotifications = () => {
       setPermission(result);
       return result === 'granted';
     } catch (error) {
-      console.error('Ошибка при запросе разрешения:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка при запросе разрешения', error);
       return false;
     }
   };
@@ -58,16 +61,19 @@ export const useNotifications = () => {
    */
   const registerServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
     if (!('serviceWorker' in navigator)) {
-      console.warn('Service Worker не поддерживается');
+      const { logger } = await import('@/lib/logger');
+      logger.warn('Service Worker не поддерживается');
       return null;
     }
 
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker зарегистрирован:', registration);
+      const { logger } = await import('@/lib/logger');
+      logger.debug('Service Worker зарегистрирован', registration);
       return registration;
     } catch (error) {
-      console.error('Ошибка регистрации Service Worker:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка регистрации Service Worker', error);
       return null;
     }
   };
@@ -77,7 +83,8 @@ export const useNotifications = () => {
    */
   const subscribeToPush = async (): Promise<PushSubscription | null> => {
     if (!user) {
-      console.warn('Пользователь не авторизован');
+      const { logger } = await import('@/lib/logger');
+      logger.warn('Пользователь не авторизован');
       return null;
     }
 
@@ -111,7 +118,8 @@ export const useNotifications = () => {
 
       return subscription;
     } catch (error) {
-      console.error('Ошибка подписки на push:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка подписки на push', error);
       return null;
     }
   };
@@ -136,7 +144,8 @@ export const useNotifications = () => {
 
       return false;
     } catch (error) {
-      console.error('Ошибка отписки от push:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка отписки от push', error);
       return false;
     }
   };
@@ -184,10 +193,12 @@ async function saveSubscription(
       });
 
     if (error) {
-      console.error('Ошибка сохранения подписки:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка сохранения подписки', error);
     }
   } catch (error) {
-    console.error('Ошибка сохранения подписки:', error);
+    const { logger } = await import('@/lib/logger');
+    logger.error('Ошибка сохранения подписки', error);
   }
 }
 
@@ -202,10 +213,12 @@ async function removeSubscription(userId: string): Promise<void> {
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Ошибка удаления подписки:', error);
+      const { logger } = await import('@/lib/logger');
+      logger.error('Ошибка удаления подписки', error);
     }
   } catch (error) {
-    console.error('Ошибка удаления подписки:', error);
+    const { logger } = await import('@/lib/logger');
+    logger.error('Ошибка удаления подписки', error);
   }
 }
 

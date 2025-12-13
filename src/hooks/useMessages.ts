@@ -118,7 +118,9 @@ export const useSendMessage = () => {
       // Отправляем уведомления получателям (асинхронно, не блокируем)
       if (data) {
         sendMessageNotifications(rideId, user.id, content).catch((err) => {
-          console.error('Ошибка отправки уведомлений:', err);
+          import('@/lib/logger').then(({ logger }) => {
+            logger.error('Ошибка отправки уведомлений', err);
+          });
         });
       }
 
@@ -185,7 +187,9 @@ async function sendMessageNotifications(
       )
     );
   } catch (error) {
-    console.error("Ошибка отправки уведомлений о сообщении:", error);
+    import('@/lib/logger').then(({ logger }) => {
+      logger.error("Ошибка отправки уведомлений о сообщении", error);
+    });
   }
 }
 
