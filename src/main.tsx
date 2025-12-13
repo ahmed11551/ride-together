@@ -4,11 +4,16 @@ import "./index.css";
 import { setupGlobalErrorHandlers } from "@/lib/error-handler-enhanced";
 import { initSentry } from "@/lib/sentry";
 
-// Initialize Sentry first
-initSentry();
-
-// Setup global error handlers
+// Setup global error handlers first (lightweight)
 setupGlobalErrorHandlers();
+
+// Initialize Sentry asynchronously to not block initial render
+if (import.meta.env.PROD) {
+  // Delay Sentry initialization to not block initial load
+  setTimeout(() => {
+    initSentry();
+  }, 100);
+}
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

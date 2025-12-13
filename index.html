@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-    <!-- Telegram Web App Script -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Telegram Web App Script - загружается асинхронно -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
     <title>Ride Together - Платформа для совместных поездок</title>
     <meta name="description" content="Найдите попутчиков для совместных поездок. Публикуйте поездки или ищите подходящие маршруты." />
     <meta name="author" content="Ride Together Team" />
@@ -32,19 +32,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Register Service Worker for PWA
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered: ', registration);
-            })
-            .catch((registrationError) => {
-              console.log('SW registration failed: ', registrationError);
-            });
-        });
-      }
-    </script>
   </body>
 </html>
