@@ -158,61 +158,61 @@ const CreateRide = () => {
             <TabsContent value="form" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-              <Label>Откуда *</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
-                <Input
-                  placeholder="Город отправления"
-                  value={formData.from_city}
-                  onChange={(e) => {
-                    handleChange("from_city", e.target.value);
-                    if (errors.from_city) setErrors(prev => ({ ...prev, from_city: "" }));
-                  }}
-                  className={`pl-10 ${errors.from_city ? "border-destructive" : ""}`}
-                />
-              </div>
-              {errors.from_city && (
-                <p className="text-sm text-destructive">{errors.from_city}</p>
-              )}
-              <Input
-                placeholder="Точный адрес (опционально)"
-                value={formData.from_address}
-                onChange={(e) => handleChange("from_address", e.target.value)}
-              />
-              {fromLocation && (
-                <p className="text-xs text-muted-foreground">
-                  📍 Выбрано на карте: {fromLocation.address || `${fromLocation.lat.toFixed(4)}, ${fromLocation.lng.toFixed(4)}`}
-                </p>
-              )}
-            </div>
+                  <Label>Откуда *</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
+                    <Input
+                      placeholder="Город отправления"
+                      value={formData.from_city}
+                      onChange={(e) => {
+                        handleChange("from_city", e.target.value);
+                        if (errors.from_city) setErrors(prev => ({ ...prev, from_city: "" }));
+                      }}
+                      className={`pl-10 ${errors.from_city ? "border-destructive" : ""}`}
+                    />
+                  </div>
+                  {errors.from_city && (
+                    <p className="text-sm text-destructive">{errors.from_city}</p>
+                  )}
+                  <Input
+                    placeholder="Точный адрес (опционально)"
+                    value={formData.from_address}
+                    onChange={(e) => handleChange("from_address", e.target.value)}
+                  />
+                  {fromLocation && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 Выбрано на карте: {fromLocation.address || `${fromLocation.lat.toFixed(4)}, ${fromLocation.lng.toFixed(4)}`}
+                    </p>
+                  )}
+                </div>
 
-            <div className="space-y-2">
-              <Label>Куда *</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
-                <Input
-                  placeholder="Город прибытия"
-                  value={formData.to_city}
-                  onChange={(e) => {
-                    handleChange("to_city", e.target.value);
-                    if (errors.to_city) setErrors(prev => ({ ...prev, to_city: "" }));
-                  }}
-                  className={`pl-10 ${errors.to_city ? "border-destructive" : ""}`}
-                />
-              </div>
-              {errors.to_city && (
-                <p className="text-sm text-destructive">{errors.to_city}</p>
-              )}
-              <Input
-                placeholder="Точный адрес (опционально)"
-                value={formData.to_address}
-                onChange={(e) => handleChange("to_address", e.target.value)}
-              />
-              {toLocation && (
-                <p className="text-xs text-muted-foreground">
-                  📍 Выбрано на карте: {toLocation.address || `${toLocation.lat.toFixed(4)}, ${toLocation.lng.toFixed(4)}`}
-                </p>
-              )}
+                <div className="space-y-2">
+                  <Label>Куда *</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+                    <Input
+                      placeholder="Город прибытия"
+                      value={formData.to_city}
+                      onChange={(e) => {
+                        handleChange("to_city", e.target.value);
+                        if (errors.to_city) setErrors(prev => ({ ...prev, to_city: "" }));
+                      }}
+                      className={`pl-10 ${errors.to_city ? "border-destructive" : ""}`}
+                    />
+                  </div>
+                  {errors.to_city && (
+                    <p className="text-sm text-destructive">{errors.to_city}</p>
+                  )}
+                  <Input
+                    placeholder="Точный адрес (опционально)"
+                    value={formData.to_address}
+                    onChange={(e) => handleChange("to_address", e.target.value)}
+                  />
+                  {toLocation && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 Выбрано на карте: {toLocation.address || `${toLocation.lat.toFixed(4)}, ${toLocation.lng.toFixed(4)}`}
+                    </p>
+                  )}
                 </div>
               </div>
             </TabsContent>
