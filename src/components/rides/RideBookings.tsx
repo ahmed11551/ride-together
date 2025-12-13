@@ -116,6 +116,8 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
                     className="text-destructive"
                     onClick={() => handleStatusChange(booking.id, "cancelled")}
                     disabled={updateBookingStatus.isPending}
+                    loading={updateBookingStatus.isPending}
+                    aria-label={`Отклонить бронирование от ${booking.passenger?.full_name || 'пассажира'}`}
                   >
                     <XCircle className="w-4 h-4 mr-1" />
                     Отклонить
@@ -125,6 +127,8 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
                     variant="default"
                     onClick={() => handleStatusChange(booking.id, "confirmed")}
                     disabled={updateBookingStatus.isPending}
+                    loading={updateBookingStatus.isPending}
+                    aria-label={`Подтвердить бронирование от ${booking.passenger?.full_name || 'пассажира'}`}
                   >
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Подтвердить

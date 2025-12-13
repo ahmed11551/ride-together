@@ -58,7 +58,7 @@ export const useUpdateProfile = () => {
           .from("profiles")
           .insert({
             user_id: user.id,
-            id: user.id, // Используем user.id как id профиля
+            display_name: updates.full_name || user.email?.split('@')[0] || 'Пользователь',
             ...updates,
             updated_at: new Date().toISOString(),
           })
