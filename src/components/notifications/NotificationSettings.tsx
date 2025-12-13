@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -21,7 +21,7 @@ export const NotificationSettings = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Проверяем, подписан ли пользователь
-  useState(() => {
+  useEffect(() => {
     if (user && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.pushManager.getSubscription().then((subscription) => {
@@ -29,7 +29,7 @@ export const NotificationSettings = () => {
         });
       });
     }
-  });
+  }, [user]);
 
   const handleEnable = async () => {
     if (!user) {
