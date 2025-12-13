@@ -41,6 +41,14 @@ const ERROR_MESSAGES: Record<string, ErrorMessage> = {
     title: 'Требуется авторизация',
     description: 'Пожалуйста, войдите в аккаунт',
   },
+  'user': {
+    title: 'Ошибка пользователя',
+    description: 'Проблема с данными пользователя. Попробуйте обновить страницу.',
+  },
+  'doesn\'t seem to exist': {
+    title: 'Пользователь не найден',
+    description: 'Попробуйте обновить страницу или войти заново.',
+  },
   // Network errors
   'Failed to fetch': {
     title: 'Ошибка соединения',

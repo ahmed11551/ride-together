@@ -34,10 +34,13 @@ export const useTelegramAuth = () => {
           .from('profiles')
           .select('*')
           .eq('telegram_id', telegramUser.id.toString())
-          .single();
+          .maybeSingle();
 
+        // PGRST116 - это код "не найдено", это нормально для новых пользователей
         if (profileError && profileError.code !== 'PGRST116') {
-          throw profileError;
+          console.error('Profile lookup error:', profileError);
+          // Не бросаем ошибку, если это просто "не найдено"
+          // Продолжаем создание нового профиля
         }
 
         if (existingProfile) {
@@ -107,13 +110,33 @@ export const useTelegramAuth = () => {
                 telegram_last_name: telegramUser.last_name || null,
                 telegram_photo_url: telegramUser.photo_url || null,
                 full_name: `${telegramUser.first_name} ${telegramUser.last_name || ''}`.trim(),
-                display_name: telegramUser.first_name,
+                display_name: telegramUser.first_name || 'Пользователь',
                 email: telegramEmail,
                 avatar_url: telegramUser.photo_url || null,
               });
 
             if (profileError) {
-              throw profileError;
+              console.error('Profile creation error:', profileError);
+              // Если профиль уже существует (дубликат), пытаемся обновить
+              if (profileError.code === '23505') { // Unique violation
+                console.log('Profile already exists, updating...');
+                const { error: updateError } = await supabase
+                  .from('profiles')
+                  .update({
+                    telegram_username: telegramUser.username || null,
+                    telegram_first_name: telegramUser.first_name || null,
+                    telegram_last_name: telegramUser.last_name || null,
+                    telegram_photo_url: telegramUser.photo_url || null,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('user_id', authData.user.id);
+                
+                if (updateError) {
+                  throw new Error('Не удалось обновить профиль. Попробуйте еще раз.');
+                }
+              } else {
+                throw new Error('Не удалось создать профиль. Попробуйте еще раз.');
+              }
             }
 
             toast({
@@ -124,11 +147,25 @@ export const useTelegramAuth = () => {
         }
       } catch (error) {
         logError(error, 'telegramAuth');
+        console.error('Telegram auth error details:', error);
+        
+        // Более детальная обработка ошибок
+        let errorMessage = 'Произошла ошибка при авторизации';
+        if (error instanceof Error) {
+          if (error.message.includes('user') && error.message.includes('exist')) {
+            errorMessage = 'Пользователь не найден. Попробуйте обновить страницу.';
+          } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
+            errorMessage = 'Профиль уже существует. Попробуйте обновить страницу.';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
         const friendlyError = getUserFriendlyError(error);
         toast({
           variant: 'destructive',
           title: friendlyError.title,
-          description: friendlyError.description,
+          description: friendlyError.description || errorMessage,
         });
       } finally {
         setIsAuthenticating(false);
