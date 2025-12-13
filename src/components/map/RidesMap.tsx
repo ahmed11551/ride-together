@@ -91,11 +91,16 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
       return;
     }
 
+    // Загружаем Yandex Maps API с defer для оптимизации
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU`;
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU&load=package.full`;
     script.async = true;
+    script.defer = true; // Отложенная загрузка
     script.onload = () => {
       window.ymaps.ready(() => setIsLoaded(true));
+    };
+    script.onerror = () => {
+      console.error('Failed to load Yandex Maps API');
     };
     document.head.appendChild(script);
 
@@ -117,10 +122,12 @@ export const RidesMap = ({ rides, height = '500px', className = '' }: RidesMapPr
         mapInstanceRef.current.destroy();
       }
 
+      // Минимальный набор контролов для оптимизации производительности
       const map = new window.ymaps.Map(mapRef.current, {
         center: [centerCoords.lat, centerCoords.lng],
         zoom: centerCoords.zoom || 6,
-        controls: ['zoomControl', 'fullscreenControl'],
+        controls: ['zoomControl'], // Только зум для экономии ресурсов
+        behaviors: ['default', 'scrollZoom'], // Отключаем лишние поведения
       });
 
       mapInstanceRef.current = map;

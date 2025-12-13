@@ -46,11 +46,29 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   
   // Обработка ошибок сообщений от Service Worker
   navigator.serviceWorker.addEventListener('messageerror', (event) => {
-    // Игнорируем ошибки от расширений
+    // Игнорируем ошибки от расширений браузера
     if (event.data && typeof event.data === 'string' && event.data.includes('extension')) {
       return;
     }
-    console.warn('Service Worker message error:', event);
+    // Игнорируем ошибку "Receiving end does not exist" - это нормально для расширений
+    if (event.error && event.error.message && event.error.message.includes('Receiving end does not exist')) {
+      return;
+    }
+    // Логируем только реальные ошибки
+    if (import.meta.env.DEV) {
+      console.warn('Service Worker message error:', event);
+    }
+  });
+
+  // Обработка ошибок Promise rejection от Service Worker
+  window.addEventListener('unhandledrejection', (event) => {
+    // Игнорируем ошибки от расширений браузера
+    if (event.reason && typeof event.reason === 'object' && event.reason.message) {
+      if (event.reason.message.includes('Receiving end does not exist')) {
+        event.preventDefault(); // Предотвращаем вывод ошибки в консоль
+        return;
+      }
+    }
   });
 }
 

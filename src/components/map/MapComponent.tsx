@@ -56,12 +56,16 @@ export const MapComponent = ({
       return;
     }
 
-    // Загружаем Yandex Maps API
+    // Загружаем Yandex Maps API с defer для оптимизации
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU`;
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU&load=package.full`;
     script.async = true;
+    script.defer = true; // Отложенная загрузка
     script.onload = () => {
       window.ymaps.ready(() => setIsLoaded(true));
+    };
+    script.onerror = () => {
+      console.error('Failed to load Yandex Maps API');
     };
     document.head.appendChild(script);
 
@@ -91,10 +95,12 @@ export const MapComponent = ({
         mapInstanceRef.current.destroy();
       }
 
+      // Минимальный набор контролов для оптимизации производительности
       const map = new window.ymaps.Map(mapRef.current, {
         center,
         zoom,
-        controls: ['zoomControl', 'fullscreenControl', 'geolocationControl'],
+        controls: ['zoomControl'], // Только зум для экономии ресурсов
+        behaviors: ['default', 'scrollZoom'], // Отключаем лишние поведения
       });
 
       mapInstanceRef.current = map;

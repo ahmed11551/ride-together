@@ -44,11 +44,16 @@ export function RideRouteMap({ ride, height = '400px', className = '' }: RideRou
       return;
     }
 
+    // Загружаем Yandex Maps API с defer для оптимизации
     const script = document.createElement('script');
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU`;
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${YANDEX_MAPS_API_KEY}&lang=ru_RU&load=package.full`;
     script.async = true;
+    script.defer = true; // Отложенная загрузка
     script.onload = () => {
       window.ymaps.ready(() => setIsLoaded(true));
+    };
+    script.onerror = () => {
+      console.error('Failed to load Yandex Maps API');
     };
     document.head.appendChild(script);
 
@@ -74,10 +79,12 @@ export function RideRouteMap({ ride, height = '400px', className = '' }: RideRou
       const centerLat = (fromCoords.lat + toCoords.lat) / 2;
       const centerLng = (fromCoords.lng + toCoords.lng) / 2;
 
+      // Минимальный набор контролов для оптимизации производительности
       const map = new window.ymaps.Map(mapRef.current, {
         center: [centerLat, centerLng],
         zoom: 7,
-        controls: ['zoomControl', 'fullscreenControl', 'routeButtonControl'],
+        controls: ['zoomControl'], // Только зум для экономии ресурсов
+        behaviors: ['default', 'scrollZoom'], // Отключаем лишние поведения
       });
 
       mapInstanceRef.current = map;

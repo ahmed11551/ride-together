@@ -60,7 +60,7 @@ export const useUpdateProfile = () => {
         const { data, error } = await supabase
           .from("profiles")
           .insert({
-            id: crypto.randomUUID(), // Генерируем UUID для id
+            id: user.id, // profiles.id должен быть равен user.id (foreign key constraint)
             user_id: user.id,
             display_name: defaultName, // Обязательное поле
             full_name: updates.full_name || defaultName,
