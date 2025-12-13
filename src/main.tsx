@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { setupGlobalErrorHandlers } from "@/lib/error-handler-enhanced";
+
+// Setup global error handlers
+setupGlobalErrorHandlers();
 
 // Register service worker for PWA
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
