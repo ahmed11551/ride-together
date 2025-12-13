@@ -44,12 +44,14 @@ const MyBookings = () => {
       await updateStatus.mutateAsync({ id: bookingId, status: "cancelled" });
       toast({
         title: "Бронирование отменено",
+        description: "Ваше бронирование было успешно отменено",
       });
-    } catch {
+    } catch (error) {
+      console.error("Cancel booking error:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось отменить бронирование",
+        description: "Не удалось отменить бронирование. Попробуйте еще раз.",
       });
     }
   };
