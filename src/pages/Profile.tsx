@@ -55,16 +55,22 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await updateProfile.mutateAsync(formData);
+      await updateProfile.mutateAsync({
+        full_name: formData.full_name || null,
+        phone: formData.phone || null,
+        bio: formData.bio || null,
+      });
       setEditing(false);
       toast({
         title: "Профиль обновлён",
+        description: "Ваши данные успешно сохранены",
       });
-    } catch {
+    } catch (error) {
+      console.error("Profile update error:", error);
       toast({
         variant: "destructive",
         title: "Ошибка",
-        description: "Не удалось обновить профиль",
+        description: "Не удалось обновить профиль. Попробуйте еще раз.",
       });
     }
   };

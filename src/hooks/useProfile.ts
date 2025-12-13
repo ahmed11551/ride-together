@@ -45,9 +45,37 @@ export const useUpdateProfile = () => {
     mutationFn: async (updates: Partial<Profile>) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Проверяем, существует ли профиль
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, user_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      // Если профиль не существует, создаем его
+      if (!existingProfile) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: user.id,
+            id: user.id, // Используем user.id как id профиля
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+
+      // Обновляем существующий профиль
       const { data, error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
         .eq("user_id", user.id)
         .select()
         .single();
@@ -55,8 +83,9 @@ export const useUpdateProfile = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
     },
   });
 };

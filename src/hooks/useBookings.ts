@@ -89,19 +89,44 @@ export const useUpdateBookingStatus = () => {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Booking["status"] }) => {
+      // Получаем текущее бронирование для проверки статуса
+      const { data: currentBooking, error: fetchError } = await supabase
+        .from("bookings")
+        .select("ride_id, seats_booked, status")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!currentBooking) throw new Error("Booking not found");
+
+      // Обновляем статус бронирования
       const { data, error } = await supabase
         .from("bookings")
-        .update({ status })
+        .update({ 
+          status,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Если бронирование подтверждено, обновляем seats_available
+      // (триггер уже обрабатывает это, но убедимся что все правильно)
+      if (status === "confirmed" && currentBooking.status === "pending") {
+        // Триггер должен обработать это автоматически
+        // Но на всякий случай обновим кэш
+        queryClient.invalidateQueries({ queryKey: ["rides", currentBooking.ride_id] });
+        queryClient.invalidateQueries({ queryKey: ["ride", currentBooking.ride_id] });
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["rides"] });
+      queryClient.invalidateQueries({ queryKey: ["ride-bookings"] });
     },
   });
 };

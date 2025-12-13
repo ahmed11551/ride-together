@@ -27,6 +27,9 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
       await updateBookingStatus.mutateAsync({ id: bookingId, status });
       toast({
         title: status === "confirmed" ? "Бронирование подтверждено" : "Бронирование отменено",
+        description: status === "confirmed" 
+          ? "Пассажир получит уведомление о подтверждении" 
+          : "Бронирование было отменено",
       });
     } catch (error) {
       logError(error, "updateBookingStatus");
@@ -34,7 +37,7 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
       toast({
         variant: "destructive",
         title: friendlyError.title,
-        description: friendlyError.description,
+        description: friendlyError.description || "Не удалось изменить статус бронирования",
       });
     }
   };
