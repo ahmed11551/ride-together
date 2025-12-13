@@ -32,10 +32,21 @@ const envSchema = z.object({
 type Env = z.infer<typeof envSchema>;
 
 /**
+ * Cached validated environment variables
+ */
+let cachedEnv: Env | null = null;
+
+/**
  * Validates and returns environment variables
  * Throws error if required variables are missing
+ * Uses lazy evaluation to avoid issues during build
  */
 function validateEnv(): Env {
+  // Return cached value if already validated
+  if (cachedEnv !== null) {
+    return cachedEnv;
+  }
+
   const rawEnv = {
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
     VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
@@ -50,7 +61,8 @@ function validateEnv(): Env {
   };
 
   try {
-    return envSchema.parse(rawEnv);
+    cachedEnv = envSchema.parse(rawEnv);
+    return cachedEnv;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors
@@ -64,6 +76,9 @@ function validateEnv(): Env {
         if (import.meta.env.PROD) {
           // In production, log but don't throw to prevent app crash
           console.error('Application may not work correctly without these variables.');
+          // Return partial env as fallback
+          cachedEnv = rawEnv as Env;
+          return cachedEnv;
         } else {
           // In development, throw to catch issues early
           throw new Error(errorMessage);
@@ -74,6 +89,9 @@ function validateEnv(): Env {
         
         if (import.meta.env.PROD) {
           console.error('Application may not work correctly with invalid variables.');
+          // Return partial env as fallback
+          cachedEnv = rawEnv as Env;
+          return cachedEnv;
         } else {
           throw new Error(errorMessage);
         }
@@ -81,20 +99,29 @@ function validateEnv(): Env {
     }
     
     // Return partial env if validation fails in production
-    return rawEnv as Env;
+    cachedEnv = rawEnv as Env;
+    return cachedEnv;
   }
 }
 
 /**
  * Validated environment variables
  * Use this instead of import.meta.env directly
+ * Lazy evaluation - validates only when first accessed
  */
-export const env = validateEnv();
+export const env = new Proxy({} as Env, {
+  get(_target, prop: string | symbol) {
+    const validated = validateEnv();
+    return validated[prop as keyof Env];
+  },
+});
 
 /**
  * Type-safe access to environment variables
  */
-export const getEnv = (): Env => env;
+export const getEnv = (): Env => {
+  return validateEnv();
+};
 
 /**
  * Check if all required environment variables are set
