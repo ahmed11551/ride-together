@@ -39,7 +39,10 @@ describe('RideCard', () => {
   it('should display price correctly', () => {
     render(<RideCard ride={mockRide} />);
     
-    expect(screen.getByText('1 500')).toBeInTheDocument();
+    // toLocaleString() formats based on locale - could be "1,500" or "1 500" or "1500"
+    // Check that price is displayed (contains 1500 in some format)
+    const priceText = screen.getByText(/1500|1[, ]500/i);
+    expect(priceText).toBeInTheDocument();
   });
 
   it('should display driver verification badge', () => {

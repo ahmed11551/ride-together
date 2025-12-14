@@ -39,11 +39,19 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
       // Кэширование запросов для лучшей производительности
       staleTime: 5 * 60 * 1000, // 5 минут - данные считаются свежими
       gcTime: 10 * 60 * 1000, // 10 минут - данные остаются в кэше (cacheTime переименован в gcTime в v5)
+      // Включаем структурное разделение для лучшего кэширования
+      structuralSharing: true,
+      // Network mode для офлайн поддержки
+      networkMode: 'online',
     },
     mutations: {
+      retry: 1,
+      networkMode: 'online',
       onError: (error) => {
         logError(error, "React Query Mutation");
       },
@@ -55,11 +63,18 @@ const queryClient = new QueryClient({
 queryClient.setQueryDefaults(["rides"], {
   staleTime: 2 * 60 * 1000, // 2 минуты для списков поездок
   gcTime: 5 * 60 * 1000, // 5 минут в кэше
+  // Предзагрузка следующей страницы
+  placeholderData: (previousData) => previousData,
 });
 
 queryClient.setQueryDefaults(["ride"], {
   staleTime: 1 * 60 * 1000, // 1 минута для деталей поездки
   gcTime: 3 * 60 * 1000, // 3 минуты в кэше
+});
+
+queryClient.setQueryDefaults(["profile"], {
+  staleTime: 10 * 60 * 1000, // 10 минут для профиля
+  gcTime: 30 * 60 * 1000, // 30 минут в кэше
 });
 
 const App = () => (

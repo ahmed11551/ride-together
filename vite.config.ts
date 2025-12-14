@@ -20,25 +20,65 @@ export default defineConfig({
     minify: "esbuild",
     cssMinify: true,
     sourcemap: false,
+    // Включаем сжатие
+    reportCompressedSize: true,
+    // Улучшенное разделение на чанки
     rollupOptions: {
       output: {
         // Разделение на чанки для лучшего кэширования
-        manualChunks: {
+        manualChunks: (id) => {
           // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'query-vendor': ['@tanstack/react-query'],
-          'ui-vendor': ['lucide-react'],
-          // Supabase chunk
-          'supabase': ['@supabase/supabase-js'],
+          if (id.includes('node_modules')) {
+            // React core
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            // React Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
+            }
+            // UI библиотеки
+            if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('recharts')) {
+              return 'ui-vendor';
+            }
+            // Supabase
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            // Form libraries
+            if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+              return 'form-vendor';
+            }
+            // Date libraries
+            if (id.includes('date-fns') || id.includes('react-day-picker')) {
+              return 'date-vendor';
+            }
+            // Остальные vendor библиотеки
+            return 'vendor';
+          }
         },
         // Оптимизация имен файлов
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || [];
+          const ext = info[info.length - 1];
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          if (/woff2?|eot|ttf|otf/i.test(ext)) {
+            return `assets/fonts/[name]-[hash][extname]`;
+          }
+          return `assets/[ext]/[name]-[hash][extname]`;
+        },
       },
     },
     // Увеличиваем лимит предупреждений о размере чанков
     chunkSizeWarningLimit: 1000,
+    // Включаем tree-shaking
+    treeshake: {
+      moduleSideEffects: 'no-external',
+    },
   },
   // Оптимизация зависимостей
   optimizeDeps: {
@@ -47,7 +87,19 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       '@tanstack/react-query',
+      'react-hook-form',
+      'zod',
     ],
     exclude: ['@supabase/supabase-js'],
+    // Предварительная оптимизация
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
+  // Предзагрузка модулей
+  experimental: {
+    renderBuiltUrl(filename: string) {
+      return `/${filename}`;
+    },
   },
 });
