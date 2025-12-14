@@ -39,7 +39,8 @@ export function isValidPhone(phone: string): boolean {
   }
 
   // Russian phone format: +7 (XXX) XXX-XX-XX or similar
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  // Must start with +7 or 7 and have at least 10 digits total
+  const phoneRegex = /^\+?7\d{10}$/;
   const cleaned = phone.replace(/[\s\-\(\)]/g, '');
   return phoneRegex.test(cleaned);
 }

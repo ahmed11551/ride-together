@@ -55,14 +55,22 @@ describe('Validation Schemas', () => {
 
   describe('createRideSchema', () => {
     it('should validate correct ride data', () => {
+      // Use a future date (tomorrow)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const futureDate = tomorrow.toISOString().split('T')[0];
+      
       const validData = {
         from_city: 'Москва',
         to_city: 'Санкт-Петербург',
-        departure_date: '2025-02-01',
+        departure_date: futureDate,
         departure_time: '10:00',
         price: '1500',
         seats_total: '4',
         seats_available: '4',
+        allow_smoking: false,
+        allow_pets: false,
+        allow_music: false,
       };
       
       expect(() => createRideSchema.parse(validData)).not.toThrow();

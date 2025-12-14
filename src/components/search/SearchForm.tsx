@@ -17,9 +17,12 @@ const SearchForm = () => {
   };
 
   const handleSearch = () => {
+    if (!from || !to) {
+      return; // Don't navigate if required fields are empty
+    }
     const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
+    params.set("from", from);
+    params.set("to", to);
     if (date) params.set("date", date);
     params.set("passengers", passengers.toString());
     navigate(`/search?${params.toString()}`);

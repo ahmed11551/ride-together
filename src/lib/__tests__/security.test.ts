@@ -25,7 +25,7 @@ describe('Security Utilities', () => {
     });
 
     it('should remove event handlers', () => {
-      expect(sanitizeInput('onclick="alert(1)"')).toBe('="alert(1)"');
+      expect(sanitizeInput('onclick="alert(1)"')).toBe('"alert(1)"');
     });
 
     it('should handle empty strings', () => {

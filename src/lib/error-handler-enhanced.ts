@@ -150,9 +150,10 @@ export function getErrorBoundaryFallback(error: Error): {
   action?: string;
 } {
   const friendlyError = getUserFriendlyError(error);
+  const errorMessageLower = error.message.toLowerCase();
   
   // Determine action based on error type
-  if (error.message.includes('network') || error.message.includes('fetch')) {
+  if (errorMessageLower.includes('network') || errorMessageLower.includes('fetch')) {
     return {
       title: friendlyError.title,
       message: friendlyError.description,
@@ -160,7 +161,7 @@ export function getErrorBoundaryFallback(error: Error): {
     };
   }
 
-  if (error.message.includes('auth') || error.message.includes('login')) {
+  if (errorMessageLower.includes('auth') || errorMessageLower.includes('login')) {
     return {
       title: friendlyError.title,
       message: friendlyError.description,

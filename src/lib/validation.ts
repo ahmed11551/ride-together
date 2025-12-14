@@ -23,6 +23,7 @@ export const createRideSchema = z.object({
       const selectedDate = new Date(date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
       return selectedDate >= today;
     },
     { message: "Дата не может быть в прошлом" }

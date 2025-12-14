@@ -10,8 +10,10 @@
  * @returns Correct form
  */
 export function pluralize(count: number, forms: [string, string, string]): string {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
+  // Use absolute value for negative numbers
+  const absCount = Math.abs(count);
+  const mod10 = absCount % 10;
+  const mod100 = absCount % 100;
 
   if (mod100 >= 11 && mod100 <= 19) {
     return forms[2]; // 11-19: всегда форма 5+
