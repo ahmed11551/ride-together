@@ -3,54 +3,60 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import type { Plugin } from "vite";
 
-// Плагин для изменения порядка загрузки скриптов и добавления modulepreload
+// Плагин для изменения порядка загрузки скриптов - entry chunk должен быть первым
 function fixScriptOrder(): Plugin {
   return {
     name: 'fix-script-order',
-    transformIndexHtml(html) {
-      // Находим все script теги
-      const scriptRegex = /<script[^>]*src="([^"]*)"[^>]*><\/script>/g;
-      const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
-      let match;
-      
-      while ((match = scriptRegex.exec(html)) !== null) {
-        const src = match[1];
-        const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
-        scripts.push({ tag: match[0], src, isEntry });
-      }
-      
-      if (scripts.length === 0) return html;
-      
-      // Разделяем на entry и vendor
-      const entryScripts = scripts.filter(s => s.isEntry);
-      const vendorScripts = scripts.filter(s => !s.isEntry);
-      
-      // Удаляем все script теги
-      let newHtml = html;
-      scripts.forEach(script => {
-        newHtml = newHtml.replace(script.tag, '');
-      });
-      
-      // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks ПЕРЕД entry chunk
-      // Это гарантирует, что все зависимости загружены до выполнения entry
-      const preloadLinks = vendorScripts.map(s => 
-        `    <link rel="modulepreload" href="${s.src}" crossorigin>`
-      ).join('\n');
-      
-      // Вставляем сначала preload, потом entry, потом vendor scripts
-      const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
-      const headEnd = newHtml.indexOf('</head>');
-      const bodyEnd = newHtml.indexOf('</body>');
-      
-      if (headEnd > -1 && preloadLinks) {
-        newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
-      }
-      
-      if (bodyEnd > -1) {
-        newHtml = newHtml.slice(0, bodyEnd) + '    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
-      }
-      
-      return newHtml;
+    transformIndexHtml: {
+      enforce: 'post',
+      transform(html, ctx) {
+        // Находим все script теги с src (только модули)
+        const scriptRegex = /<script[^>]*type="module"[^>]*src="([^"]*)"[^>]*><\/script>/g;
+        const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
+        let match;
+        
+        while ((match = scriptRegex.exec(html)) !== null) {
+          const src = match[1];
+          // Entry chunk - это index-*.js, но не vendor или react-router
+          const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
+          scripts.push({ tag: match[0], src, isEntry });
+        }
+        
+        if (scripts.length === 0) return html;
+        
+        // Разделяем на entry и vendor
+        const entryScripts = scripts.filter(s => s.isEntry);
+        const vendorScripts = scripts.filter(s => !s.isEntry);
+        
+        // Удаляем все найденные script теги (только модули)
+        let newHtml = html;
+        scripts.forEach(script => {
+          newHtml = newHtml.replace(script.tag, '');
+        });
+        
+        // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
+        // Это гарантирует, что все зависимости загружены до выполнения entry
+        const preloadLinks = vendorScripts
+          .filter(s => s.src.startsWith('/assets/')) // Только локальные файлы
+          .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
+          .join('\n');
+        
+        // Вставляем preload в <head> перед </head>
+        const headEnd = newHtml.lastIndexOf('</head>');
+        if (headEnd > -1 && preloadLinks) {
+          newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
+        }
+        
+        // Вставляем скрипты в <body> перед </body>
+        // Сначала entry, потом vendor
+        const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        const bodyEnd = newHtml.lastIndexOf('</body>');
+        if (bodyEnd > -1) {
+          newHtml = newHtml.slice(0, bodyEnd) + '    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
+        }
+        
+        return newHtml;
+      },
     },
   };
 }
