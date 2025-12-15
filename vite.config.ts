@@ -48,11 +48,23 @@ function fixScriptOrder(): Plugin {
         }
         
         // Вставляем скрипты в <body> перед </body>
-        // Сначала entry, потом vendor
+        // КРИТИЧНО: Entry chunk ДОЛЖЕН загружаться первым, затем vendor chunks
+        // Это гарантирует, что React будет доступен до того, как React Router попытается его использовать
         const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
+        }
+        
+        // КРИТИЧНО: Также добавляем modulepreload для entry chunk в <head>
+        // Это гарантирует предзагрузку entry chunk
+        const entryPreload = entryScripts
+          .filter(s => s.src.startsWith('/assets/'))
+          .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
+          .join('\n');
+        
+        if (headEnd > -1 && entryPreload) {
+          newHtml = newHtml.slice(0, headEnd) + '\n' + entryPreload + '\n' + newHtml.slice(headEnd);
         }
         
         return newHtml;
@@ -87,33 +99,54 @@ export default defineConfig({
       output: {
         // КРИТИЧНО: Отключаем динамические импорты для React - он должен быть встроен
         // Это гарантирует синхронную загрузку React до всех других модулей
+        // ВАЖНО: Сначала проверяем React, ПЕРЕД проверкой node_modules
         manualChunks: (id) => {
-          // КРИТИЧНО: React и react-dom НЕ должны быть в отдельном chunk
-          // Они должны остаться в entry chunk для синхронной загрузки
-          // Проверяем все возможные пути к React (более строгая проверка)
+          // КРИТИЧНО: React core ДОЛЖЕН быть в entry chunk
+          // Проверяем ТОЛЬКО точные пути к React core
           if (
-            id.includes('node_modules/react/') ||
-            id.includes('node_modules/react-dom/') ||
-            id.includes('node_modules/scheduler/') ||
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('/scheduler/') ||
-            id.includes('react/jsx-runtime') ||
-            id.includes('react-dom/client') ||
-            id.includes('react/index') ||
-            id.includes('react-dom/index') ||
-            id === 'react' ||
-            id === 'react-dom' ||
-            id.endsWith('/react') ||
-            id.endsWith('/react-dom')
+            (id.includes('node_modules/react/') || id.includes('node_modules/react/index')) &&
+            !id.includes('react-router') && 
+            !id.includes('react-helmet') && 
+            !id.includes('react-hook-form') && 
+            !id.includes('react-day-picker') && 
+            !id.includes('react-resizable') &&
+            !id.includes('react-query')
           ) {
-            // Возвращаем undefined - React останется в entry chunk
-            return undefined;
+            return undefined; // React остается в entry
           }
           
+          if (
+            (id.includes('node_modules/react-dom/') || id.includes('node_modules/react-dom/index')) &&
+            !id.includes('react-router')
+          ) {
+            return undefined; // React DOM остается в entry
+          }
+          
+          if (id.includes('node_modules/scheduler/')) {
+            return undefined; // Scheduler остается в entry
+          }
+          
+          if (id.includes('react/jsx-runtime') || id.includes('react-dom/client')) {
+            return undefined; // JSX runtime остается в entry
+          }
+          
+          // Только после проверки React проверяем остальные node_modules
           // НЕ разбиваем React на отдельный chunk - он должен быть в entry
           // Vendor chunks
           if (id.includes('node_modules')) {
+            // КРИТИЧНО: React core (react, react-dom, scheduler) НЕ должны быть в отдельном chunk
+            // Проверяем ТОЛЬКО точные пути к React core, не все что содержит "react"
+            const isReactCore = 
+              (id.includes('node_modules/react/') && !id.includes('react-router') && !id.includes('react-helmet') && !id.includes('react-hook-form') && !id.includes('react-day-picker') && !id.includes('react-resizable') && !id.includes('react-query')) ||
+              (id.includes('node_modules/react-dom/') && !id.includes('react-router')) ||
+              id.includes('node_modules/scheduler/') ||
+              id.includes('react/jsx-runtime') ||
+              id.includes('react-dom/client');
+            
+            // Если это React core, НЕ разбиваем на chunk - останется в entry
+            if (isReactCore) {
+              return undefined;
+            }
             // React Router - зависит от React, но может быть в отдельном chunk
             if (id.includes('react-router')) {
               return 'react-router';
