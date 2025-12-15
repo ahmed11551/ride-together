@@ -34,8 +34,8 @@ const ERROR_MESSAGES: Record<string, ErrorMessage> = {
     description: 'Пользователь с таким email уже существует',
   },
   'duplicate': {
-    title: 'Ошибка',
-    description: 'Эта запись уже существует',
+    title: 'Конфликт данных',
+    description: 'Профиль уже существует. Попробуйте обновить страницу.',
   },
   'Not authenticated': {
     title: 'Требуется авторизация',
@@ -62,10 +62,6 @@ const ERROR_MESSAGES: Record<string, ErrorMessage> = {
     description: 'Профиль уже существует. Попробуйте обновить страницу.',
   },
   'PGRST301': {
-    title: 'Конфликт данных',
-    description: 'Профиль уже существует. Попробуйте обновить страницу.',
-  },
-  'duplicate': {
     title: 'Конфликт данных',
     description: 'Профиль уже существует. Попробуйте обновить страницу.',
   },

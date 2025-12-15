@@ -137,7 +137,7 @@ function validateEnv(): Env {
  * Use this instead of import.meta.env directly
  * Lazy evaluation - validates only when first accessed
  */
-let envInstance: Env | null = null;
+// Removed unused envInstance variable
 
 export const env = {
   get VITE_SUPABASE_URL() {

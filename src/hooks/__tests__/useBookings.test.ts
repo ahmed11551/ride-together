@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useCreateBooking, useConfirmBooking } from '../useBookings';
+import React from 'react';
+import { useCreateBooking, useUpdateBookingStatus } from '../useBookings';
 import { supabase } from '@/integrations/supabase/client';
 
 // Mock Supabase
@@ -55,7 +56,7 @@ describe('useBookings', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useCreateBooking(), { wrapper });
 
@@ -84,7 +85,7 @@ describe('useBookings', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useCreateBooking(), { wrapper });
 
@@ -98,36 +99,54 @@ describe('useBookings', () => {
     });
   });
 
-  describe('useConfirmBooking', () => {
-    it('should confirm booking successfully', async () => {
-      const mockBooking = {
+  describe('useUpdateBookingStatus', () => {
+    it('should update booking status successfully', async () => {
+      const mockCurrentBooking = {
+        id: 'booking-id',
+        ride_id: 'ride-id',
+        seats_booked: 2,
+        status: 'pending' as const,
+      };
+
+      const mockUpdatedBooking = {
         id: 'booking-id',
         ride_id: 'ride-id',
         passenger_id: 'user-id',
-        status: 'confirmed',
+        status: 'confirmed' as const,
       };
 
-      const mockFrom = vi.fn().mockReturnValue({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({ data: mockBooking, error: null }),
+      const mockFrom = vi.fn()
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: mockCurrentBooking, error: null }),
             }),
           }),
-        }),
-      });
+        })
+        .mockReturnValueOnce({
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockUpdatedBooking, error: null }),
+              }),
+            }),
+          }),
+        });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
-      const { result } = renderHook(() => useConfirmBooking(), { wrapper });
+      const { result } = renderHook(() => useUpdateBookingStatus(), { wrapper });
 
       await waitFor(() => {
         expect(result.current.isPending).toBe(false);
       });
 
-      const mutationResult = await result.current.mutateAsync('booking-id');
+      const mutationResult = await result.current.mutateAsync({
+        id: 'booking-id',
+        status: 'confirmed',
+      });
 
-      expect(mutationResult).toEqual(mockBooking);
+      expect(mutationResult).toEqual(mockUpdatedBooking);
       expect(supabase.from).toHaveBeenCalledWith('bookings');
     });
   });

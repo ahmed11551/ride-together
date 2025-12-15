@@ -329,7 +329,7 @@ async function handleCallbackQuery(
       });
       break;
 
-    case "my_tickets":
+    case "my_tickets": {
       // Get user's tickets
       const { data: tickets } = await supabase
         .from("support_tickets")
@@ -399,6 +399,7 @@ async function handleCallbackQuery(
         });
       }
       break;
+    }
 
     case "faq":
       await sendTelegramMessage({
@@ -494,7 +495,7 @@ async function handleCallbackQuery(
       });
       break;
 
-    case "view_reviews":
+    case "view_reviews": {
       // Get public reviews
       const { data: reviews } = await supabase
         .from("bot_reviews")
@@ -559,6 +560,7 @@ async function handleCallbackQuery(
         });
       }
       break;
+    }
 
     case "settings":
       await sendTelegramMessage({

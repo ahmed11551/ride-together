@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 import { useProfile, useUpdateProfile } from '../useProfile';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -57,7 +58,7 @@ describe('useProfile', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useProfile(), { wrapper });
 
@@ -77,7 +78,7 @@ describe('useProfile', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useProfile(), { wrapper });
 
@@ -116,7 +117,7 @@ describe('useProfile', () => {
           }),
         });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useUpdateProfile(), { wrapper });
 

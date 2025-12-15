@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 import { useRides, useRide } from '../useRides';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -59,7 +60,7 @@ describe('useRides', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useRides(), { wrapper });
 
@@ -92,7 +93,7 @@ describe('useRides', () => {
         }),
       });
 
-      (supabase.from as ReturnType<typeof vi.fn>).mockReturnValue(mockFrom());
+      vi.mocked(supabase.from).mockReturnValue(mockFrom() as never);
 
       const { result } = renderHook(() => useRide('ride-1'), { wrapper });
 

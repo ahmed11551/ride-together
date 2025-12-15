@@ -34,8 +34,8 @@ export function initAnalytics() {
   try {
     // Create dataLayer
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function () {
-      window.dataLayer?.push(arguments);
+    window.gtag = function (...args: unknown[]) {
+      window.dataLayer?.push(args);
     };
 
     // Load GA script
