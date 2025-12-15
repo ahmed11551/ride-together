@@ -9,7 +9,8 @@ export interface Profile {
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
-  rating: number;
+  rating: number; // Рейтинг водителя
+  passenger_rating?: number; // Рейтинг пассажира (опционально, по умолчанию 5.0)
   trips_count: number;
   is_verified: boolean;
   created_at: string;
@@ -26,7 +27,7 @@ export const useProfile = () => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, phone, avatar_url, bio, rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
+        .select("id, user_id, full_name, phone, avatar_url, bio, rating, passenger_rating, trips_count, is_verified, created_at, updated_at, display_name, is_admin, is_banned")
         .eq("user_id", user.id)
         .maybeSingle();
 

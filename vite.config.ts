@@ -29,11 +29,15 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React core
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            // React core - ВАЖНО: объединяем React и react-dom в один чанк
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
               return 'react-vendor';
             }
-            // React Query
+            // React Router - зависит от React
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
+            // React Query - зависит от React
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
@@ -84,7 +88,9 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'react',
+      'react/jsx-runtime',
       'react-dom',
+      'react-dom/client',
       'react-router-dom',
       '@tanstack/react-query',
       'react-hook-form',
@@ -95,6 +101,8 @@ export default defineConfig({
     esbuildOptions: {
       target: 'esnext',
     },
+    // Принудительная оптимизация React
+    force: true,
   },
   // Предзагрузка модулей
   experimental: {

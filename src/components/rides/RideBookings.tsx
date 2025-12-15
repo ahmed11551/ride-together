@@ -90,7 +90,15 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{booking.passenger?.full_name || "Пассажир"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{booking.passenger?.full_name || "Пассажир"}</p>
+                      {booking.passenger?.passenger_rating !== undefined && booking.passenger.passenger_rating !== null && booking.passenger.passenger_rating > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-warning">
+                          <span>⭐</span>
+                          <span className="font-semibold">{booking.passenger.passenger_rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
                     {booking.passenger?.phone && (
                       <p className="text-sm text-muted-foreground">{booking.passenger.phone}</p>
                     )}
@@ -162,7 +170,15 @@ export const RideBookings = ({ rideId }: RideBookingsProps) => {
                     )}
                   </div>
                   <div>
-                    <p className="font-medium">{booking.passenger?.full_name || "Пассажир"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{booking.passenger?.full_name || "Пассажир"}</p>
+                      {booking.passenger?.passenger_rating !== undefined && booking.passenger.passenger_rating !== null && booking.passenger.passenger_rating > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-warning">
+                          <span>⭐</span>
+                          <span className="font-semibold">{booking.passenger.passenger_rating.toFixed(1)}</span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {booking.seats_booked} {booking.seats_booked === 1 ? "место" : "места"} • {booking.total_price} ₽
                     </p>

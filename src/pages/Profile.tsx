@@ -149,11 +149,16 @@ const Profile = () => {
           </h2>
           <p className="text-muted-foreground text-sm mb-4">{user?.email}</p>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             <div className="p-2 sm:p-3 rounded-xl bg-muted">
               <Star className="w-4 h-4 sm:w-5 sm:h-5 text-warning mx-auto mb-1" />
-              <p className="font-bold text-sm sm:text-base">{profile?.rating || 5}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Рейтинг</p>
+              <p className="font-bold text-sm sm:text-base">{profile?.rating?.toFixed(1) || "5.0"}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Водитель</p>
+            </div>
+            <div className="p-2 sm:p-3 rounded-xl bg-muted">
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-primary mx-auto mb-1" />
+              <p className="font-bold text-sm sm:text-base">{(profile?.passenger_rating ?? 5.0).toFixed(1)}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Пассажир</p>
             </div>
             <div className="p-2 sm:p-3 rounded-xl bg-muted">
               <Car className="w-4 h-4 sm:w-5 sm:h-5 text-primary mx-auto mb-1" />

@@ -206,22 +206,32 @@ export const useCreateReview = () => {
 };
 
 /**
- * Update user rating based on all reviews
+ * Update user ratings (both driver and passenger) based on all reviews
+ * Uses database function for accurate calculation
  */
 async function updateUserRating(userId: string) {
-  const { data: reviews } = await supabase
-    .from("reviews")
-    .select("rating")
-    .eq("to_user_id", userId);
+  // Use database function to update both driver and passenger ratings
+  const { error } = await supabase.rpc('update_user_ratings', {
+    p_user_id: userId
+  });
 
-  if (!reviews || reviews.length === 0) return;
+  if (error) {
+    console.error('Error updating user ratings:', error);
+    // Fallback to old method if RPC fails
+    const { data: reviews } = await supabase
+      .from("reviews")
+      .select("rating")
+      .eq("to_user_id", userId);
 
-  const avgRating =
-    reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    if (!reviews || reviews.length === 0) return;
 
-  await supabase
-    .from("profiles")
-    .update({ rating: avgRating })
-    .eq("user_id", userId);
+    const avgRating =
+      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
+    await supabase
+      .from("profiles")
+      .update({ rating: avgRating })
+      .eq("user_id", userId);
+  }
 }
 

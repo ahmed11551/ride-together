@@ -136,6 +136,7 @@ export type Database = {
           is_verified: boolean | null
           phone: string | null
           rating: number | null
+          passenger_rating: number | null
           trips_count: number | null
           updated_at: string
           user_id: string
@@ -149,6 +150,7 @@ export type Database = {
           is_verified?: boolean | null
           phone?: string | null
           rating?: number | null
+          passenger_rating?: number | null
           trips_count?: number | null
           updated_at?: string
           user_id: string
@@ -162,6 +164,7 @@ export type Database = {
           is_verified?: boolean | null
           phone?: string | null
           rating?: number | null
+          passenger_rating?: number | null
           trips_count?: number | null
           updated_at?: string
           user_id?: string

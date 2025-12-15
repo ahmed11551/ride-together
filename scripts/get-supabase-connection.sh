@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Скрипт для получения данных подключения к Supabase
+# Помогает найти правильные параметры для экспорта
+
+echo "🔍 Получение данных подключения к Supabase..."
+echo ""
+
+echo "📋 Инструкция:"
+echo ""
+echo "1. Откройте Supabase Dashboard:"
+echo "   https://app.supabase.com/project/vcjnvkdqjrqymnmqdvfr"
+echo ""
+echo "2. Перейдите в Settings → Database"
+echo ""
+echo "3. Найдите раздел 'Connection string'"
+echo ""
+echo "4. Скопируйте данные:"
+echo "   - Host"
+echo "   - Port (обычно 5432)"
+echo "   - Database name (обычно 'postgres')"
+echo "   - User (обычно 'postgres')"
+echo "   - Password (нажмите 'Reveal' чтобы показать)"
+echo ""
+echo "5. Используйте эти данные для экспорта:"
+echo ""
+echo "   pg_dump -h [HOST] \\"
+echo "     -p [PORT] \\"
+echo "     -U [USER] \\"
+echo "     -d [DATABASE] \\"
+echo "     --schema=public \\"
+echo "     --no-owner \\"
+echo "     --no-privileges \\"
+echo "     > backup.sql"
+echo ""
+echo "6. Или используйте скрипт export-supabase-data.sh"
+echo "   (нужно будет указать пароль)"
+echo ""
+
+echo "💡 Альтернатива: Используйте Supabase Dashboard → Database → Backups"
+echo "   Это проще и безопаснее!"

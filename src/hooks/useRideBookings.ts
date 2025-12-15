@@ -16,7 +16,8 @@ export interface RideBooking {
     full_name: string | null;
     avatar_url: string | null;
     phone: string | null;
-    rating: number;
+    rating: number; // Рейтинг водителя (если пассажир также водитель)
+    passenger_rating: number; // Рейтинг пассажира
   };
 }
 
@@ -43,7 +44,7 @@ export const useRideBookings = (rideId: string | undefined) => {
       const passengerIds = [...new Set(data?.map(b => b.passenger_id) || [])];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, rating")
+        .select("user_id, full_name, avatar_url, phone, rating, passenger_rating")
         .in("user_id", passengerIds);
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
@@ -93,7 +94,7 @@ export const useMyRideBookings = () => {
       const passengerIds = [...new Set(bookings?.map(b => b.passenger_id) || [])];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, rating")
+        .select("user_id, full_name, avatar_url, phone, rating, passenger_rating")
         .in("user_id", passengerIds);
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);

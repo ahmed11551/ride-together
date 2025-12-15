@@ -1,0 +1,68 @@
+═══════════════════════════════════════════════════════════════
+  ПРИМЕНИ СХЕМУ БД В TIMEWEB
+═══════════════════════════════════════════════════════════════
+
+1. Открой файл: TIMEWEB_FULL_SCHEMA.sql
+
+2. Открой SQL Editor в Timeweb:
+   https://dbs.timeweb.com/?pgsql=77.95.206.10&username=gen_user&db=default_db&ns=public
+   → Нажми "SQL Editor" (слева)
+
+3. Скопируй ВСЁ содержимое TIMEWEB_FULL_SCHEMA.sql
+   (Ctrl+A, Ctrl+C)
+
+4. Вставь в SQL Editor Timeweb
+   (Ctrl+V)
+
+5. Нажми "Выполнить" или F5
+
+═══════════════════════════════════════════════════════════════
+  ЧТО СОЗДАСТСЯ:
+═══════════════════════════════════════════════════════════════
+
+✅ Таблицы:
+   - users (Auth система)
+   - sessions (сессии)
+   - profiles (профили)
+   - rides (поездки)
+   - bookings (бронирования)
+   - messages (сообщения)
+   - reviews (отзывы)
+   - reports (жалобы)
+   - driver_info (инфо о водителях)
+   - telegram_subscriptions (подписки Telegram)
+   - support_tickets (тикеты поддержки)
+   - subscriptions (подписки бота)
+   - bot_users (пользователи бота)
+   - referrals (рефералы)
+   - bot_reviews (отзывы через бота)
+
+✅ Функции:
+   - update_updated_at_column
+   - handle_new_user
+   - update_seats_on_booking
+   - update_driver_rating
+   - update_passenger_rating
+   - update_user_ratings
+   - on_review_created
+   - is_ride_participant
+   - cleanup_old_rides
+   - current_user_id
+   - cleanup_expired_sessions
+   - generate_ticket_number
+
+✅ Триггеры:
+   - Обновление updated_at
+   - Создание профиля
+   - Обновление мест
+   - Обновление рейтингов
+
+✅ Индексы для производительности
+
+✅ RLS политики безопасности
+
+═══════════════════════════════════════════════════════════════
+  ГОТОВО!
+═══════════════════════════════════════════════════════════════
+
+После выполнения можешь добавлять данные!
