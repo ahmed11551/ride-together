@@ -1,6 +1,59 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import type { Plugin } from "vite";
+
+// Плагин для изменения порядка загрузки скриптов и добавления modulepreload
+function fixScriptOrder(): Plugin {
+  return {
+    name: 'fix-script-order',
+    transformIndexHtml(html) {
+      // Находим все script теги
+      const scriptRegex = /<script[^>]*src="([^"]*)"[^>]*><\/script>/g;
+      const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
+      let match;
+      
+      while ((match = scriptRegex.exec(html)) !== null) {
+        const src = match[1];
+        const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
+        scripts.push({ tag: match[0], src, isEntry });
+      }
+      
+      if (scripts.length === 0) return html;
+      
+      // Разделяем на entry и vendor
+      const entryScripts = scripts.filter(s => s.isEntry);
+      const vendorScripts = scripts.filter(s => !s.isEntry);
+      
+      // Удаляем все script теги
+      let newHtml = html;
+      scripts.forEach(script => {
+        newHtml = newHtml.replace(script.tag, '');
+      });
+      
+      // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks ПЕРЕД entry chunk
+      // Это гарантирует, что все зависимости загружены до выполнения entry
+      const preloadLinks = vendorScripts.map(s => 
+        `    <link rel="modulepreload" href="${s.src}" crossorigin>`
+      ).join('\n');
+      
+      // Вставляем сначала preload, потом entry, потом vendor scripts
+      const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+      const headEnd = newHtml.indexOf('</head>');
+      const bodyEnd = newHtml.indexOf('</body>');
+      
+      if (headEnd > -1 && preloadLinks) {
+        newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
+      }
+      
+      if (bodyEnd > -1) {
+        newHtml = newHtml.slice(0, bodyEnd) + '    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
+      }
+      
+      return newHtml;
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,7 +61,7 @@ export default defineConfig({
     host: "::",
     port: 8080,
   },
-  plugins: [react()],
+  plugins: [react(), fixScriptOrder()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -22,22 +75,44 @@ export default defineConfig({
     sourcemap: false,
     // Включаем сжатие
     reportCompressedSize: true,
-    // Улучшенное разделение на чанки
+    // КРИТИЧНО: Сохраняем сигнатуры entry точек для правильной загрузки
     rollupOptions: {
+      preserveEntrySignatures: 'strict',
       output: {
-        // Разделение на чанки для лучшего кэширования
+        // КРИТИЧНО: Отключаем динамические импорты для React - он должен быть встроен
+        // Это гарантирует синхронную загрузку React до всех других модулей
         manualChunks: (id) => {
+          // КРИТИЧНО: React и react-dom НЕ должны быть в отдельном chunk
+          // Они должны остаться в entry chunk для синхронной загрузки
+          // Проверяем все возможные пути к React (более строгая проверка)
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/') ||
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/') ||
+            id.includes('react/jsx-runtime') ||
+            id.includes('react-dom/client') ||
+            id.includes('react/index') ||
+            id.includes('react-dom/index') ||
+            id === 'react' ||
+            id === 'react-dom' ||
+            id.endsWith('/react') ||
+            id.endsWith('/react-dom')
+          ) {
+            // Возвращаем undefined - React останется в entry chunk
+            return undefined;
+          }
+          
+          // НЕ разбиваем React на отдельный chunk - он должен быть в entry
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React core - ВАЖНО: объединяем React и react-dom в один чанк
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'react-vendor';
-            }
-            // React Router - зависит от React
+            // React Router - зависит от React, но может быть в отдельном chunk
             if (id.includes('react-router')) {
               return 'react-router';
             }
-            // React Query - зависит от React
+            // React Query - зависит от React, но может быть в отдельном chunk
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
             }
@@ -100,9 +175,13 @@ export default defineConfig({
     // Предварительная оптимизация
     esbuildOptions: {
       target: 'esnext',
+      // КРИТИЧНО: Убеждаемся, что React загружается синхронно
+      jsx: 'automatic',
     },
     // Принудительная оптимизация React
     force: true,
+    // КРИТИЧНО: Предзагружаем React синхронно
+    entries: ['./src/main.tsx'],
   },
   // Предзагрузка модулей
   experimental: {
