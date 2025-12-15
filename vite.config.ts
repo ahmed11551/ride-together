@@ -83,12 +83,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // КРИТИЧНО: В продакшене используем глобальный React из CDN
-      // В dev режиме используем локальный React
-      ...(process.env.NODE_ENV === 'production' ? {
-        'react': path.resolve(__dirname, './src/lib/react-global.ts'),
-        'react-dom': path.resolve(__dirname, './src/lib/react-dom-global.ts'),
-      } : {}),
     },
   },
   build: {

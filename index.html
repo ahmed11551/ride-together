@@ -40,16 +40,30 @@
 
   <body>
     <div id="root"></div>
-    <!-- КРИТИЧНО: Загружаем React через CDN ПЕРЕД всеми другими скриптами -->
+    <!-- КРИТИЧНО: В продакшене загружаем React через CDN ПЕРЕД всеми другими скриптами -->
     <!-- Это гарантирует, что React будет доступен синхронно до загрузки React Router -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- В dev режиме Vite обработает это и загрузит локальный React -->
     <script>
-      // Экспортируем React в глобальную область для использования в модулях
-      window.React = React;
-      window.ReactDOM = ReactDOM;
+      // Загружаем React через CDN только в продакшене
+      if (import.meta.env.PROD) {
+        const reactScript = document.createElement('script');
+        reactScript.crossOrigin = 'anonymous';
+        reactScript.src = 'https://unpkg.com/react@18/umd/react.production.min.js';
+        reactScript.onload = () => {
+          const reactDOMScript = document.createElement('script');
+          reactDOMScript.crossOrigin = 'anonymous';
+          reactDOMScript.src = 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js';
+          reactDOMScript.onload = () => {
+            // Экспортируем React в глобальную область для использования в модулях
+            window.React = React;
+            window.ReactDOM = ReactDOM;
+          };
+          document.body.appendChild(reactDOMScript);
+        };
+        document.body.appendChild(reactScript);
+      }
     </script>
-    <!-- КРИТИЧНО: Загружаем main.tsx как модуль, React будет встроен в entry chunk -->
+    <!-- КРИТИЧНО: Загружаем main.tsx как модуль -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
