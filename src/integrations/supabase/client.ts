@@ -1,47 +1,26 @@
-import { createClient } from '@supabase/supabase-js';
+// DEPRECATED: Supabase integration is no longer used
+// This file is kept for backward compatibility only
+// The application now uses custom backend API (see @/lib/api-client)
+
 import type { Database } from './types';
-import { env } from '@/lib/env';
 
-// Environment variables are validated in @/lib/env
-// Supabase is OPTIONAL - only initialize if variables are provided
-const SUPABASE_URL = env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Supabase is NOT used - application uses custom backend
+// This is a dummy client that always returns empty/null data
+export const supabase = {
+  auth: {
+    getSession: async () => ({ data: { session: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
+    signInWithPassword: async () => ({ data: { session: null, user: null }, error: { message: 'Supabase is not used. Use custom auth API instead.' } }),
+    signUp: async () => ({ data: { session: null, user: null }, error: { message: 'Supabase is not used. Use custom auth API instead.' } }),
+  },
+  from: () => ({
+    select: () => ({ data: null, error: { message: 'Supabase is not used. Use custom backend API instead.' } }),
+    insert: () => ({ data: null, error: { message: 'Supabase is not used. Use custom backend API instead.' } }),
+    update: () => ({ data: null, error: { message: 'Supabase is not used. Use custom backend API instead.' } }),
+    delete: () => ({ data: null, error: { message: 'Supabase is not used. Use custom backend API instead.' } }),
+  }),
+} as any;
 
-// Check if Supabase is configured
-const isSupabaseConfigured = !!(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-// Check if configured: import { isSupabaseConfigured } from "@/integrations/supabase/client";
-
-// Create Supabase client only if configured
-// Otherwise, create a dummy client that won't crash the app
-export const supabase = isSupabaseConfigured
-  ? createClient<Database>(
-      SUPABASE_URL!,
-      SUPABASE_PUBLISHABLE_KEY!,
-      {
-        auth: {
-          storage: localStorage,
-          persistSession: true,
-          autoRefreshToken: true,
-        },
-      }
-    )
-  : // Dummy client that won't crash but will log warnings
-    ({
-      auth: {
-        getSession: async () => ({ data: { session: null }, error: null }),
-        signOut: async () => ({ error: null }),
-        onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
-      },
-      from: () => ({
-        select: () => ({ data: null, error: { message: 'Supabase is not configured' } }),
-        insert: () => ({ data: null, error: { message: 'Supabase is not configured' } }),
-        update: () => ({ data: null, error: { message: 'Supabase is not configured' } }),
-        delete: () => ({ data: null, error: { message: 'Supabase is not configured' } }),
-      }),
-    } as any);
-
-// Export flag to check if Supabase is configured
-export { isSupabaseConfigured };
+// Supabase is never configured - we use custom backend
+export const isSupabaseConfigured = false;

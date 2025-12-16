@@ -135,7 +135,8 @@ export default defineConfig({
                   
                   // Только НЕ React-зависимые библиотеки в отдельные chunks
                   if (id.includes('node_modules')) {
-                    // Supabase - отдельный chunk
+                    // Supabase - отдельный chunk (deprecated, но оставляем для совместимости)
+                    // Приложение использует кастомный backend, Supabase не используется
                     if (id.includes('@supabase')) {
                       return 'supabase';
                     }
