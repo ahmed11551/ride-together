@@ -97,16 +97,10 @@ export default defineConfig({
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
-        // КРИТИЧНО: Встраиваем React в entry chunk через inlineDynamicImports
+        // КРИТИЧНО: Встраиваем React в entry chunk
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
         manualChunks: (id, { getModuleInfo }) => {
-          const moduleInfo = getModuleInfo(id);
-          // Если это entry модуль, встраиваем все его зависимости
-          if (moduleInfo?.isEntry) {
-            return undefined; // Entry остается монолитным
-          }
-          
           // КРИТИЧНО: React core ДОЛЖЕН быть в entry chunk
           // Проверяем ТОЛЬКО точные пути к React core
           if (
@@ -130,6 +124,28 @@ export default defineConfig({
           
           if (id.includes('node_modules/scheduler/')) {
             return undefined; // Scheduler остается в entry
+          }
+          
+          // Проверяем, является ли это entry модулем или его зависимостью
+          const moduleInfo = getModuleInfo(id);
+          if (moduleInfo?.isEntry) {
+            // Для entry модуля встраиваем React и его зависимости
+            return undefined;
+          }
+          
+          // Проверяем, является ли это зависимостью entry модуля
+          if (moduleInfo) {
+            const isDependencyOfEntry = moduleInfo.importers.some(importer => {
+              const importerInfo = getModuleInfo(importer);
+              return importerInfo?.isEntry;
+            });
+            if (isDependencyOfEntry && (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/')
+            )) {
+              return undefined; // React зависимости entry остаются в entry
+            }
           }
           
           // Только после проверки React проверяем остальные node_modules
