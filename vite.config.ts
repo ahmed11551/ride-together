@@ -161,7 +161,14 @@ export default defineConfig({
                       return 'query-vendor';
                     }
                     // Остальные UI библиотеки (не критичные для начальной загрузки)
-                    if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('recharts')) {
+                    // НО: проверяем, что это НЕ критичные компоненты (toast, tooltip, sonner, themes)
+                    if (
+                      (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('recharts')) &&
+                      !id.includes('react-toast') &&
+                      !id.includes('react-tooltip') &&
+                      !id.includes('sonner') &&
+                      !id.includes('next-themes')
+                    ) {
                       return 'ui-vendor';
                     }
                     // Supabase (deprecated, но оставляем для совместимости)
