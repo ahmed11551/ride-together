@@ -97,7 +97,7 @@ export default defineConfig({
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
-        // КРИТИЧНО: Встраиваем React в entry chunk
+        // КРИТИЧНО: Отключаем code splitting для React - он должен быть встроен в entry chunk
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
         manualChunks: (id) => {
@@ -158,6 +158,9 @@ export default defineConfig({
             return 'vendor';
           }
         },
+        // КРИТИЧНО: Отключаем inline динамические импорты для React
+        // Это гарантирует, что React встроен в entry chunk
+        inlineDynamicImports: false,
         // Оптимизация имен файлов
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
