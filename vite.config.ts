@@ -175,11 +175,38 @@ function fixScriptOrder(): Plugin {
       window.dispatchEvent(new Event('react-loaded'));
     </script>`;
         
+        // КРИТИЧНО: Добавляем скрипт-защиту, который блокирует выполнение модулей до загрузки React
+        const reactGuard = `    <script>
+      // КРИТИЧНО: Блокируем выполнение модулей до загрузки React
+      // Переопределяем import() для модулей, чтобы они ждали React
+      (function() {
+        const originalImport = window.import || function() { return Promise.resolve(); };
+        const waitForReact = function() {
+          if (window.__REACT_LOADED__ && window.React && window.ReactDOM) {
+            return Promise.resolve();
+          }
+          return new Promise(function(resolve) {
+            if (window.__REACT_LOADED__) {
+              resolve();
+            } else {
+              window.addEventListener('react-loaded', resolve, { once: true });
+              // Fallback: проверяем каждые 10ms
+              setTimeout(function() {
+                if (window.__REACT_LOADED__) resolve();
+              }, 10);
+            }
+          });
+        };
+        // Ждем загрузки React перед выполнением модулей
+        waitForReact().catch(function(err) {
+          console.error('Error waiting for React:', err);
+        });
+      })();
+    </script>`;
+        
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
-        // КРИТИЧНО: Все модули должны загружаться ПОСЛЕ React CDN
-        // Используем обычные script теги без defer, чтобы они выполнялись последовательно
-        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // КРИТИЧНО: Сначала React CDN, потом guard, потом entry chunk, затем vendor chunks
+        const allScripts = reactCDN + '\n' + reactGuard + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
