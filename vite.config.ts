@@ -3,6 +3,64 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import type { Plugin } from "vite";
 
+// Плагин для замены импортов React на глобальный React в продакшене
+function useGlobalReact(): Plugin {
+  return {
+    name: 'use-global-react',
+    enforce: 'pre',
+    resolveId(id) {
+      // В продакшене заменяем импорты react и react-dom на виртуальные модули
+      if (process.env.NODE_ENV === 'production') {
+        if (id === 'react' || id === 'react/jsx-runtime') {
+          return '\0virtual:react';
+        }
+        if (id === 'react-dom' || id === 'react-dom/client') {
+          return '\0virtual:react-dom';
+        }
+      }
+      return null;
+    },
+    load(id) {
+      if (id === '\0virtual:react') {
+        return `
+          // Используем глобальный React из CDN
+          const React = window.React;
+          if (!React) {
+            throw new Error('React is not loaded. Make sure React CDN is loaded before modules.');
+          }
+          export default React;
+          export const {
+            useState, useEffect, useContext, useReducer, useCallback, useMemo,
+            useRef, useImperativeHandle, useLayoutEffect, useInsertionEffect,
+            useId, useSyncExternalStore, useTransition, useDeferredValue,
+            useDebugValue, createContext, createElement, Fragment, StrictMode,
+            Suspense, Component, PureComponent, memo, forwardRef, lazy,
+            startTransition, use
+          } = React;
+          // JSX runtime
+          export const jsx = React.createElement;
+          export const jsxs = React.createElement;
+        `;
+      }
+      if (id === '\0virtual:react-dom') {
+        return `
+          // Используем глобальный ReactDOM из CDN
+          const ReactDOM = window.ReactDOM;
+          if (!ReactDOM) {
+            throw new Error('ReactDOM is not loaded. Make sure ReactDOM CDN is loaded before modules.');
+          }
+          export default ReactDOM;
+          export const {
+            createRoot, hydrateRoot, render, unmountComponentAtNode,
+            findDOMNode, flushSync
+          } = ReactDOM;
+        `;
+      }
+      return null;
+    },
+  };
+}
+
 // Плагин для изменения порядка загрузки скриптов - entry chunk должен быть первым
 function fixScriptOrder(): Plugin {
   return {
@@ -119,27 +177,7 @@ export default defineConfig({
     // КРИТИЧНО: Сохраняем сигнатуры entry точек для правильной загрузки
     rollupOptions: {
       preserveEntrySignatures: 'strict',
-      // КРИТИЧНО: Помечаем React как external в продакшене, чтобы использовать глобальный React из CDN
-      external: (id) => {
-        // В продакшене React и react-dom должны быть external (загружаются через CDN)
-        if (process.env.NODE_ENV === 'production') {
-          if (id === 'react' || id === 'react/jsx-runtime') {
-            return true;
-          }
-          if (id === 'react-dom' || id === 'react-dom/client') {
-            return true;
-          }
-        }
-        return false;
-      },
       output: {
-        // КРИТИЧНО: Настраиваем глобальные переменные для external модулей
-        globals: {
-          'react': 'React',
-          'react/jsx-runtime': 'React',
-          'react-dom': 'ReactDOM',
-          'react-dom/client': 'ReactDOM',
-        },
         // КРИТИЧНО: Встраиваем React в entry chunk через inlineDynamicImports
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
