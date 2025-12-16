@@ -149,7 +149,8 @@ export const env = {
   get VITE_API_URL() {
     const apiUrl = validateEnv().VITE_API_URL;
     if (!apiUrl && import.meta.env.PROD) {
-      console.error('VITE_API_URL is required in production');
+      // Log warning but don't crash - app can work without it if using Supabase
+      console.warn('VITE_API_URL is not set. Backend API features may not work.');
     }
     return apiUrl || '';
   },
