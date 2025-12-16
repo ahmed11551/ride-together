@@ -106,8 +106,20 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КРИТИЧНО: React core, React Router и критичные UI компоненты ДОЛЖНЫ быть в entry chunk
-                  // Это гарантирует синхронную загрузку React до всех других модулей
+                  // КРИТИЧНО: Проверка критичных компонентов должна быть ПЕРВОЙ
+                  // Это гарантирует, что они точно попадут в entry chunk
+                  
+                  // КРИТИЧНО: Критичные UI компоненты, используемые в App.tsx синхронно, должны быть в entry
+                  // Toaster и TooltipProvider импортируются в App.tsx сразу, поэтому их зависимости тоже в entry
+                  // Проверяем как полные пути, так и частичные совпадения
+                  if (
+                    id.includes('react-toast') ||
+                    id.includes('react-tooltip') ||
+                    id.includes('sonner') ||
+                    id.includes('next-themes')
+                  ) {
+                    return undefined; // Критичные UI компоненты остаются в entry
+                  }
                   
                   // React core - всегда в entry
                   if (
@@ -138,20 +150,6 @@ export default defineConfig({
                   // React Router - КРИТИЧНО: тоже в entry, так как используется сразу при загрузке
                   if (id.includes('node_modules/react-router/')) {
                     return undefined; // React Router остается в entry вместе с React
-                  }
-                  
-                  // КРИТИЧНО: Критичные UI компоненты, используемые в App.tsx синхронно, должны быть в entry
-                  // Toaster и TooltipProvider импортируются в App.tsx сразу, поэтому их зависимости тоже в entry
-                  // Проверяем как полные пути, так и частичные совпадения
-                  if (
-                    id.includes('@radix-ui/react-toast') ||
-                    id.includes('radix-ui/react-toast') ||
-                    id.includes('@radix-ui/react-tooltip') ||
-                    id.includes('radix-ui/react-tooltip') ||
-                    id.includes('sonner') ||
-                    id.includes('next-themes')
-                  ) {
-                    return undefined; // Критичные UI компоненты остаются в entry
                   }
                   
                   // Vendor chunks
