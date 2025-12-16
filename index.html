@@ -40,23 +40,8 @@
 
   <body>
     <div id="root"></div>
-    <!-- КРИТИЧНО: В продакшене загружаем React через CDN ПЕРЕД всеми другими скриптами -->
-    <!-- Это гарантирует, что React будет доступен синхронно до загрузки React Router -->
-    <!-- В dev режиме Vite обработает это и загрузит локальный React -->
-    <!-- Используем синхронную загрузку через script теги (не async/defer) -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script>
-      // Экспортируем React в глобальную область для использования в модулях
-      // Это нужно для того, чтобы модули могли использовать React до его полной загрузки
-      if (typeof React !== 'undefined') {
-        window.React = React;
-      }
-      if (typeof ReactDOM !== 'undefined') {
-        window.ReactDOM = ReactDOM;
-      }
-    </script>
     <!-- КРИТИЧНО: Загружаем main.tsx как модуль -->
+    <!-- React CDN будет добавлен автоматически плагином в продакшене -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
