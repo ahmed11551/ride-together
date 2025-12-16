@@ -1,10 +1,11 @@
 // КРИТИЧНО: React должен быть импортирован первым и синхронно
+// Все импорты React должны быть в начале файла
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
 import "./index.css";
 import { setupGlobalErrorHandlers } from "@/lib/error-handler-enhanced";
 import { initSentry } from "@/lib/sentry";
+import App from "./App.tsx";
 
 // Setup global error handlers first (lightweight)
 setupGlobalErrorHandlers();

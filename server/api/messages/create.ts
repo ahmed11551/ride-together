@@ -49,7 +49,7 @@ export async function createMessage(req: Request): Promise<Response> {
     );
     const isParticipant = isParticipantResult.rows.length > 0;
 
-    if (!isDriver && isParticipant.rows.length === 0) {
+    if (!isDriver && !isParticipant) {
       return new Response(
         JSON.stringify({ error: 'Нет доступа к чату этой поездки' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
