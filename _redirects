@@ -1,0 +1,4 @@
+# Netlify/Vercel redirects для SPA роутинга
+# Все запросы должны возвращаться на index.html
+
+/*    /index.html   200

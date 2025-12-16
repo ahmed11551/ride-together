@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { apiClient } from "@/lib/api-client";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
-import { trackUserAction } from "@/lib/analytics";
+// Analytics импортируется динамически, чтобы избежать предупреждений Vite
 
 // Типы пользователя (совместимые с Supabase для постепенной миграции)
 export interface User {
@@ -101,7 +101,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(sessionData);
       setUser(data.user);
 
-      // Track analytics
+      // Track analytics (динамический импорт)
+      const { trackUserAction } = await import("@/lib/analytics");
       trackUserAction.signUp("email");
 
       // Update Sentry user context
@@ -135,7 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(sessionData);
       setUser(data.user);
 
-      // Track analytics
+      // Track analytics (динамический импорт)
+      const { trackUserAction } = await import("@/lib/analytics");
       trackUserAction.signIn("email");
 
       // Update Sentry user context
@@ -164,8 +166,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       setUser(null);
       
-      // Track analytics
-      trackUserAction.signOut();
+      // Track analytics (динамический импорт)
+      import("@/lib/analytics").then(({ trackUserAction }) => {
+        trackUserAction.signOut();
+      });
       
       // Clear Sentry user context
       clearSentryUser();
