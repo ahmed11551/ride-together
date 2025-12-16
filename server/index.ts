@@ -3,6 +3,32 @@
  * Замена Supabase Edge Functions и Auth
  */
 
+// Автоматическая загрузка переменных окружения
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Загружаем .env файлы (приоритет: .env.production > .env)
+const envPath = process.env.NODE_ENV === 'production' 
+  ? path.join(__dirname, '.env.production')
+  : path.join(__dirname, '.env');
+dotenv.config({ path: envPath });
+dotenv.config(); // Также загружаем .env если есть
+
+// Установка значений по умолчанию для Timeweb (если не заданы)
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgresql://gen_user:fn)un5%40K2oLrBJ@9d497bc2bf9dd679bd9834af.twc1.net:5432/default_db?sslmode=verify-full';
+}
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET не установлен! Используется временный ключ. Установите JWT_SECRET в production!');
+  process.env.JWT_SECRET = 'temporary-secret-key-change-in-production-min-32-chars';
+}
+if (!process.env.PORT) {
+  process.env.PORT = '3001';
+}
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
