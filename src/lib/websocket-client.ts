@@ -7,6 +7,14 @@ import { io, Socket } from 'socket.io-client';
 import { env } from './env';
 import { apiClient } from './api-client';
 
+// Динамический импорт для избежания проблем с SSR
+let ioClient: typeof io | null = null;
+try {
+  ioClient = io;
+} catch (e) {
+  // Игнорируем ошибки при SSR
+}
+
 let socket: Socket | null = null;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 5;
@@ -26,6 +34,11 @@ export function connectWebSocket(): Promise<Socket> {
       return;
     }
 
+    if (!ioClient) {
+      reject(new Error('Socket.io client not available'));
+      return;
+    }
+
     const wsUrl = env.VITE_WS_URL;
     if (!wsUrl) {
       reject(new Error('VITE_WS_URL not configured'));
@@ -39,7 +52,7 @@ export function connectWebSocket(): Promise<Socket> {
     }
 
     // Подключаемся к Socket.io серверу
-    socket = io(wsUrl, {
+    socket = ioClient(wsUrl, {
       path: '/socket.io',
       transports: ['websocket'],
       auth: {

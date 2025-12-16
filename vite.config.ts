@@ -101,26 +101,38 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КРИТИЧНО: React core ДОЛЖЕН быть в entry chunk
-                  // React Router тоже должен быть в entry, так как он критичен для загрузки
+                  // КРИТИЧНО: React core и React Router ДОЛЖНЫ быть в entry chunk
+                  // Это гарантирует синхронную загрузку React до всех других модулей
+                  
+                  // React core - всегда в entry
                   if (
-                    id.includes('node_modules/react/') ||
-                    id.includes('node_modules/react-dom/') ||
-                    id.includes('node_modules/scheduler/') ||
-                    id.includes('node_modules/react-router/')
+                    id.includes('node_modules/react/') &&
+                    !id.includes('react-router') &&
+                    !id.includes('react-helmet') &&
+                    !id.includes('react-hook-form') &&
+                    !id.includes('react-day-picker') &&
+                    !id.includes('react-resizable') &&
+                    !id.includes('react-query')
                   ) {
-                    // Проверяем, что это не другие react-* библиотеки
-                    if (
-                      id.includes('react-helmet') || 
-                      id.includes('react-hook-form') || 
-                      id.includes('react-day-picker') || 
-                      id.includes('react-resizable') ||
-                      id.includes('react-query')
-                    ) {
-                      // Эти библиотеки могут быть в отдельных chunks
-                    } else {
-                      return undefined; // React, ReactDOM, Scheduler, React Router остаются в entry
-                    }
+                    return undefined; // React остается в entry
+                  }
+                  
+                  // React DOM - всегда в entry
+                  if (
+                    id.includes('node_modules/react-dom/') &&
+                    !id.includes('react-router')
+                  ) {
+                    return undefined; // React DOM остается в entry
+                  }
+                  
+                  // Scheduler - всегда в entry
+                  if (id.includes('node_modules/scheduler/')) {
+                    return undefined; // Scheduler остается в entry
+                  }
+                  
+                  // React Router - КРИТИЧНО: тоже в entry, так как используется сразу при загрузке
+                  if (id.includes('node_modules/react-router/')) {
+                    return undefined; // React Router остается в entry вместе с React
                   }
                   
                   // Vendor chunks
