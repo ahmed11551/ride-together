@@ -106,40 +106,37 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КАРДИНАЛЬНОЕ ИЗМЕНЕНИЕ: Включаем ВСЕ React-зависимые библиотеки в entry chunk
-                  // Это гарантирует, что они загружаются вместе с React и не вызывают ошибки
+                  // УЛЬТИМАТИВНОЕ РЕШЕНИЕ: Включаем ВСЕ React-зависимые библиотеки в entry chunk
+                  // Проверяем путь к файлу - если содержит "react" (в любом регистре) - в entry
                   
-                  // КРИТИЧНО: Проверяем ВСЕ возможные React-зависимые библиотеки
-                  // Если библиотека содержит "react" в пути или названии - она в entry
+                  // КРИТИЧНО: Проверяем путь к модулю, а не содержимое
+                  // Если путь содержит "react" - библиотека React-зависимая
+                  const lowerId = id.toLowerCase();
                   
-                  // 1. ВСЕ что связано с React - в entry
                   if (
-                    id.includes('react') ||
-                    id.includes('React') ||
-                    id.includes('@radix-ui') ||
-                    id.includes('@tanstack/react-query') ||
-                    id.includes('react-helmet') ||
-                    id.includes('react-hook-form') ||
-                    id.includes('react-day-picker') ||
-                    id.includes('react-resizable') ||
-                    id.includes('react-router') ||
-                    id.includes('embla-carousel-react') ||
-                    id.includes('sonner') ||
-                    id.includes('next-themes') ||
-                    id.includes('cmdk') ||
-                    id.includes('vaul') ||
-                    id.includes('input-otp') ||
-                    id.includes('@hookform')
+                    lowerId.includes('react') ||
+                    lowerId.includes('@radix-ui') ||
+                    lowerId.includes('@tanstack/react-query') ||
+                    lowerId.includes('react-helmet') ||
+                    lowerId.includes('react-hook-form') ||
+                    lowerId.includes('react-day-picker') ||
+                    lowerId.includes('react-resizable') ||
+                    lowerId.includes('react-router') ||
+                    lowerId.includes('embla-carousel-react') ||
+                    lowerId.includes('sonner') ||
+                    lowerId.includes('next-themes') ||
+                    lowerId.includes('cmdk') ||
+                    lowerId.includes('vaul') ||
+                    lowerId.includes('input-otp') ||
+                    lowerId.includes('@hookform') ||
+                    lowerId.includes('lucide-react') || // Иконки тоже могут использовать React
+                    lowerId.includes('recharts') // Графики тоже могут использовать React
                   ) {
                     return undefined; // ВСЕ React-зависимое в entry chunk
                   }
                   
                   // Vendor chunks - только НЕ React-зависимые библиотеки
                   if (id.includes('node_modules')) {
-                    // UI библиотеки без React зависимостей
-                    if (id.includes('lucide-react') || id.includes('recharts')) {
-                      return 'ui-vendor';
-                    }
                     // Supabase (deprecated, но оставляем для совместимости)
                     if (id.includes('@supabase')) {
                       return 'supabase';
