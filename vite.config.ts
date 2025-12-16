@@ -119,7 +119,27 @@ export default defineConfig({
     // КРИТИЧНО: Сохраняем сигнатуры entry точек для правильной загрузки
     rollupOptions: {
       preserveEntrySignatures: 'strict',
+      // КРИТИЧНО: Помечаем React как external в продакшене, чтобы использовать глобальный React из CDN
+      external: (id) => {
+        // В продакшене React и react-dom должны быть external (загружаются через CDN)
+        if (process.env.NODE_ENV === 'production') {
+          if (id === 'react' || id === 'react/jsx-runtime') {
+            return true;
+          }
+          if (id === 'react-dom' || id === 'react-dom/client') {
+            return true;
+          }
+        }
+        return false;
+      },
       output: {
+        // КРИТИЧНО: Настраиваем глобальные переменные для external модулей
+        globals: {
+          'react': 'React',
+          'react/jsx-runtime': 'React',
+          'react-dom': 'ReactDOM',
+          'react-dom/client': 'ReactDOM',
+        },
         // КРИТИЧНО: Встраиваем React в entry chunk через inlineDynamicImports
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
