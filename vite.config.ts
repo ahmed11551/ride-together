@@ -66,7 +66,19 @@ function fixScriptOrder(): Plugin {
         // Вставляем скрипты в <body> перед </body>
         // КРИТИЧНО: Entry chunk должен загружаться и выполняться ПЕРВЫМ
         // Vendor chunks загружаются после, но не выполняются до завершения entry
-        const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // ВАЖНО: Используем defer для всех скриптов, чтобы гарантировать порядок выполнения
+        const entryScriptsWithDefer = entryScripts.map(s => {
+          // Убеждаемся, что entry chunk не имеет defer (выполняется сразу)
+          return s.tag.replace(/type=["']module["']/, 'type="module"');
+        });
+        const vendorScriptsWithDefer = vendorScripts.map(s => {
+          // Vendor chunks могут иметь defer для загрузки после entry
+          if (!s.tag.includes('defer')) {
+            return s.tag.replace(/type=["']module["']/, 'type="module" defer');
+          }
+          return s.tag;
+        });
+        const allScripts = [...entryScriptsWithDefer, ...vendorScriptsWithDefer].join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
