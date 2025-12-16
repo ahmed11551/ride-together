@@ -1,6 +1,20 @@
 // КРИТИЧНО: React должен быть импортирован первым и синхронно
-import React from "react";
-import { createRoot } from "react-dom/client";
+// В продакшене используем глобальный React из CDN, если он доступен
+let React: typeof import("react");
+let createRoot: typeof import("react-dom/client").createRoot;
+
+if (import.meta.env.PROD && typeof window !== 'undefined' && window.React) {
+  // Используем глобальный React из CDN в продакшене
+  React = window.React as any;
+  const ReactDOM = window.ReactDOM as any;
+  createRoot = ReactDOM.createRoot;
+} else {
+  // В dev режиме используем локальный React
+  React = await import("react");
+  const reactDom = await import("react-dom/client");
+  createRoot = reactDom.createRoot;
+}
+
 import App from "./App.tsx";
 import "./index.css";
 import { setupGlobalErrorHandlers } from "@/lib/error-handler-enhanced";
@@ -95,4 +109,42 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   };
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// КРИТИЧНО: В продакшене ждем загрузки React из CDN перед рендерингом
+if (import.meta.env.PROD && typeof window !== 'undefined') {
+  // Проверяем, что React загружен
+  const checkReact = () => {
+    if (window.React && window.ReactDOM) {
+      const React = window.React;
+      const ReactDOM = window.ReactDOM;
+      const root = ReactDOM.createRoot(document.getElementById("root")!);
+      root.render(React.createElement(App));
+    } else {
+      // Если React еще не загружен, ждем немного и проверяем снова
+      setTimeout(checkReact, 10);
+    }
+  };
+  checkReact();
+} else {
+  // В dev режиме используем обычный импорт
+  const { createRoot } = await import("react-dom/client");
+  // КРИТИЧНО: В продакшене ждем загрузки React из CDN перед рендерингом
+if (import.meta.env.PROD && typeof window !== 'undefined') {
+  // Проверяем, что React загружен из CDN
+  const initApp = () => {
+    if (window.React && window.ReactDOM) {
+      // Используем глобальный React из CDN
+      const ReactGlobal = window.React;
+      const ReactDOMGlobal = window.ReactDOM;
+      const root = ReactDOMGlobal.createRoot(document.getElementById("root")!);
+      root.render(ReactGlobal.createElement(App));
+    } else {
+      // Если React еще не загружен, ждем немного и проверяем снова
+      setTimeout(initApp, 10);
+    }
+  };
+  initApp();
+} else {
+  // В dev режиме используем обычный импорт
+  createRoot(document.getElementById("root")!).render(<App />);
+}
+}
