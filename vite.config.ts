@@ -154,15 +154,26 @@ function fixScriptOrder(): Plugin {
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script>
-      // Экспортируем React в глобальную область для использования в модулях
-      if (typeof React !== 'undefined') window.React = React;
-      if (typeof ReactDOM !== 'undefined') window.ReactDOM = ReactDOM;
+      // КРИТИЧНО: Экспортируем React в глобальную область и ждем полной загрузки
+      if (typeof React !== 'undefined') {
+        window.React = React;
+      }
+      if (typeof ReactDOM !== 'undefined') {
+        window.ReactDOM = ReactDOM;
+      }
+      // КРИТИЧНО: Устанавливаем флаг, что React загружен
+      window.__REACT_LOADED__ = true;
+      // КРИТИЧНО: Отправляем событие, что React готов
+      window.dispatchEvent(new Event('react-loaded'));
     </script>`;
         
         // Вставляем скрипты в <body> перед </body>
         // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
-        // Это гарантирует, что React будет доступен до того, как React Router попытается его использовать
-        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // КРИТИЧНО: Все модули должны иметь defer, чтобы они ждали загрузки React
+        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => {
+          // Добавляем defer к модулям, чтобы они ждали загрузки React
+          return s.tag.replace('type="module"', 'type="module" defer');
+        }).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);

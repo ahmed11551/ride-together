@@ -99,18 +99,31 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 if (import.meta.env.PROD && typeof window !== 'undefined') {
   // Проверяем, что React загружен из CDN
   const initApp = () => {
-    if (window.React && window.ReactDOM) {
+    if (window.React && window.ReactDOM && window.__REACT_LOADED__) {
       // Используем глобальный React из CDN
       const ReactGlobal = window.React;
       const ReactDOMGlobal = window.ReactDOM;
       const root = ReactDOMGlobal.createRoot(document.getElementById("root")!);
       root.render(ReactGlobal.createElement(App));
     } else {
-      // Если React еще не загружен, ждем немного и проверяем снова
-      setTimeout(initApp, 10);
+      // Если React еще не загружен, ждем события или проверяем снова
+      if (window.__REACT_LOADED__) {
+        initApp();
+      } else {
+        window.addEventListener('react-loaded', initApp, { once: true });
+        // Fallback: проверяем каждые 10ms на случай, если событие не сработало
+        setTimeout(initApp, 10);
+      }
     }
   };
-  initApp();
+  // Ждем события загрузки React или проверяем сразу
+  if (window.__REACT_LOADED__) {
+    initApp();
+  } else {
+    window.addEventListener('react-loaded', initApp, { once: true });
+    // Fallback: проверяем каждые 10ms
+    setTimeout(initApp, 10);
+  }
 } else {
   // В dev режиме используем обычный импорт
   createRoot(document.getElementById("root")!).render(<App />);
