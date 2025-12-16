@@ -97,24 +97,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 
 // КРИТИЧНО: В продакшене ждем загрузки React из CDN перед рендерингом
 if (import.meta.env.PROD && typeof window !== 'undefined') {
-  // Проверяем, что React загружен
-  const checkReact = () => {
-    if (window.React && window.ReactDOM) {
-      const React = window.React;
-      const ReactDOM = window.ReactDOM;
-      const root = ReactDOM.createRoot(document.getElementById("root")!);
-      root.render(React.createElement(App));
-    } else {
-      // Если React еще не загружен, ждем немного и проверяем снова
-      setTimeout(checkReact, 10);
-    }
-  };
-  checkReact();
-} else {
-  // В dev режиме используем обычный импорт
-  const { createRoot } = await import("react-dom/client");
-  // КРИТИЧНО: В продакшене ждем загрузки React из CDN перед рендерингом
-if (import.meta.env.PROD && typeof window !== 'undefined') {
   // Проверяем, что React загружен из CDN
   const initApp = () => {
     if (window.React && window.ReactDOM) {
@@ -132,5 +114,4 @@ if (import.meta.env.PROD && typeof window !== 'undefined') {
 } else {
   // В dev режиме используем обычный импорт
   createRoot(document.getElementById("root")!).render(<App />);
-}
 }
