@@ -16,10 +16,20 @@ function useGlobalReact(): Plugin {
       // В продакшене заменяем импорты react и react-dom на виртуальные модули
       // КРИТИЧНО: Это должно работать для ВСЕХ модулей, включая react-router
       if (isProduction) {
-        if (id === 'react' || id.startsWith('react/')) {
+        // Точное совпадение для 'react'
+        if (id === 'react') {
           return '\0virtual:react';
         }
-        if (id === 'react-dom' || id.startsWith('react-dom/')) {
+        // Все подмодули react (react/jsx-runtime, react/...)
+        if (id.startsWith('react/')) {
+          return '\0virtual:react';
+        }
+        // Точное совпадение для 'react-dom'
+        if (id === 'react-dom') {
+          return '\0virtual:react-dom';
+        }
+        // Все подмодули react-dom (react-dom/client, react-dom/...)
+        if (id.startsWith('react-dom/')) {
           return '\0virtual:react-dom';
         }
       }
@@ -145,21 +155,42 @@ function fixScriptOrder(): Plugin {
         
         // КРИТИЧНО: Добавляем React CDN ПЕРЕД всеми модулями в продакшене
         // Это гарантирует синхронную загрузку React до React Router
+        // КРИТИЧНО: Используем синхронную загрузку (без async/defer), чтобы блокировать выполнение модулей
         const reactCDN = `    <!-- КРИТИЧНО: React загружается через CDN синхронно перед всеми модулями -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script>
-      // КРИТИЧНО: Экспортируем React в глобальную область и ждем полной загрузки
-      if (typeof React !== 'undefined') {
-        window.React = React;
-      }
-      if (typeof ReactDOM !== 'undefined') {
-        window.ReactDOM = ReactDOM;
-      }
-      // КРИТИЧНО: Устанавливаем флаг, что React загружен
-      window.__REACT_LOADED__ = true;
-      // КРИТИЧНО: Отправляем событие, что React готов
-      window.dispatchEvent(new Event('react-loaded'));
+      // КРИТИЧНО: Загружаем React синхронно через XMLHttpRequest, чтобы гарантировать загрузку до модулей
+      (function() {
+        function loadScriptSync(url, callback) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', url, false); // false = синхронный запрос
+          xhr.onload = function() {
+            if (xhr.status === 200) {
+              var script = document.createElement('script');
+              script.textContent = xhr.responseText;
+              document.head.appendChild(script);
+              if (callback) callback();
+            }
+          };
+          xhr.send();
+        }
+        
+        // Загружаем React синхронно
+        loadScriptSync('https://unpkg.com/react@18/umd/react.production.min.js', function() {
+          loadScriptSync('https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', function() {
+            // КРИТИЧНО: Экспортируем React в глобальную область
+            if (typeof React !== 'undefined') {
+              window.React = React;
+            }
+            if (typeof ReactDOM !== 'undefined') {
+              window.ReactDOM = ReactDOM;
+            }
+            // КРИТИЧНО: Устанавливаем флаг, что React загружен
+            window.__REACT_LOADED__ = true;
+            // КРИТИЧНО: Отправляем событие, что React готов
+            window.dispatchEvent(new Event('react-loaded'));
+          });
+        });
+      })();
     </script>`;
         
         // Вставляем скрипты в <body> перед </body>
