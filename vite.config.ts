@@ -47,13 +47,24 @@ function fixScriptOrder(): Plugin {
           newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
         }
         
+        // КРИТИЧНО: Добавляем React CDN ПЕРЕД всеми модулями в продакшене
+        // Это гарантирует синхронную загрузку React до React Router
+        const reactCDN = `    <!-- КРИТИЧНО: React загружается через CDN синхронно перед всеми модулями -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+      // Экспортируем React в глобальную область для использования в модулях
+      if (typeof React !== 'undefined') window.React = React;
+      if (typeof ReactDOM !== 'undefined') window.ReactDOM = ReactDOM;
+    </script>`;
+        
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Entry chunk ДОЛЖЕН загружаться первым, затем vendor chunks
+        // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
         // Это гарантирует, что React будет доступен до того, как React Router попытается его использовать
-        const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
-          newHtml = newHtml.slice(0, bodyEnd) + '    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
+          newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
         }
         
         // КРИТИЧНО: Также добавляем modulepreload для entry chunk в <head>
