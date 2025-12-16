@@ -158,9 +158,6 @@ export default defineConfig({
             return 'vendor';
           }
         },
-        // КРИТИЧНО: Отключаем inline динамические импорты для React
-        // Это гарантирует, что React встроен в entry chunk
-        inlineDynamicImports: false,
         // Оптимизация имен файлов
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
