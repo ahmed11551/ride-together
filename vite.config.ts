@@ -40,10 +40,19 @@ function useGlobalReact(): Plugin {
         // КРИТИЧНО: Проверяем, что React загружен, иначе ждем
         return `
           // КРИТИЧНО: Ждем загрузки React из CDN
-          if (!window.React) {
-            throw new Error('React CDN must be loaded before modules. Make sure React CDN scripts are loaded synchronously before all module scripts.');
+          // Используем синхронную проверку, чтобы гарантировать загрузку
+          if (!window.React || !window.__REACT_LOADED__) {
+            // Если React еще не загружен, ждем события или проверяем снова
+            if (!window.__REACT_LOADED__) {
+              // Блокируем выполнение до загрузки React
+              throw new Error('React CDN must be loaded before modules. Make sure React CDN scripts are loaded synchronously before all module scripts.');
+            }
           }
           const React = window.React;
+          // КРИТИЧНО: Убеждаемся, что __SECRET_INTERNALS доступен
+          if (!React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+            console.warn('React.__SECRET_INTERNALS not found. This may cause issues with React Router.');
+          }
           export default React;
           export const useState = React.useState;
           export const useEffect = React.useEffect;
@@ -166,17 +175,25 @@ function fixScriptOrder(): Plugin {
       if (typeof React !== 'undefined') {
         window.React = React;
         // КРИТИЧНО: Убеждаемся, что React.__SECRET_INTERNALS доступен
+        // Это критично для React Router
         if (React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
           window.__REACT_INTERNALS__ = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        } else {
+          console.error('React.__SECRET_INTERNALS not found! This will cause issues with React Router.');
         }
+      } else {
+        console.error('React is not loaded from CDN!');
       }
       if (typeof ReactDOM !== 'undefined') {
         window.ReactDOM = ReactDOM;
+      } else {
+        console.error('ReactDOM is not loaded from CDN!');
       }
       // КРИТИЧНО: Устанавливаем флаг, что React загружен
       window.__REACT_LOADED__ = true;
       // КРИТИЧНО: Отправляем событие, что React готов
       window.dispatchEvent(new Event('react-loaded'));
+      console.log('React loaded from CDN:', !!window.React, 'Internals:', !!window.React?.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED);
     </script>`;
         
         // КРИТИЧНО: Добавляем скрипт-защиту, который блокирует выполнение модулей до загрузки React
