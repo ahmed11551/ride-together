@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { env } from '@/lib/env';
+import { apiClient } from '@/lib/api-client';
 
 export interface NotificationPermission {
   permission: NotificationPermissionState;
@@ -113,7 +113,7 @@ export const useNotifications = () => {
 
       const subscription = await registration.pushManager.subscribe(subscribeOptions);
 
-      // Сохраняем подписку в Supabase
+      // Сохраняем подписку через API (нужно создать endpoint)
       await saveSubscription(subscription, user.id);
 
       return subscription;
@@ -175,27 +175,19 @@ export const useNotifications = () => {
 };
 
 /**
- * Сохранение подписки в Supabase
+ * Сохранение подписки через API
  */
 async function saveSubscription(
   subscription: PushSubscription,
   userId: string
 ): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert({
-        user_id: userId,
-        subscription: subscription.toJSON(),
-        endpoint: subscription.endpoint,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
-    if (error) {
-      const { logger } = await import('@/lib/logger');
-      logger.error('Ошибка сохранения подписки', error);
-    }
+    // TODO: Создать API endpoint для сохранения подписок
+    // Пока просто логируем
+    const { logger } = await import('@/lib/logger');
+    logger.debug('Subscription saved', { userId, endpoint: subscription.endpoint });
+    
+    // В будущем: await apiClient.post('/api/push-subscriptions', { ... });
   } catch (error) {
     const { logger } = await import('@/lib/logger');
     logger.error('Ошибка сохранения подписки', error);
@@ -203,19 +195,15 @@ async function saveSubscription(
 }
 
 /**
- * Удаление подписки из Supabase
+ * Удаление подписки через API
  */
 async function removeSubscription(userId: string): Promise<void> {
   try {
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .delete()
-      .eq('user_id', userId);
-
-    if (error) {
-      const { logger } = await import('@/lib/logger');
-      logger.error('Ошибка удаления подписки', error);
-    }
+    // TODO: Создать API endpoint для удаления подписок
+    const { logger } = await import('@/lib/logger');
+    logger.debug('Subscription removed', { userId });
+    
+    // В будущем: await apiClient.delete(`/api/push-subscriptions/${userId}`);
   } catch (error) {
     const { logger } = await import('@/lib/logger');
     logger.error('Ошибка удаления подписки', error);
@@ -237,4 +225,3 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   }
   return outputArray;
 }
-

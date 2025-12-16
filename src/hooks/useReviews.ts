@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Review {
@@ -36,30 +36,8 @@ export const useUserReviews = (userId: string | undefined) => {
     queryFn: async () => {
       if (!userId) return [];
 
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("to_user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch user profiles
-      const userIds = [
-        ...new Set(data?.flatMap(r => [r.from_user_id, r.to_user_id]) || []),
-      ];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url")
-        .in("user_id", userIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      return (data || []).map(review => ({
-        ...review,
-        from_user: profileMap.get(review.from_user_id),
-        to_user: profileMap.get(review.to_user_id),
-      })) as Review[];
+      const data = await apiClient.get<Review[]>(`/api/reviews?user_id=${userId}`);
+      return data;
     },
     enabled: !!userId,
   });
@@ -74,30 +52,8 @@ export const useRideReviews = (rideId: string | undefined) => {
     queryFn: async () => {
       if (!rideId) return [];
 
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("ride_id", rideId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch user profiles
-      const userIds = [
-        ...new Set(data?.flatMap(r => [r.from_user_id, r.to_user_id]) || []),
-      ];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url")
-        .in("user_id", userIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      return (data || []).map(review => ({
-        ...review,
-        from_user: profileMap.get(review.from_user_id),
-        to_user: profileMap.get(review.to_user_id),
-      })) as Review[];
+      const data = await apiClient.get<Review[]>(`/api/reviews?ride_id=${rideId}`);
+      return data;
     },
     enabled: !!rideId,
   });
@@ -115,46 +71,41 @@ export const useCanReviewRide = (rideId: string | undefined) => {
       if (!rideId || !user) return { canReview: false, reason: null };
 
       // Check if ride is completed
-      const { data: ride } = await supabase
-        .from("rides")
-        .select("id, driver_id, status")
-        .eq("id", rideId)
-        .single();
-
+      const ride = await apiClient.get<{ driver_id: string; status: string }>(`/api/rides/${rideId}`);
+      
       if (!ride || ride.status !== "completed") {
         return { canReview: false, reason: "Поездка не завершена" };
       }
 
       // Check if user was part of the ride
       const isDriver = ride.driver_id === user.id;
-      const { data: booking } = await supabase
-        .from("bookings")
-        .select("id, status")
-        .eq("ride_id", rideId)
-        .eq("passenger_id", user.id)
-        .eq("status", "completed")
-        .maybeSingle();
-
-      if (!isDriver && !booking) {
-        return { canReview: false, reason: "Вы не участвовали в поездке" };
+      
+      if (!isDriver) {
+        // Check if user has a completed booking
+        const myBookings = await apiClient.get<Booking[]>('/api/bookings');
+        const booking = myBookings.find(
+          b => b.ride_id === rideId && 
+          b.status === "completed"
+        );
+        
+        if (!booking) {
+          return { canReview: false, reason: "Вы не участвовали в поездке" };
+        }
       }
 
       // Check if review already exists
-      const otherUserId = isDriver
-        ? booking?.passenger_id || null
+      const reviews = await apiClient.get<Review[]>(`/api/reviews?ride_id=${rideId}`);
+      const otherUserId = isDriver 
+        ? (await apiClient.get<Booking[]>(`/api/bookings/ride/${rideId}`)).find(b => b.status === "completed")?.passenger_id
         : ride.driver_id;
 
       if (!otherUserId) {
         return { canReview: false, reason: "Не найден второй участник" };
       }
 
-      const { data: existingReview } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("ride_id", rideId)
-        .eq("from_user_id", user.id)
-        .eq("to_user_id", otherUserId)
-        .maybeSingle();
+      const existingReview = reviews.find(
+        r => r.from_user_id === user.id && r.to_user_id === otherUserId
+      );
 
       if (existingReview) {
         return { canReview: false, reason: "Отзыв уже оставлен" };
@@ -170,6 +121,14 @@ export const useCanReviewRide = (rideId: string | undefined) => {
   });
 };
 
+// Временный интерфейс для useCanReviewRide
+interface Booking {
+  id: string;
+  ride_id: string;
+  passenger_id: string;
+  status: string;
+}
+
 /**
  * Create a review
  */
@@ -181,20 +140,7 @@ export const useCreateReview = () => {
     mutationFn: async (review: ReviewInput) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("reviews")
-        .insert({
-          ...review,
-          from_user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update user rating
-      await updateUserRating(review.to_user_id);
-
+      const data = await apiClient.post<Review>('/api/reviews', review);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -204,34 +150,3 @@ export const useCreateReview = () => {
     },
   });
 };
-
-/**
- * Update user ratings (both driver and passenger) based on all reviews
- * Uses database function for accurate calculation
- */
-async function updateUserRating(userId: string) {
-  // Use database function to update both driver and passenger ratings
-  const { error } = await supabase.rpc('update_user_ratings', {
-    p_user_id: userId
-  });
-
-  if (error) {
-    console.error('Error updating user ratings:', error);
-    // Fallback to old method if RPC fails
-    const { data: reviews } = await supabase
-      .from("reviews")
-      .select("rating")
-      .eq("to_user_id", userId);
-
-    if (!reviews || reviews.length === 0) return;
-
-    const avgRating =
-      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-
-    await supabase
-      .from("profiles")
-      .update({ rating: avgRating })
-      .eq("user_id", userId);
-  }
-}
-

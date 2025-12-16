@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Report {
@@ -44,16 +44,7 @@ export const useCreateReport = () => {
     mutationFn: async (report: ReportInput) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("reports")
-        .insert({
-          ...report,
-          reporter_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.post<Report>('/api/reports', report);
       return data;
     },
     onSuccess: () => {
@@ -73,14 +64,8 @@ export const useMyReports = () => {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from("reports")
-        .select("*")
-        .eq("reporter_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Report[];
+      const data = await apiClient.get<Report[]>(`/api/reports?my=true`);
+      return data;
     },
     enabled: !!user,
   });
@@ -97,13 +82,8 @@ export const useIsAdmin = () => {
     queryFn: async () => {
       if (!user) return false;
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      return data?.is_admin || false;
+      const profile = await apiClient.get<{ is_admin?: boolean }>('/api/profiles/me');
+      return profile?.is_admin || false;
     },
     enabled: !!user,
   });
@@ -118,18 +98,8 @@ export const useAllReports = () => {
   return useQuery({
     queryKey: ["reports", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("reports")
-        .select(`
-          *,
-          reported_user:profiles!reports_reported_user_id_fkey(user_id, full_name),
-          reporter:profiles!reports_reporter_id_fkey(user_id, full_name),
-          ride:rides(id, from_city, to_city)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data as Report[];
+      const data = await apiClient.get<Report[]>('/api/reports');
+      return data;
     },
     enabled: !!isAdmin,
   });
@@ -151,14 +121,7 @@ export const useUpdateReport = () => {
       status: Report["status"];
       admin_notes?: string;
     }) => {
-      const { data, error } = await supabase
-        .from("reports")
-        .update({ status, admin_notes })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.put<Report>(`/api/reports/${id}`, { status, admin_notes });
       return data;
     },
     onSuccess: () => {
@@ -181,14 +144,10 @@ export const useBanUser = () => {
       userId: string;
       isBanned: boolean;
     }) => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({ is_banned: isBanned })
-        .eq("user_id", userId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.put<{ id: string; user_id: string; is_banned: boolean }>(
+        `/api/profiles/${userId}/ban`,
+        { is_banned: isBanned }
+      );
       return data;
     },
     onSuccess: () => {
@@ -197,4 +156,3 @@ export const useBanUser = () => {
     },
   });
 };
-

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface Ride {
@@ -45,40 +45,14 @@ export const useSearchRides = (params: SearchParams) => {
   return useQuery({
     queryKey: ["rides", "search", params],
     queryFn: async () => {
-      let query = supabase
-        .from("rides")
-        .select("*")
-        .eq("status", "active")
-        .gte("seats_available", params.passengers || 1)
-        .order("departure_date", { ascending: true })
-        .order("departure_time", { ascending: true });
+      const queryParams = new URLSearchParams();
+      if (params.from) queryParams.append('from', params.from);
+      if (params.to) queryParams.append('to', params.to);
+      if (params.date) queryParams.append('date', params.date);
+      if (params.passengers) queryParams.append('passengers', params.passengers.toString());
 
-      if (params.from) {
-        query = query.ilike("from_city", `%${params.from}%`);
-      }
-      if (params.to) {
-        query = query.ilike("to_city", `%${params.to}%`);
-      }
-      if (params.date) {
-        query = query.eq("departure_date", params.date);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Fetch driver profiles separately
-      const driverIds = [...new Set(data?.map(r => r.driver_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, rating, trips_count, is_verified")
-        .in("user_id", driverIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
-      
-      return (data || []).map(ride => ({
-        ...ride,
-        driver: profileMap.get(ride.driver_id),
-      })) as RideWithDriver[];
+      const data = await apiClient.get<RideWithDriver[]>(`/api/rides?${queryParams.toString()}`);
+      return data;
     },
   });
 };
@@ -89,22 +63,8 @@ export const useRideById = (rideId: string | undefined) => {
     queryFn: async () => {
       if (!rideId) return null;
 
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*")
-        .eq("id", rideId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) return null;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", data.driver_id)
-        .maybeSingle();
-
-      return { ...data, driver: profile } as RideWithDriver;
+      const data = await apiClient.get<RideWithDriver>(`/api/rides/${rideId}`);
+      return data;
     },
     enabled: !!rideId,
   });
@@ -118,14 +78,8 @@ export const useMyRides = () => {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*")
-        .eq("driver_id", user.id)
-        .order("departure_date", { ascending: true });
-
-      if (error) throw error;
-      return data as Ride[];
+      const data = await apiClient.get<Ride[]>(`/api/rides/my`);
+      return data;
     },
     enabled: !!user,
   });
@@ -139,13 +93,7 @@ export const useCreateRide = () => {
     mutationFn: async (ride: Omit<Ride, "id" | "driver_id" | "status" | "created_at" | "updated_at">) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("rides")
-        .insert({ ...ride, driver_id: user.id })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.post<Ride>('/api/rides', ride);
       return data;
     },
     onSuccess: () => {
@@ -159,14 +107,7 @@ export const useUpdateRide = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Ride> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("rides")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.put<Ride>(`/api/rides/${id}`, updates);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -180,29 +121,8 @@ export const useRecentRides = () => {
   return useQuery({
     queryKey: ["rides", "recent"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rides")
-        .select("*")
-        .eq("status", "active")
-        .gte("departure_date", new Date().toISOString().split("T")[0])
-        .gt("seats_available", 0)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-
-      const driverIds = [...new Set(data?.map(r => r.driver_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, rating, trips_count, is_verified")
-        .in("user_id", driverIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
-      
-      return (data || []).map(ride => ({
-        ...ride,
-        driver: profileMap.get(ride.driver_id),
-      })) as RideWithDriver[];
+      const data = await apiClient.get<RideWithDriver[]>('/api/rides?limit=10');
+      return data;
     },
   });
 };
@@ -219,13 +139,29 @@ export const useCleanupOldRides = () => {
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
 
-      // Вызываем SQL функцию для очистки старых поездок пользователя
-      const { data, error } = await supabase.rpc('cleanup_user_old_rides', {
-        user_uuid: user.id
-      });
+      // Получаем старые поездки
+      const myRides = await apiClient.get<Ride[]>('/api/rides/my?status=cancelled');
+      const completedRides = await apiClient.get<Ride[]>('/api/rides/my?status=completed');
+      
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      let deletedCount = 0;
+      
+      // Удаляем старые отмененные и завершенные поездки
+      for (const ride of [...myRides, ...completedRides]) {
+        const rideDate = new Date(ride.updated_at);
+        if (rideDate < thirtyDaysAgo) {
+          try {
+            await apiClient.delete(`/api/rides/${ride.id}`);
+            deletedCount++;
+          } catch (error) {
+            console.error(`Error deleting ride ${ride.id}:`, error);
+          }
+        }
+      }
 
-      if (error) throw error;
-      return data as number;
+      return deletedCount;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rides"] });

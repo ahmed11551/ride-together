@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { notifyNewBooking, notifyBookingConfirmed } from "@/lib/notifications";
 
@@ -25,6 +25,10 @@ export interface BookingWithRide extends Booking {
     price: number;
     seats_available: number;
     driver_id: string;
+    driver?: {
+      full_name: string | null;
+      avatar_url: string | null;
+    };
   };
 }
 
@@ -36,32 +40,23 @@ export const useMyBookings = () => {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*, ride:rides(*)")
-        .eq("passenger_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch driver profiles
-      const driverIds = [...new Set(data?.map(b => (b.ride as any)?.driver_id).filter(Boolean) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, phone")
-        .in("user_id", driverIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]));
-      
-      return (data || []).map(booking => ({
-        ...booking,
-        ride: booking.ride ? {
-          ...(booking.ride as any),
-          driver: profileMap.get((booking.ride as any).driver_id),
-        } : undefined,
-      })) as BookingWithRide[];
+      const data = await apiClient.get<BookingWithRide[]>('/api/bookings');
+      return data;
     },
     enabled: !!user,
+  });
+};
+
+export const useRideBookings = (rideId: string | undefined) => {
+  return useQuery({
+    queryKey: ["ride-bookings", rideId],
+    queryFn: async () => {
+      if (!rideId) return [];
+
+      const data = await apiClient.get<BookingWithRide[]>(`/api/bookings/ride/${rideId}`);
+      return data;
+    },
+    enabled: !!rideId,
   });
 };
 
@@ -73,18 +68,11 @@ export const useCreateBooking = () => {
     mutationFn: async ({ rideId, seats, totalPrice }: { rideId: string; seats: number; totalPrice: number }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .insert({
-          ride_id: rideId,
-          passenger_id: user.id,
-          seats_booked: seats,
-          total_price: totalPrice,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await apiClient.post<Booking>('/api/bookings', {
+        ride_id: rideId,
+        seats_booked: seats,
+        total_price: totalPrice,
+      });
 
       // Отправляем уведомление водителю (асинхронно, не блокируем)
       if (data) {
@@ -100,6 +88,7 @@ export const useCreateBooking = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["rides"] });
+      queryClient.invalidateQueries({ queryKey: ["ride-bookings"] });
     },
   });
 };
@@ -115,25 +104,12 @@ async function sendBookingNotification(
 ): Promise<void> {
   try {
     // Получаем информацию о поездке
-    const { data: ride } = await supabase
-      .from("rides")
-      .select("driver_id")
-      .eq("id", rideId)
-      .single();
-
+    const ride = await apiClient.get<{ driver_id: string }>(`/api/rides/${rideId}`);
     if (!ride) return;
 
     // Получаем информацию о пассажире
-    const { data: passengerProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", passengerId)
-      .maybeSingle();
-
+    const passengerProfile = await apiClient.get<{ full_name: string | null }>(`/api/profiles/${passengerId}`);
     const passengerName = passengerProfile?.full_name || "Пассажир";
-
-    // Импортируем функцию отправки уведомлений
-    // Уведомление отправляется через статический импорт
 
     // Отправляем уведомление водителю
     await notifyNewBooking(ride.driver_id, bookingId, passengerName, seats);
@@ -149,34 +125,24 @@ export const useUpdateBookingStatus = () => {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Booking["status"] }) => {
-      // Получаем текущее бронирование для проверки статуса
-      const { data: currentBooking, error: fetchError } = await supabase
-        .from("bookings")
-        .select("ride_id, seats_booked, status")
-        .eq("id", id)
-        .single();
+      // Получаем текущее бронирование из кэша
+      const cachedBookings = queryClient.getQueryData<BookingWithRide[]>(["bookings", "my"]);
+      let currentBooking = cachedBookings?.find(b => b.id === id);
+      
+      // Если не в кэше, получаем из списка
+      if (!currentBooking) {
+        const allBookings = await apiClient.get<BookingWithRide[]>('/api/bookings');
+        currentBooking = allBookings.find(b => b.id === id);
+        if (!currentBooking) throw new Error("Booking not found");
+      }
 
-      if (fetchError) throw fetchError;
-      if (!currentBooking) throw new Error("Booking not found");
+      const oldStatus = currentBooking.status;
 
       // Обновляем статус бронирования
-      const { data, error } = await supabase
-        .from("bookings")
-        .update({ 
-          status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
+      const data = await apiClient.put<Booking>(`/api/bookings/${id}`, { status });
 
-      if (error) throw error;
-
-      // Если бронирование подтверждено, обновляем seats_available
-      // (триггер уже обрабатывает это, но убедимся что все правильно)
-      if (status === "confirmed" && currentBooking.status === "pending") {
-        // Триггер должен обработать это автоматически
-        // Но на всякий случай обновим кэш
+      // Если бронирование подтверждено, отправляем уведомление пассажиру
+      if (status === "confirmed" && oldStatus === "pending") {
         queryClient.invalidateQueries({ queryKey: ["rides", currentBooking.ride_id] });
         queryClient.invalidateQueries({ queryKey: ["ride", currentBooking.ride_id] });
 
@@ -210,16 +176,8 @@ async function sendBookingConfirmedNotification(
 ): Promise<void> {
   try {
     // Получаем информацию о поездке
-    const { data: ride } = await supabase
-      .from("rides")
-      .select("from_city, to_city")
-      .eq("id", rideId)
-      .single();
-
+    const ride = await apiClient.get<{ from_city: string; to_city: string }>(`/api/rides/${rideId}`);
     if (!ride) return;
-
-    // Импортируем функцию отправки уведомлений
-    // Уведомление отправляется через статический импорт
 
     // Отправляем уведомление пассажиру
     await notifyBookingConfirmed(

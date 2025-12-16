@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/AuthContext';
+import { subscribe, sendMessage, connectWebSocket } from '@/lib/websocket-client';
 
 export interface RideLocation {
   lat: number;
@@ -13,67 +14,53 @@ export interface RideLocation {
 
 /**
  * Hook для отслеживания поездки в реальном времени
- * Использует Supabase Realtime для обновлений местоположения
+ * Использует WebSocket для обновлений местоположения
  */
 export const useRideTracking = (rideId: string | undefined, enabled: boolean = true) => {
   const { user } = useAuth();
   const [currentLocation, setCurrentLocation] = useState<RideLocation | null>(null);
 
   // Получаем текущее местоположение поездки
+  // TODO: Создать API endpoint для получения последнего местоположения
   const { data: rideLocation, isLoading } = useQuery({
     queryKey: ['ride-tracking', rideId],
     queryFn: async () => {
       if (!rideId) return null;
 
-      // Получаем последнее местоположение из БД
-      const { data, error } = await supabase
-        .from('ride_locations')
-        .select('*')
-        .eq('ride_id', rideId)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Ошибка получения местоположения:', error);
-        return null;
-      }
-
-      return data;
+      // Временно возвращаем null, пока не создан endpoint
+      // В будущем: const data = await apiClient.get(`/api/rides/${rideId}/location`);
+      return null;
     },
     enabled: !!rideId && enabled,
     refetchInterval: 5000, // Обновляем каждые 5 секунд
   });
 
-  // Подписка на обновления местоположения через Realtime
+  // Подписка на обновления местоположения через WebSocket
   useEffect(() => {
     if (!rideId || !enabled) return;
 
-    const channel = supabase
-      .channel(`ride-tracking-${rideId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'ride_locations',
-          filter: `ride_id=eq.${rideId}`,
-        },
-        (payload) => {
-          const newLocation = payload.new as any;
-          setCurrentLocation({
-            lat: newLocation.latitude,
-            lng: newLocation.longitude,
-            timestamp: newLocation.timestamp,
-            speed: newLocation.speed || undefined,
-            heading: newLocation.heading || undefined,
-          });
-        }
-      )
-      .subscribe();
+    // Подключаемся к WebSocket
+    connectWebSocket().catch(console.error);
+
+    // Присоединяемся к отслеживанию поездки
+    sendMessage('join-tracking', { rideId });
+
+    // Подписываемся на обновления местоположения
+    const unsubscribe = subscribe('location-update', (data) => {
+      if (data.ride_id === rideId) {
+        setCurrentLocation({
+          lat: data.latitude,
+          lng: data.longitude,
+          timestamp: data.timestamp,
+          speed: data.speed || undefined,
+          heading: data.heading || undefined,
+        });
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
+      sendMessage('leave-tracking', { rideId });
     };
   }, [rideId, enabled]);
 
@@ -112,7 +99,8 @@ export const useSendRideLocation = () => {
     }
 
     try {
-      const { error } = await supabase.from('ride_locations').insert({
+      // Отправляем через WebSocket
+      sendMessage('location-update', {
         ride_id: rideId,
         driver_id: user.id,
         latitude: location.lat,
@@ -122,10 +110,8 @@ export const useSendRideLocation = () => {
         timestamp: new Date().toISOString(),
       });
 
-      if (error) {
-        console.error('Ошибка отправки местоположения:', error);
-        return false;
-      }
+      // TODO: Также сохранять в БД через API endpoint
+      // await apiClient.post(`/api/rides/${rideId}/location`, { ... });
 
       return true;
     } catch (error) {
@@ -136,4 +122,3 @@ export const useSendRideLocation = () => {
 
   return { sendLocation };
 };
-
