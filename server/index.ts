@@ -16,9 +16,55 @@ const app = express();
 const httpServer = createServer(app);
 
 // Middleware
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').filter(Boolean) || [];
+
+// Функция проверки origin с поддержкой wildcard
+const isOriginAllowed = (origin: string): boolean => {
+  // Разрешаем локальные разработки
+  if (process.env.NODE_ENV !== 'production' && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    return true;
+  }
+  
+  // Если нет ограничений, разрешаем все (только для dev)
+  if (allowedOrigins.length === 0) {
+    return process.env.NODE_ENV !== 'production';
+  }
+  
+  // Проверяем точное совпадение
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+  
+  // Проверяем wildcard для vercel.app (например: *.vercel.app)
+  for (const allowed of allowedOrigins) {
+    if (allowed.includes('*')) {
+      const pattern = allowed.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`);
+      if (regex.test(origin)) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+};
+
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: (origin, callback) => {
+    // Разрешаем запросы без origin (мобильные приложения, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
@@ -59,8 +105,10 @@ const io = createWebSocketServer(httpServer);
 export { io };
 
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0'; // Слушаем на всех интерфейсах для Docker/Cloud
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
   console.log(`📡 WebSocket server ready`);
+  console.log(`🌍 CORS allowed origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'all (dev mode)'}`);
 });

@@ -62,20 +62,26 @@ export async function getCurrentUser(req: Request): Promise<Response> {
 
     const user = userResult.rows[0];
 
-    // Получение профиля
+    // Получение профиля для user_metadata
     const profileResult = await db.query(
-      'SELECT * FROM profiles WHERE user_id = $1',
+      'SELECT full_name FROM profiles WHERE user_id = $1',
       [user.id]
     );
+
+    const profile = profileResult.rows[0];
 
     return new Response(
       JSON.stringify({
         user: {
           id: user.id,
           email: user.email,
+          user_metadata: {
+            full_name: profile?.full_name || null,
+          },
           email_verified: user.email_verified,
+          created_at: user.created_at,
         },
-        profile: profileResult.rows[0] || null,
+        token, // Возвращаем тот же токен для удобства
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

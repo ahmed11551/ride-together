@@ -45,8 +45,8 @@ export async function signIn(req: Request): Promise<Response> {
     }
 
     // Генерация токенов
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const token = generateToken(user.id, user.email);
+    const refreshToken = generateRefreshToken(user.id, user.email);
 
     // Создание сессии
     const expiresAt = new Date();
@@ -70,20 +70,24 @@ export async function signIn(req: Request): Promise<Response> {
       ]
     );
 
-    // Получаем профиль
+    // Получаем профиль для user_metadata
     const profileResult = await db.query(
-      'SELECT * FROM profiles WHERE user_id = $1',
+      'SELECT full_name FROM profiles WHERE user_id = $1',
       [user.id]
     );
+
+    const profile = profileResult.rows[0];
 
     return new Response(
       JSON.stringify({
         user: {
           id: user.id,
           email: user.email,
+          user_metadata: {
+            full_name: profile?.full_name || null,
+          },
           email_verified: user.email_verified,
         },
-        profile: profileResult.rows[0],
         token,
         refresh_token: refreshToken,
       }),

@@ -1,0 +1,40 @@
+==========================================
+НАСТРОЙКА БЭКЕНДА НА TIMEWEB
+==========================================
+
+ШАГ 1: СОЗДАЙТЕ .env В ПАПКЕ server/
+
+Скопируйте содержимое server/env.example в server/.env
+и заполните следующие значения:
+
+TIMEWEB_DB_HOST=ваш-хост-из-timeweb.twc1.net
+TIMEWEB_DB_PORT=5432
+TIMEWEB_DB_NAME=default_db
+TIMEWEB_DB_USER=gen_user
+TIMEWEB_DB_PASSWORD=ваш-пароль-из-timeweb
+TIMEWEB_DB_SSL=true
+TIMEWEB_DB_SSL_CERT=./ca.crt
+TIMEWEB_DB_SSL_MODE=verify-full
+PORT=3001
+NODE_ENV=production
+JWT_SECRET=сгенерируйте-командой: openssl rand -base64 32
+JWT_EXPIRES_IN=7d
+ALLOWED_ORIGINS=http://localhost:8080
+WS_PORT=3001
+
+ШАГ 2: В TIMEWEB APP PLATFORM
+
+1. Создайте новое приложение
+2. Подключите GitHub репозиторий
+3. Root Directory: ride-together/server (или server если репо только с server)
+4. Build Command: npm install && npm run build
+5. Start Command: npm start
+6. Port: 3001
+7. Добавьте все переменные из .env в Environment Variables
+
+ШАГ 3: ПОСЛЕ ДЕПЛОЯ
+
+Запишите URL бэкенда (например: https://api-12345.twc1.net)
+Он понадобится для настройки фронтенда на Vercel
+
+==========================================

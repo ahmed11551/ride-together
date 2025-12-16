@@ -50,8 +50,8 @@ export async function signUp(req: Request): Promise<Response> {
     await createProfile(user.id, fullName);
 
     // Генерация токенов
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const token = generateToken(user.id, user.email);
+    const refreshToken = generateRefreshToken(user.id, user.email);
 
     // Создание сессии
     const expiresAt = new Date();
@@ -85,10 +85,11 @@ export async function signUp(req: Request): Promise<Response> {
         user: {
           id: user.id,
           email: user.email,
-          full_name: fullName,
-          email_verified: user.email_verified,
+          user_metadata: {
+            full_name: fullName,
+          },
+          created_at: user.created_at,
         },
-        profile: profileResult.rows[0],
         token,
         refresh_token: refreshToken,
       }),

@@ -1,8 +1,23 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 import { trackUserAction } from "@/lib/analytics";
+
+// Типы пользователя (совместимые с Supabase для постепенной миграции)
+export interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+  created_at?: string;
+}
+
+export interface Session {
+  user: User;
+  access_token: string;
+  expires_at?: number;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -29,98 +44,142 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Загрузка сессии при монтировании
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const loadSession = async () => {
+      const token = apiClient.getToken();
+      if (!token) {
         setLoading(false);
+        return;
+      }
 
+      try {
+        const data = await apiClient.get<{ user: User; token: string }>('/api/auth/me');
+        const sessionData: Session = {
+          user: data.user,
+          access_token: data.token,
+        };
+        setSession(sessionData);
+        setUser(data.user);
+        
         // Update Sentry user context
-        if (session?.user) {
+        if (data.user) {
           setSentryUser(
-            session.user.id,
-            session.user.email,
-            session.user.user_metadata?.full_name
+            data.user.id,
+            data.user.email,
+            data.user.user_metadata?.full_name
           );
-        } else {
-          clearSentryUser();
         }
+      } catch (error) {
+        // Токен невалиден, очищаем
+        apiClient.setToken(null);
+        setSession(null);
+        setUser(null);
+        clearSentryUser();
+      } finally {
+        setLoading(false);
       }
-    );
+    };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      // Update Sentry user context
-      if (session?.user) {
-        setSentryUser(
-          session.user.id,
-          session.user.email,
-          session.user.user_metadata?.full_name
-        );
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    loadSession();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+    try {
+      const data = await apiClient.post<{ user: User; token: string }>('/api/auth/signup', {
+        email,
+        password,
+        full_name: fullName,
+      });
 
-    // Track analytics
-    if (!error) {
+      const sessionData: Session = {
+        user: data.user,
+        access_token: data.token,
+      };
+
+      apiClient.setToken(data.token);
+      setSession(sessionData);
+      setUser(data.user);
+
+      // Track analytics
       trackUserAction.signUp("email");
+
+      // Update Sentry user context
+      if (data.user) {
+        setSentryUser(
+          data.user.id,
+          data.user.email,
+          data.user.user_metadata?.full_name
+        );
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Sign up failed') };
     }
-    
-    return { error: error as Error | null };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const data = await apiClient.post<{ user: User; token: string }>('/api/auth/signin', {
+        email,
+        password,
+      });
 
-    // Track analytics
-    if (!error) {
+      const sessionData: Session = {
+        user: data.user,
+        access_token: data.token,
+      };
+
+      apiClient.setToken(data.token);
+      setSession(sessionData);
+      setUser(data.user);
+
+      // Track analytics
       trackUserAction.signIn("email");
+
+      // Update Sentry user context
+      if (data.user) {
+        setSentryUser(
+          data.user.id,
+          data.user.email,
+          data.user.user_metadata?.full_name
+        );
+      }
+
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Sign in failed') };
     }
-    
-    return { error: error as Error | null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    
-    // Track analytics
-    trackUserAction.signOut();
-    
-    // Clear Sentry user context
-    clearSentryUser();
+    try {
+      await apiClient.post('/api/auth/signout');
+    } catch (error) {
+      // Игнорируем ошибки при выходе
+      console.error('Sign out error:', error);
+    } finally {
+      apiClient.setToken(null);
+      setSession(null);
+      setUser(null);
+      
+      // Track analytics
+      trackUserAction.signOut();
+      
+      // Clear Sentry user context
+      clearSentryUser();
+    }
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth?mode=resetPassword`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl,
-    });
-    
-    return { error: error as Error | null };
+    try {
+      // TODO: Реализовать endpoint для сброса пароля
+      await apiClient.post('/api/auth/reset-password', { email });
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Reset password failed') };
+    }
   };
 
   return (

@@ -9,9 +9,13 @@ import { z } from 'zod';
  * Schema for environment variables
  */
 const envSchema = z.object({
-  // Supabase (required)
-  VITE_SUPABASE_URL: z.string().url('VITE_SUPABASE_URL must be a valid URL'),
-  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, 'VITE_SUPABASE_PUBLISHABLE_KEY is required'),
+  // Backend API (optional in dev, required in production)
+  VITE_API_URL: z.string().url('VITE_API_URL must be a valid URL').optional(),
+  VITE_WS_URL: z.string().url().optional(), // WebSocket URL (optional, defaults to API_URL)
+
+  // Supabase (deprecated, kept for backward compatibility)
+  VITE_SUPABASE_URL: z.string().url().optional(),
+  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
 
   // Optional API keys
   VITE_YANDEX_MAPS_API_KEY: z.string().optional(),
@@ -53,6 +57,8 @@ function validateEnv(): Env {
   }
 
   const rawEnv = {
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    VITE_WS_URL: import.meta.env.VITE_WS_URL,
     VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
     VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     VITE_YANDEX_MAPS_API_KEY: import.meta.env.VITE_YANDEX_MAPS_API_KEY,
@@ -140,6 +146,23 @@ function validateEnv(): Env {
 // Removed unused envInstance variable
 
 export const env = {
+  get VITE_API_URL() {
+    const apiUrl = validateEnv().VITE_API_URL;
+    if (!apiUrl && import.meta.env.PROD) {
+      console.error('VITE_API_URL is required in production');
+    }
+    return apiUrl || '';
+  },
+  get VITE_WS_URL() {
+    // Если не указан, используем API_URL с заменой http(s) на ws(s)
+    const apiUrl = validateEnv().VITE_API_URL;
+    const wsUrl = validateEnv().VITE_WS_URL;
+    if (wsUrl) return wsUrl;
+    if (apiUrl) {
+      return apiUrl.replace(/^https?/, (match) => match === 'https' ? 'wss' : 'ws');
+    }
+    return '';
+  },
   get VITE_SUPABASE_URL() {
     return validateEnv().VITE_SUPABASE_URL;
   },
