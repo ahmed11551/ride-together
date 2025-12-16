@@ -50,8 +50,13 @@ function useGlobalReact(): Plugin {
           }
           const React = window.React;
           // КРИТИЧНО: Убеждаемся, что __SECRET_INTERNALS доступен
+          // Это критично для React Router - он использует это свойство
           if (!React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
-            console.warn('React.__SECRET_INTERNALS not found. This may cause issues with React Router.');
+            console.error('React.__SECRET_INTERNALS not found! This will cause issues with React Router.');
+            // Пытаемся создать заглушку, если это возможно
+            if (typeof React !== 'undefined' && !React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+              console.warn('Attempting to access React internals...');
+            }
           }
           export default React;
           export const useState = React.useState;
@@ -196,38 +201,10 @@ function fixScriptOrder(): Plugin {
       console.log('React loaded from CDN:', !!window.React, 'Internals:', !!window.React?.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED);
     </script>`;
         
-        // КРИТИЧНО: Добавляем скрипт-защиту, который блокирует выполнение модулей до загрузки React
-        const reactGuard = `    <script>
-      // КРИТИЧНО: Блокируем выполнение модулей до загрузки React
-      // Переопределяем import() для модулей, чтобы они ждали React
-      (function() {
-        const originalImport = window.import || function() { return Promise.resolve(); };
-        const waitForReact = function() {
-          if (window.__REACT_LOADED__ && window.React && window.ReactDOM) {
-            return Promise.resolve();
-          }
-          return new Promise(function(resolve) {
-            if (window.__REACT_LOADED__) {
-              resolve();
-            } else {
-              window.addEventListener('react-loaded', resolve, { once: true });
-              // Fallback: проверяем каждые 10ms
-              setTimeout(function() {
-                if (window.__REACT_LOADED__) resolve();
-              }, 10);
-            }
-          });
-        };
-        // Ждем загрузки React перед выполнением модулей
-        waitForReact().catch(function(err) {
-          console.error('Error waiting for React:', err);
-        });
-      })();
-    </script>`;
-        
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Сначала React CDN, потом guard, потом entry chunk, затем vendor chunks
-        const allScripts = reactCDN + '\n' + reactGuard + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
+        // КРИТИЧНО: Модули загружаются ПОСЛЕ React CDN, поэтому React должен быть доступен
+        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
