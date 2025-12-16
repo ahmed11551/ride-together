@@ -106,19 +106,16 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КРИТИЧНО: Проверка критичных компонентов должна быть ПЕРВОЙ
-                  // Это гарантирует, что они точно попадут в entry chunk
+                  // КРИТИЧНО: ВСЕ Radix UI компоненты должны быть в entry chunk
+                  // Это гарантирует, что они загружаются вместе с React и не вызывают ошибки
+                  // Радикс UI компоненты сильно зависят от React и должны быть в одном chunk
+                  if (id.includes('@radix-ui')) {
+                    return undefined; // ВСЕ Radix UI в entry chunk
+                  }
                   
-                  // КРИТИЧНО: Критичные UI компоненты, используемые в App.tsx синхронно, должны быть в entry
-                  // Toaster и TooltipProvider импортируются в App.tsx сразу, поэтому их зависимости тоже в entry
-                  // Проверяем как полные пути, так и частичные совпадения
-                  if (
-                    id.includes('react-toast') ||
-                    id.includes('react-tooltip') ||
-                    id.includes('sonner') ||
-                    id.includes('next-themes')
-                  ) {
-                    return undefined; // Критичные UI компоненты остаются в entry
+                  // Sonner и next-themes тоже в entry
+                  if (id.includes('sonner') || id.includes('next-themes')) {
+                    return undefined; // В entry chunk
                   }
                   
                   // React core - всегда в entry
@@ -158,15 +155,8 @@ export default defineConfig({
                     if (id.includes('@tanstack/react-query')) {
                       return 'query-vendor';
                     }
-                    // Остальные UI библиотеки (не критичные для начальной загрузки)
-                    // НО: проверяем, что это НЕ критичные компоненты (toast, tooltip, sonner, themes)
-                    if (
-                      (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('recharts')) &&
-                      !id.includes('react-toast') &&
-                      !id.includes('react-tooltip') &&
-                      !id.includes('sonner') &&
-                      !id.includes('next-themes')
-                    ) {
+                    // Остальные UI библиотеки (lucide-react, recharts) - не критичные
+                    if (id.includes('lucide-react') || id.includes('recharts')) {
                       return 'ui-vendor';
                     }
                     // Supabase (deprecated, но оставляем для совместимости)
