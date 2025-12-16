@@ -25,6 +25,11 @@ const isOriginAllowed = (origin: string): boolean => {
     return true;
   }
   
+  // Разрешаем запросы с того же домена (если фронт и бэк на одном домене)
+  if (origin && process.env.FRONTEND_URL && origin.startsWith(process.env.FRONTEND_URL)) {
+    return true;
+  }
+  
   // Если нет ограничений, разрешаем все (только для dev)
   if (allowedOrigins.length === 0) {
     return process.env.NODE_ENV !== 'production';
