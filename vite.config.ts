@@ -102,17 +102,13 @@ export default defineConfig({
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
-        // КРИТИЧНО: Отключаем code splitting для React - он должен быть встроен в entry chunk
-        // Это гарантирует синхронную загрузку React до всех других модулей
-        // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
-                manualChunks: (id) => {
-                  // УЛЬТИМАТИВНОЕ РЕШЕНИЕ: Включаем ВСЕ React-зависимые библиотеки в entry chunk
-                  // Проверяем путь к файлу - если содержит "react" (в любом регистре) - в entry
-                  
-                  // КРИТИЧНО: Проверяем путь к модулю, а не содержимое
-                  // Если путь содержит "react" - библиотека React-зависимая
+        // КАРДИНАЛЬНОЕ РЕШЕНИЕ: Минимальный code splitting
+        // ВСЕ React-зависимое в entry chunk, остальное в отдельные chunks
+        manualChunks: (id) => {
+                  // КРИТИЧНО: ВСЕ что содержит "react" в пути - в entry chunk
                   const lowerId = id.toLowerCase();
                   
+                  // ВСЕ React-зависимое в entry
                   if (
                     lowerId.includes('react') ||
                     lowerId.includes('@radix-ui') ||
@@ -129,37 +125,41 @@ export default defineConfig({
                     lowerId.includes('vaul') ||
                     lowerId.includes('input-otp') ||
                     lowerId.includes('@hookform') ||
-                    lowerId.includes('lucide-react') || // Иконки тоже могут использовать React
-                    lowerId.includes('recharts') // Графики тоже могут использовать React
+                    lowerId.includes('lucide-react') ||
+                    lowerId.includes('recharts')
                   ) {
-                    return undefined; // ВСЕ React-зависимое в entry chunk
+                    return undefined; // В entry chunk
                   }
                   
-                  // Vendor chunks - только НЕ React-зависимые библиотеки
+                  // Только НЕ React-зависимые библиотеки в отдельные chunks
                   if (id.includes('node_modules')) {
-                    // Supabase (deprecated, но оставляем для совместимости)
+                    // Supabase - отдельный chunk
                     if (id.includes('@supabase')) {
                       return 'supabase';
                     }
-                    // Socket.io (не зависит от React напрямую)
+                    // Socket.io - отдельный chunk
                     if (id.includes('socket.io-client')) {
                       return 'socket-vendor';
                     }
-                    // Zod (не зависит от React)
+                    // Zod - отдельный chunk
                     if (id.includes('zod')) {
                       return 'form-vendor';
                     }
-                    // Date libraries без React
+                    // Date libraries - отдельный chunk
                     if (id.includes('date-fns')) {
                       return 'date-vendor';
                     }
-                    // Утилиты без React
+                    // Утилиты - отдельный chunk
                     if (id.includes('clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
                       return 'utils-vendor';
                     }
-                    // Остальные vendor библиотеки (не React-зависимые)
-                    return 'vendor';
+                    // ВСЕ остальное тоже в entry chunk (на всякий случай)
+                    // Это гарантирует, что ничего не попадет в vendor с React-зависимостями
+                    return undefined; // В entry chunk
                   }
+                  
+                  // Все остальное (не node_modules) - в entry
+                  return undefined;
                 },
         // Оптимизация имен файлов
         chunkFileNames: 'assets/js/[name]-[hash].js',
