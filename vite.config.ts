@@ -34,16 +34,19 @@ function fixScriptOrder(): Plugin {
           newHtml = newHtml.replace(script.tag, '');
         });
         
-        // КРИТИЧНО: Удаляем существующие React CDN скрипты (если есть) чтобы избежать дублирования
-        // Удаляем все скрипты, которые содержат react или react-dom в src (включая многострочные)
-        const reactCDNRegex = /<script[^>]*(?:react|react-dom)[^>]*>[\s\S]*?<\/script>/gi;
-        newHtml = newHtml.replace(reactCDNRegex, '');
-        // Также удаляем скрипты, которые устанавливают window.React (многострочные)
-        const reactGlobalRegex = /<script[^>]*>[\s\S]*?window\.(React|ReactDOM)[\s\S]*?<\/script>/gi;
-        newHtml = newHtml.replace(reactGlobalRegex, '');
+        // КРИТИЧНО: Удаляем ВСЕ существующие React CDN скрипты перед добавлением новых
+        // Это включает скрипты с react/react-dom в src и скрипты, устанавливающие window.React
+        // Используем более агрессивный regex для удаления всех связанных скриптов
+        let cleanedHtml = newHtml;
+        // Удаляем скрипты с unpkg.com/react
+        cleanedHtml = cleanedHtml.replace(/<script[^>]*unpkg\.com\/react[^>]*>[\s\S]*?<\/script>/gi, '');
+        // Удаляем скрипты, которые устанавливают window.React или window.ReactDOM
+        cleanedHtml = cleanedHtml.replace(/<script[^>]*>[\s\S]*?window\.(React|ReactDOM)[\s\S]*?<\/script>/gi, '');
         // Удаляем комментарии о React CDN
-        const reactCommentRegex = /<!--[^>]*React[^>]*CDN[^>]*-->/gi;
-        newHtml = newHtml.replace(reactCommentRegex, '');
+        cleanedHtml = cleanedHtml.replace(/<!--[^>]*React[^>]*CDN[^>]*-->/gi, '');
+        // Удаляем пустые строки после удаления
+        cleanedHtml = cleanedHtml.replace(/\n\s*\n\s*\n/g, '\n');
+        newHtml = cleanedHtml;
         
         // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
         // Это гарантирует, что все зависимости загружены до выполнения entry
