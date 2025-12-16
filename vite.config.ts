@@ -142,9 +142,12 @@ export default defineConfig({
                   
                   // КРИТИЧНО: Критичные UI компоненты, используемые в App.tsx синхронно, должны быть в entry
                   // Toaster и TooltipProvider импортируются в App.tsx сразу, поэтому их зависимости тоже в entry
+                  // Проверяем как полные пути, так и частичные совпадения
                   if (
                     id.includes('@radix-ui/react-toast') ||
+                    id.includes('radix-ui/react-toast') ||
                     id.includes('@radix-ui/react-tooltip') ||
+                    id.includes('radix-ui/react-tooltip') ||
                     id.includes('sonner') ||
                     id.includes('next-themes')
                   ) {
