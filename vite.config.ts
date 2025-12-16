@@ -34,6 +34,17 @@ function fixScriptOrder(): Plugin {
           newHtml = newHtml.replace(script.tag, '');
         });
         
+        // КРИТИЧНО: Удаляем существующие React CDN скрипты (если есть) чтобы избежать дублирования
+        // Удаляем все скрипты, которые содержат react или react-dom в src (включая многострочные)
+        const reactCDNRegex = /<script[^>]*(?:react|react-dom)[^>]*>[\s\S]*?<\/script>/gi;
+        newHtml = newHtml.replace(reactCDNRegex, '');
+        // Также удаляем скрипты, которые устанавливают window.React (многострочные)
+        const reactGlobalRegex = /<script[^>]*>[\s\S]*?window\.(React|ReactDOM)[\s\S]*?<\/script>/gi;
+        newHtml = newHtml.replace(reactGlobalRegex, '');
+        // Удаляем комментарии о React CDN
+        const reactCommentRegex = /<!--[^>]*React[^>]*CDN[^>]*-->/gi;
+        newHtml = newHtml.replace(reactCommentRegex, '');
+        
         // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
         // Это гарантирует, что все зависимости загружены до выполнения entry
         const preloadLinks = vendorScripts
@@ -46,10 +57,6 @@ function fixScriptOrder(): Plugin {
         if (headEnd > -1 && preloadLinks) {
           newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
         }
-        
-        // КРИТИЧНО: Удаляем существующие React CDN скрипты (если есть) чтобы избежать дублирования
-        const reactCDNRegex = /<script[^>]*react[^>]*production\.min\.js[^>]*><\/script>/gi;
-        newHtml = newHtml.replace(reactCDNRegex, '');
         
         // КРИТИЧНО: Добавляем React CDN ПЕРЕД всеми модулями в продакшене
         // Это гарантирует синхронную загрузку React до React Router
