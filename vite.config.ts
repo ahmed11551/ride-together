@@ -8,17 +8,17 @@ function fixScriptOrder(): Plugin {
   return {
     name: 'fix-script-order',
     transformIndexHtml: {
-      enforce: 'post',
-      transform(html, ctx) {
+      order: 'post',
+      handler(html, ctx) {
         // Находим все script теги с src (только модули)
-        const scriptRegex = /<script[^>]*type="module"[^>]*src="([^"]*)"[^>]*><\/script>/g;
+        const scriptRegex = /<script[^>]*type=["']module["'][^>]*src=["']([^"']*)["'][^>]*><\/script>/g;
         const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
         let match;
         
         while ((match = scriptRegex.exec(html)) !== null) {
           const src = match[1];
-          // Entry chunk - это index-*.js, но не vendor или react-router
-          const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
+          // Entry chunk - это index-*.js (React, React Router и критичные UI в entry)
+          const isEntry = src.includes('/index-') || src.includes('/assets/js/index-');
           scripts.push({ tag: match[0], src, isEntry });
         }
         
@@ -34,37 +34,42 @@ function fixScriptOrder(): Plugin {
           newHtml = newHtml.replace(script.tag, '');
         });
         
-        // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
-        // Это гарантирует, что все зависимости загружены до выполнения entry
+        // КРИТИЧНО: Добавляем modulepreload для entry chunk ПЕРВЫМ в <head>
+        // Это гарантирует предзагрузку entry chunk (с React, React Router и критичными UI)
+        const entryPreload = entryScripts
+          .filter(s => s.src.startsWith('/assets/') || s.src.startsWith('./assets/'))
+          .map(s => {
+            const href = s.src.startsWith('./') ? s.src.slice(1) : s.src;
+            return `    <link rel="modulepreload" href="${href}" crossorigin>`;
+          })
+          .join('\n');
+        
+        // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks ПОСЛЕ entry в <head>
+        // Это гарантирует, что vendor chunks загружаются, но не выполняются до entry
         const preloadLinks = vendorScripts
-          .filter(s => s.src.startsWith('/assets/')) // Только локальные файлы
-          .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
+          .filter(s => s.src.startsWith('/assets/') || s.src.startsWith('./assets/'))
+          .map(s => {
+            const href = s.src.startsWith('./') ? s.src.slice(1) : s.src;
+            return `    <link rel="modulepreload" href="${href}" crossorigin>`;
+          })
           .join('\n');
         
         // Вставляем preload в <head> перед </head>
         const headEnd = newHtml.lastIndexOf('</head>');
-        if (headEnd > -1 && preloadLinks) {
-          newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
+        if (headEnd > -1) {
+          const allPreloads = [entryPreload, preloadLinks].filter(Boolean).join('\n');
+          if (allPreloads) {
+            newHtml = newHtml.slice(0, headEnd) + '\n' + allPreloads + '\n' + newHtml.slice(headEnd);
+          }
         }
         
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Entry chunk должен загружаться первым, затем vendor chunks
-        // Это гарантирует, что React (встроенный в entry) загружается до React Router
+        // КРИТИЧНО: Entry chunk должен загружаться и выполняться ПЕРВЫМ
+        // Vendor chunks загружаются после, но не выполняются до завершения entry
         const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
-        }
-        
-        // КРИТИЧНО: Также добавляем modulepreload для entry chunk в <head>
-        // Это гарантирует предзагрузку entry chunk
-        const entryPreload = entryScripts
-          .filter(s => s.src.startsWith('/assets/'))
-          .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
-          .join('\n');
-        
-        if (headEnd > -1 && entryPreload) {
-          newHtml = newHtml.slice(0, headEnd) + '\n' + entryPreload + '\n' + newHtml.slice(headEnd);
         }
         
         return newHtml;
@@ -101,7 +106,7 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КРИТИЧНО: React core и React Router ДОЛЖНЫ быть в entry chunk
+                  // КРИТИЧНО: React core, React Router и критичные UI компоненты ДОЛЖНЫ быть в entry chunk
                   // Это гарантирует синхронную загрузку React до всех других модулей
                   
                   // React core - всегда в entry
@@ -135,13 +140,24 @@ export default defineConfig({
                     return undefined; // React Router остается в entry вместе с React
                   }
                   
+                  // КРИТИЧНО: Критичные UI компоненты, используемые в App.tsx синхронно, должны быть в entry
+                  // Toaster и TooltipProvider импортируются в App.tsx сразу, поэтому их зависимости тоже в entry
+                  if (
+                    id.includes('@radix-ui/react-toast') ||
+                    id.includes('@radix-ui/react-tooltip') ||
+                    id.includes('sonner') ||
+                    id.includes('next-themes')
+                  ) {
+                    return undefined; // Критичные UI компоненты остаются в entry
+                  }
+                  
                   // Vendor chunks
                   if (id.includes('node_modules')) {
                     // React Query - зависит от React, но может быть в отдельном chunk
                     if (id.includes('@tanstack/react-query')) {
                       return 'query-vendor';
                     }
-                    // UI библиотеки
+                    // Остальные UI библиотеки (не критичные для начальной загрузки)
                     if (id.includes('@radix-ui') || id.includes('lucide-react') || id.includes('recharts')) {
                       return 'ui-vendor';
                     }
