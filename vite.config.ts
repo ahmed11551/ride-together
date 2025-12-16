@@ -10,43 +10,41 @@ function fixScriptOrder(): Plugin {
     transformIndexHtml: {
       enforce: 'post',
       transform(html, ctx) {
-        // Находим все script теги с src (только модули)
-        const scriptRegex = /<script[^>]*type="module"[^>]*src="([^"]*)"[^>]*><\/script>/g;
-        const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
-        let match;
-        
-        while ((match = scriptRegex.exec(html)) !== null) {
-          const src = match[1];
-          // Entry chunk - это index-*.js, но не vendor или react-router
-          const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
-          scripts.push({ tag: match[0], src, isEntry });
-        }
-        
-        if (scripts.length === 0) return html;
-        
-        // Разделяем на entry и vendor
-        const entryScripts = scripts.filter(s => s.isEntry);
-        const vendorScripts = scripts.filter(s => !s.isEntry);
-        
-        // Удаляем все найденные script теги (только модули)
-        let newHtml = html;
-        scripts.forEach(script => {
-          newHtml = newHtml.replace(script.tag, '');
-        });
-        
-        // КРИТИЧНО: Удаляем ВСЕ существующие React CDN скрипты перед добавлением новых
-        // Это включает скрипты с react/react-dom в src и скрипты, устанавливающие window.React
-        // Используем более агрессивный regex для удаления всех связанных скриптов
-        let cleanedHtml = newHtml;
-        // Удаляем скрипты с unpkg.com/react
+        // КРИТИЧНО: Сначала удаляем ВСЕ существующие React CDN скрипты из исходного HTML
+        // Это предотвращает дублирование
+        let cleanedHtml = html;
+        // Удаляем скрипты с unpkg.com/react (однострочные и многострочные)
         cleanedHtml = cleanedHtml.replace(/<script[^>]*unpkg\.com\/react[^>]*>[\s\S]*?<\/script>/gi, '');
         // Удаляем скрипты, которые устанавливают window.React или window.ReactDOM
         cleanedHtml = cleanedHtml.replace(/<script[^>]*>[\s\S]*?window\.(React|ReactDOM)[\s\S]*?<\/script>/gi, '');
         // Удаляем комментарии о React CDN
         cleanedHtml = cleanedHtml.replace(/<!--[^>]*React[^>]*CDN[^>]*-->/gi, '');
         // Удаляем пустые строки после удаления
-        cleanedHtml = cleanedHtml.replace(/\n\s*\n\s*\n/g, '\n');
-        newHtml = cleanedHtml;
+        cleanedHtml = cleanedHtml.replace(/\n\s{4,}\n/g, '\n');
+        
+        // Находим все script теги с src (только модули)
+        const scriptRegex = /<script[^>]*type="module"[^>]*src="([^"]*)"[^>]*><\/script>/g;
+        const scripts: Array<{ tag: string; src: string; isEntry: boolean }> = [];
+        let match;
+        
+        while ((match = scriptRegex.exec(cleanedHtml)) !== null) {
+          const src = match[1];
+          // Entry chunk - это index-*.js, но не vendor или react-router
+          const isEntry = src.includes('/index-') && !src.includes('vendor') && !src.includes('react-router');
+          scripts.push({ tag: match[0], src, isEntry });
+        }
+        
+        if (scripts.length === 0) return cleanedHtml;
+        
+        // Разделяем на entry и vendor
+        const entryScripts = scripts.filter(s => s.isEntry);
+        const vendorScripts = scripts.filter(s => !s.isEntry);
+        
+        // Удаляем все найденные script теги (только модули)
+        let newHtml = cleanedHtml;
+        scripts.forEach(script => {
+          newHtml = newHtml.replace(script.tag, '');
+        });
         
         // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
         // Это гарантирует, что все зависимости загружены до выполнения entry
