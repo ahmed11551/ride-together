@@ -165,6 +165,10 @@ function fixScriptOrder(): Plugin {
       // Это гарантирует, что React доступен до выполнения любых модулей
       if (typeof React !== 'undefined') {
         window.React = React;
+        // КРИТИЧНО: Убеждаемся, что React.__SECRET_INTERNALS доступен
+        if (React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
+          window.__REACT_INTERNALS__ = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        }
       }
       if (typeof ReactDOM !== 'undefined') {
         window.ReactDOM = ReactDOM;
