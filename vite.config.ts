@@ -89,6 +89,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Настройка для правильной загрузки CommonJS модулей (Supabase)
+    conditions: ['import', 'module', 'browser', 'default'],
   },
   build: {
     // Оптимизация бандла
@@ -196,12 +198,14 @@ export default defineConfig({
               'react-hook-form',
               'zod',
               'socket.io-client',
+              '@supabase/supabase-js', // Включаем Supabase для правильной обработки CommonJS
             ],
-            exclude: ['@supabase/supabase-js'],
             // Предварительная оптимизация
             esbuildOptions: {
               target: 'esnext',
               jsx: 'automatic',
+              // Преобразуем CommonJS в ESM для Supabase
+              format: 'esm',
             },
             // Принудительная оптимизация React
             force: true,
