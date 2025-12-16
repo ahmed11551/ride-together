@@ -118,3 +118,4 @@ export async function updateBooking(req: Request, bookingId: string): Promise<Re
     );
   }
 }
+

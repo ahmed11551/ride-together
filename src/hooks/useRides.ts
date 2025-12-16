@@ -121,7 +121,7 @@ export const useRecentRides = () => {
   return useQuery({
     queryKey: ["rides", "recent"],
     queryFn: async () => {
-      const data = await apiClient.get<RideWithDriver[]>('/api/rides?limit=10');
+      const data = await apiClient.get<RideWithDriver[]>('/api/rides?limit=10&status=active');
       return data;
     },
   });

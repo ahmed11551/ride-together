@@ -35,11 +35,16 @@ function fixScriptOrder(): Plugin {
         });
         
         // КРИТИЧНО: Добавляем modulepreload для всех vendor chunks в <head>
-        // Это гарантирует, что все зависимости загружены до выполнения entry
-        const preloadLinks = vendorScripts
-          .filter(s => s.src.startsWith('/assets/')) // Только локальные файлы
+        // КРИТИЧНО: react-vendor должен быть первым (содержит React и React Router)
+        const reactVendorPreload = vendorScripts
+          .filter(s => s.src.includes('react-vendor') && s.src.startsWith('/assets/'))
           .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
           .join('\n');
+        const otherVendorPreload = vendorScripts
+          .filter(s => !s.src.includes('react-vendor') && s.src.startsWith('/assets/'))
+          .map(s => `    <link rel="modulepreload" href="${s.src}" crossorigin>`)
+          .join('\n');
+        const preloadLinks = reactVendorPreload + (reactVendorPreload && otherVendorPreload ? '\n' : '') + otherVendorPreload;
         
         // Вставляем preload в <head> перед </head>
         const headEnd = newHtml.lastIndexOf('</head>');
@@ -48,9 +53,15 @@ function fixScriptOrder(): Plugin {
         }
         
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Entry chunk должен загружаться первым, затем vendor chunks
-        // Это гарантирует, что React (встроенный в entry) загружается до React Router
-        const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // КРИТИЧНО: react-vendor chunk должен загружаться ПЕРВЫМ (содержит React и React Router)
+        // Затем entry chunk, затем остальные vendor chunks
+        const reactVendorScripts = vendorScripts.filter(s => s.src.includes('react-vendor'));
+        const otherVendorScripts = vendorScripts.filter(s => !s.src.includes('react-vendor'));
+        const allScripts = [
+          ...reactVendorScripts,
+          ...entryScripts,
+          ...otherVendorScripts
+        ].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
@@ -97,43 +108,33 @@ export default defineConfig({
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
-        // КРИТИЧНО: Отключаем code splitting для React - он должен быть встроен в entry chunk
-        // Это гарантирует синхронную загрузку React до всех других модулей
-        // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
+        // КРИТИЧНО: React и React Router должны быть в одном chunk для синхронной загрузки
         manualChunks: (id) => {
-          // КРИТИЧНО: React core ДОЛЖЕН быть в entry chunk
-          // Проверяем ТОЛЬКО точные пути к React core
+          // КРИТИЧНО: React core и React Router в одном chunk
+          // Это гарантирует, что React загрузится до того, как React Router попытается его использовать
           if (
-            id.includes('node_modules/react/') &&
-            !id.includes('react-router') && 
-            !id.includes('react-helmet') && 
-            !id.includes('react-hook-form') && 
-            !id.includes('react-day-picker') && 
-            !id.includes('react-resizable') &&
-            !id.includes('react-query')
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/') ||
+            id.includes('node_modules/react-router')
           ) {
-            return undefined; // React остается в entry
+            // Проверяем, что это не другие react-* библиотеки
+            if (
+              id.includes('react-helmet') || 
+              id.includes('react-hook-form') || 
+              id.includes('react-day-picker') || 
+              id.includes('react-resizable') ||
+              id.includes('react-query')
+            ) {
+              // Эти библиотеки могут быть в отдельных chunks
+            } else {
+              // React core и React Router - в один chunk
+              return 'react-vendor';
+            }
           }
           
-          if (
-            id.includes('node_modules/react-dom/') &&
-            !id.includes('react-router')
-          ) {
-            return undefined; // React DOM остается в entry
-          }
-          
-          if (id.includes('node_modules/scheduler/')) {
-            return undefined; // Scheduler остается в entry
-          }
-          
-          // Только после проверки React проверяем остальные node_modules
-          // НЕ разбиваем React на отдельный chunk - он должен быть в entry
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React Router - зависит от React, но может быть в отдельном chunk
-            if (id.includes('react-router')) {
-              return 'react-router';
-            }
             // React Query - зависит от React, но может быть в отдельном chunk
             if (id.includes('@tanstack/react-query')) {
               return 'query-vendor';
@@ -153,6 +154,10 @@ export default defineConfig({
             // Date libraries
             if (id.includes('date-fns') || id.includes('react-day-picker')) {
               return 'date-vendor';
+            }
+            // Socket.io client
+            if (id.includes('socket.io-client')) {
+              return 'socket-vendor';
             }
             // Остальные vendor библиотеки
             return 'vendor';

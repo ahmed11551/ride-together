@@ -72,3 +72,4 @@ export async function banUser(req: Request, userId: string): Promise<Response> {
     );
   }
 }
+

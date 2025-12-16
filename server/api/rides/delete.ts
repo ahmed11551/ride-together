@@ -79,3 +79,4 @@ export async function deleteRide(req: Request, rideId: string): Promise<Response
     );
   }
 }
+

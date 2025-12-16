@@ -72,3 +72,4 @@ export async function getRide(req: Request, rideId: string): Promise<Response> {
     );
   }
 }
+

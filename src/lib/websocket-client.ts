@@ -158,3 +158,4 @@ export function disconnectWebSocket(): void {
 export function isConnected(): boolean {
   return socket !== null && socket.connected;
 }
+

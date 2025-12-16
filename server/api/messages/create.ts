@@ -5,7 +5,6 @@
 
 import { db } from '../../utils/database';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
-import { broadcastMessage } from '../../websocket/server';
 
 export async function createMessage(req: Request): Promise<Response> {
   try {
@@ -106,3 +105,4 @@ export async function createMessage(req: Request): Promise<Response> {
     );
   }
 }
+

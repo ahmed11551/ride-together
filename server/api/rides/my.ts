@@ -72,3 +72,4 @@ export async function getMyRides(req: Request): Promise<Response> {
     );
   }
 }
+
