@@ -12,29 +12,28 @@ function useGlobalReact(): Plugin {
     configResolved(config) {
       isProduction = config.command === 'build';
     },
-    resolveId(id) {
+    resolveId(id, importer) {
       // В продакшене заменяем импорты react и react-dom на виртуальные модули
+      // КРИТИЧНО: Это должно работать для ВСЕХ модулей, включая react-router
       if (isProduction) {
-        if (id === 'react') {
+        if (id === 'react' || id.startsWith('react/')) {
           return '\0virtual:react';
         }
-        if (id === 'react/jsx-runtime') {
-          return '\0virtual:react-jsx-runtime';
-        }
-        if (id === 'react-dom') {
+        if (id === 'react-dom' || id.startsWith('react-dom/')) {
           return '\0virtual:react-dom';
-        }
-        if (id === 'react-dom/client') {
-          return '\0virtual:react-dom-client';
         }
       }
       return null;
     },
     load(id) {
       if (id === '\0virtual:react') {
+        // КРИТИЧНО: Проверяем, что React загружен, иначе ждем
         return `
+          // КРИТИЧНО: Ждем загрузки React из CDN
+          if (!window.React) {
+            throw new Error('React CDN must be loaded before modules. Make sure React CDN scripts are loaded synchronously before all module scripts.');
+          }
           const React = window.React;
-          if (!React) throw new Error('React CDN must be loaded before modules');
           export default React;
           export const useState = React.useState;
           export const useEffect = React.useEffect;
@@ -63,21 +62,17 @@ function useGlobalReact(): Plugin {
           export const lazy = React.lazy;
           export const startTransition = React.startTransition;
           export const use = React.use;
-        `;
-      }
-      if (id === '\0virtual:react-jsx-runtime') {
-        return `
-          const React = window.React;
-          if (!React) throw new Error('React CDN must be loaded before modules');
+          // Для react/jsx-runtime
           export const jsx = React.createElement;
           export const jsxs = React.createElement;
-          export const Fragment = React.Fragment;
         `;
       }
-      if (id === '\0virtual:react-dom' || id === '\0virtual:react-dom-client') {
+      if (id === '\0virtual:react-dom') {
         return `
+          if (!window.ReactDOM) {
+            throw new Error('ReactDOM CDN must be loaded before modules. Make sure ReactDOM CDN scripts are loaded synchronously before all module scripts.');
+          }
           const ReactDOM = window.ReactDOM;
-          if (!ReactDOM) throw new Error('ReactDOM CDN must be loaded before modules');
           export default ReactDOM;
           export const createRoot = ReactDOM.createRoot;
           export const hydrateRoot = ReactDOM.hydrateRoot;
@@ -169,11 +164,9 @@ function fixScriptOrder(): Plugin {
         
         // Вставляем скрипты в <body> перед </body>
         // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
-        // КРИТИЧНО: Все модули должны иметь defer, чтобы они ждали загрузки React
-        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => {
-          // Добавляем defer к модулям, чтобы они ждали загрузки React
-          return s.tag.replace('type="module"', 'type="module" defer');
-        }).join('\n    ');
+        // КРИТИЧНО: Все модули должны загружаться ПОСЛЕ React CDN
+        // Используем обычные script теги без defer, чтобы они выполнялись последовательно
+        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
