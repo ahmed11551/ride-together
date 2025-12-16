@@ -167,44 +167,11 @@ function fixScriptOrder(): Plugin {
           newHtml = newHtml.slice(0, headEnd) + '\n' + preloadLinks + '\n' + newHtml.slice(headEnd);
         }
         
-        // КРИТИЧНО: Добавляем React CDN ПЕРЕД всеми модулями в продакшене
-        // Это гарантирует синхронную загрузку React до React Router
-        // КРИТИЧНО: Используем обычные script теги БЕЗ async/defer для синхронной загрузки
-        const reactCDN = `    <!-- КРИТИЧНО: React загружается через CDN синхронно перед всеми модулями -->
-    <!-- ВАЖНО: Без async/defer - скрипты выполняются синхронно и блокируют выполнение модулей -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script>
-      // КРИТИЧНО: Экспортируем React в глобальную область СРАЗУ после загрузки
-      // Это гарантирует, что React доступен до выполнения любых модулей
-      if (typeof React !== 'undefined') {
-        window.React = React;
-        // КРИТИЧНО: Убеждаемся, что React.__SECRET_INTERNALS доступен
-        // Это критично для React Router
-        if (React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
-          window.__REACT_INTERNALS__ = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-        } else {
-          console.error('React.__SECRET_INTERNALS not found! This will cause issues with React Router.');
-        }
-      } else {
-        console.error('React is not loaded from CDN!');
-      }
-      if (typeof ReactDOM !== 'undefined') {
-        window.ReactDOM = ReactDOM;
-      } else {
-        console.error('ReactDOM is not loaded from CDN!');
-      }
-      // КРИТИЧНО: Устанавливаем флаг, что React загружен
-      window.__REACT_LOADED__ = true;
-      // КРИТИЧНО: Отправляем событие, что React готов
-      window.dispatchEvent(new Event('react-loaded'));
-      console.log('React loaded from CDN:', !!window.React, 'Internals:', !!window.React?.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED);
-    </script>`;
-        
+        // КРИТИЧНО: НЕ используем CDN - React встроен в бандл
+        // Это гарантирует, что React загружается вместе с модулями и доступен синхронно
         // Вставляем скрипты в <body> перед </body>
-        // КРИТИЧНО: Сначала React CDN, потом entry chunk, затем vendor chunks
-        // КРИТИЧНО: Модули загружаются ПОСЛЕ React CDN, поэтому React должен быть доступен
-        const allScripts = reactCDN + '\n    ' + [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
+        // КРИТИЧНО: Entry chunk должен загружаться первым, затем vendor chunks
+        const allScripts = [...entryScripts, ...vendorScripts].map(s => s.tag).join('\n    ');
         const bodyEnd = newHtml.lastIndexOf('</body>');
         if (bodyEnd > -1) {
           newHtml = newHtml.slice(0, bodyEnd) + '\n    ' + allScripts + '\n' + newHtml.slice(bodyEnd);
