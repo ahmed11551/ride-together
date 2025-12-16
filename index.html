@@ -10,8 +10,6 @@
     <link rel="preconnect" href="https://telegram.org" crossorigin />
     <link rel="preconnect" href="https://api-maps.yandex.ru" crossorigin />
     
-    <!-- Preconnect к Supabase (будет добавлен динамически через env) -->
-    
     <!-- Telegram Web App Script - загружается асинхронно -->
     <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
     <title>Ride Together - Платформа для совместных поездок</title>
@@ -40,8 +38,6 @@
 
   <body>
     <div id="root"></div>
-    <!-- КРИТИЧНО: Загружаем main.tsx как модуль -->
-    <!-- React CDN будет добавлен автоматически плагином в продакшене -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

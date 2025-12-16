@@ -13,7 +13,7 @@ const envSchema = z.object({
   VITE_API_URL: z.string().url('VITE_API_URL must be a valid URL').optional(),
   VITE_WS_URL: z.string().url().optional(), // WebSocket URL (optional, defaults to API_URL)
 
-  // Supabase (deprecated, kept for backward compatibility)
+  // Supabase (deprecated, kept for backward compatibility - will be removed)
   VITE_SUPABASE_URL: z.string().url().optional(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().optional(),
 
