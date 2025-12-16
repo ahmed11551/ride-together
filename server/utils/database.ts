@@ -8,37 +8,68 @@ import * as path from 'path';
 
 // Путь к SSL сертификату
 const getSSLOptions = () => {
-  if (process.env.TIMEWEB_DB_SSL !== 'true') {
-    return false;
-  }
-
-  const certPath = process.env.TIMEWEB_DB_SSL_CERT || path.join(process.cwd(), 'ca.crt');
-  
-  if (fs.existsSync(certPath)) {
+  // Если используется DATABASE_URL с sslmode=verify-full, нужен сертификат
+  if (process.env.DATABASE_URL?.includes('sslmode=verify-full')) {
+    const certPath = process.env.PGSSLROOTCERT || 
+                     process.env.TIMEWEB_DB_SSL_CERT || 
+                     path.join(process.cwd(), 'ca.crt');
+    
+    if (fs.existsSync(certPath)) {
+      return {
+        rejectUnauthorized: true,
+        ca: fs.readFileSync(certPath).toString(),
+      };
+    }
+    
+    // Если сертификат не найден, но требуется verify-full, используем базовую SSL
+    console.warn('SSL certificate not found, using basic SSL connection');
     return {
-      rejectUnauthorized: process.env.TIMEWEB_DB_SSL_MODE === 'verify-full',
-      ca: fs.readFileSync(certPath).toString(),
+      rejectUnauthorized: false,
     };
   }
 
-  // Если сертификат не найден, используем базовую SSL конфигурацию
-  return {
-    rejectUnauthorized: false,
-  };
+  // Если явно указан TIMEWEB_DB_SSL
+  if (process.env.TIMEWEB_DB_SSL === 'true') {
+    const certPath = process.env.PGSSLROOTCERT || 
+                     process.env.TIMEWEB_DB_SSL_CERT || 
+                     path.join(process.cwd(), 'ca.crt');
+    
+    if (fs.existsSync(certPath)) {
+      return {
+        rejectUnauthorized: process.env.TIMEWEB_DB_SSL_MODE === 'verify-full',
+        ca: fs.readFileSync(certPath).toString(),
+      };
+    }
+    
+    return {
+      rejectUnauthorized: false,
+    };
+  }
+
+  return false;
 };
 
 // Создаем пул подключений
-const pool = new Pool({
-  host: process.env.TIMEWEB_DB_HOST,
-  port: parseInt(process.env.TIMEWEB_DB_PORT || '5432'),
-  database: process.env.TIMEWEB_DB_NAME,
-  user: process.env.TIMEWEB_DB_USER,
-  password: process.env.TIMEWEB_DB_PASSWORD,
-  ssl: getSSLOptions(),
-  max: 20, // Максимум подключений в пуле
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+// Приоритет: DATABASE_URL > отдельные переменные
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: getSSLOptions(),
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    })
+  : new Pool({
+      host: process.env.TIMEWEB_DB_HOST,
+      port: parseInt(process.env.TIMEWEB_DB_PORT || '5432'),
+      database: process.env.TIMEWEB_DB_NAME,
+      user: process.env.TIMEWEB_DB_USER,
+      password: process.env.TIMEWEB_DB_PASSWORD,
+      ssl: getSSLOptions(),
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
 
 // Экспортируем query функцию
 export const db = {
