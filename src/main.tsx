@@ -1,20 +1,6 @@
 // КРИТИЧНО: React должен быть импортирован первым и синхронно
-// В продакшене используем глобальный React из CDN, если он доступен
-let React: typeof import("react");
-let createRoot: typeof import("react-dom/client").createRoot;
-
-if (import.meta.env.PROD && typeof window !== 'undefined' && window.React) {
-  // Используем глобальный React из CDN в продакшене
-  React = window.React as any;
-  const ReactDOM = window.ReactDOM as any;
-  createRoot = ReactDOM.createRoot;
-} else {
-  // В dev режиме используем локальный React
-  React = await import("react");
-  const reactDom = await import("react-dom/client");
-  createRoot = reactDom.createRoot;
-}
-
+import React from "react";
+import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { setupGlobalErrorHandlers } from "@/lib/error-handler-enhanced";
