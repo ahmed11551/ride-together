@@ -106,56 +106,67 @@ export default defineConfig({
         // Это гарантирует синхронную загрузку React до всех других модулей
         // ВАЖНО: Это увеличит размер entry chunk, но решит проблему с порядком загрузки
                 manualChunks: (id) => {
-                  // КРИТИЧНО: ВСЕ Radix UI компоненты должны быть в entry chunk
+                  // КАРДИНАЛЬНОЕ ИЗМЕНЕНИЕ: Включаем ВСЕ React-зависимые библиотеки в entry chunk
                   // Это гарантирует, что они загружаются вместе с React и не вызывают ошибки
-                  // Радикс UI компоненты сильно зависят от React и должны быть в одном chunk
+                  
+                  // 1. ВСЕ Radix UI компоненты - в entry
                   if (id.includes('@radix-ui')) {
                     return undefined; // ВСЕ Radix UI в entry chunk
                   }
                   
-                  // Sonner и next-themes тоже в entry
+                  // 2. Sonner и next-themes - в entry
                   if (id.includes('sonner') || id.includes('next-themes')) {
                     return undefined; // В entry chunk
                   }
                   
-                  // React core - всегда в entry
-                  if (
-                    id.includes('node_modules/react/') &&
-                    !id.includes('react-router') &&
-                    !id.includes('react-helmet') &&
-                    !id.includes('react-hook-form') &&
-                    !id.includes('react-day-picker') &&
-                    !id.includes('react-resizable') &&
-                    !id.includes('react-query')
-                  ) {
-                    return undefined; // React остается в entry
+                  // 3. React core - всегда в entry
+                  if (id.includes('node_modules/react/')) {
+                    return undefined; // ВСЕ React в entry
                   }
                   
-                  // React DOM - всегда в entry
-                  if (
-                    id.includes('node_modules/react-dom/') &&
-                    !id.includes('react-router')
-                  ) {
-                    return undefined; // React DOM остается в entry
+                  // 4. React DOM - всегда в entry
+                  if (id.includes('node_modules/react-dom/')) {
+                    return undefined; // React DOM в entry
                   }
                   
-                  // Scheduler - всегда в entry
+                  // 5. Scheduler - всегда в entry
                   if (id.includes('node_modules/scheduler/')) {
-                    return undefined; // Scheduler остается в entry
+                    return undefined; // Scheduler в entry
                   }
                   
-                  // React Router - КРИТИЧНО: тоже в entry, так как используется сразу при загрузке
+                  // 6. React Router - в entry
                   if (id.includes('node_modules/react-router/')) {
-                    return undefined; // React Router остается в entry вместе с React
+                    return undefined; // React Router в entry
                   }
                   
-                  // Vendor chunks
+                  // 7. React Query - КРИТИЧНО: тоже в entry, так как используется в App.tsx
+                  if (id.includes('@tanstack/react-query')) {
+                    return undefined; // React Query в entry
+                  }
+                  
+                  // 8. React Helmet - в entry (используется в App.tsx)
+                  if (id.includes('react-helmet')) {
+                    return undefined; // React Helmet в entry
+                  }
+                  
+                  // 9. React Hook Form - в entry (используется в формах)
+                  if (id.includes('react-hook-form') || id.includes('@hookform')) {
+                    return undefined; // React Hook Form в entry
+                  }
+                  
+                  // 10. React Day Picker - в entry (используется в формах)
+                  if (id.includes('react-day-picker')) {
+                    return undefined; // React Day Picker в entry
+                  }
+                  
+                  // 11. React Resizable - в entry (если используется)
+                  if (id.includes('react-resizable')) {
+                    return undefined; // React Resizable в entry
+                  }
+                  
+                  // Vendor chunks - только НЕ React-зависимые библиотеки
                   if (id.includes('node_modules')) {
-                    // React Query - зависит от React, но может быть в отдельном chunk
-                    if (id.includes('@tanstack/react-query')) {
-                      return 'query-vendor';
-                    }
-                    // Остальные UI библиотеки (lucide-react, recharts) - не критичные
+                    // UI библиотеки без React зависимостей
                     if (id.includes('lucide-react') || id.includes('recharts')) {
                       return 'ui-vendor';
                     }
@@ -163,19 +174,19 @@ export default defineConfig({
                     if (id.includes('@supabase')) {
                       return 'supabase';
                     }
-                    // Socket.io
+                    // Socket.io (не зависит от React напрямую)
                     if (id.includes('socket.io-client')) {
                       return 'socket-vendor';
                     }
-                    // Form libraries
-                    if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
+                    // Zod (не зависит от React)
+                    if (id.includes('zod')) {
                       return 'form-vendor';
                     }
-                    // Date libraries
-                    if (id.includes('date-fns') || id.includes('react-day-picker')) {
+                    // Date libraries без React
+                    if (id.includes('date-fns')) {
                       return 'date-vendor';
                     }
-                    // Остальные vendor библиотеки
+                    // Остальные vendor библиотеки (не React-зависимые)
                     return 'vendor';
                   }
                 },
