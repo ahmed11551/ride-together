@@ -109,59 +109,29 @@ export default defineConfig({
                   // КАРДИНАЛЬНОЕ ИЗМЕНЕНИЕ: Включаем ВСЕ React-зависимые библиотеки в entry chunk
                   // Это гарантирует, что они загружаются вместе с React и не вызывают ошибки
                   
-                  // 1. ВСЕ Radix UI компоненты - в entry
-                  if (id.includes('@radix-ui')) {
-                    return undefined; // ВСЕ Radix UI в entry chunk
-                  }
+                  // КРИТИЧНО: Проверяем ВСЕ возможные React-зависимые библиотеки
+                  // Если библиотека содержит "react" в пути или названии - она в entry
                   
-                  // 2. Sonner и next-themes - в entry
-                  if (id.includes('sonner') || id.includes('next-themes')) {
-                    return undefined; // В entry chunk
-                  }
-                  
-                  // 3. React core - всегда в entry
-                  if (id.includes('node_modules/react/')) {
-                    return undefined; // ВСЕ React в entry
-                  }
-                  
-                  // 4. React DOM - всегда в entry
-                  if (id.includes('node_modules/react-dom/')) {
-                    return undefined; // React DOM в entry
-                  }
-                  
-                  // 5. Scheduler - всегда в entry
-                  if (id.includes('node_modules/scheduler/')) {
-                    return undefined; // Scheduler в entry
-                  }
-                  
-                  // 6. React Router - в entry
-                  if (id.includes('node_modules/react-router/')) {
-                    return undefined; // React Router в entry
-                  }
-                  
-                  // 7. React Query - КРИТИЧНО: тоже в entry, так как используется в App.tsx
-                  if (id.includes('@tanstack/react-query')) {
-                    return undefined; // React Query в entry
-                  }
-                  
-                  // 8. React Helmet - в entry (используется в App.tsx)
-                  if (id.includes('react-helmet')) {
-                    return undefined; // React Helmet в entry
-                  }
-                  
-                  // 9. React Hook Form - в entry (используется в формах)
-                  if (id.includes('react-hook-form') || id.includes('@hookform')) {
-                    return undefined; // React Hook Form в entry
-                  }
-                  
-                  // 10. React Day Picker - в entry (используется в формах)
-                  if (id.includes('react-day-picker')) {
-                    return undefined; // React Day Picker в entry
-                  }
-                  
-                  // 11. React Resizable - в entry (если используется)
-                  if (id.includes('react-resizable')) {
-                    return undefined; // React Resizable в entry
+                  // 1. ВСЕ что связано с React - в entry
+                  if (
+                    id.includes('react') ||
+                    id.includes('React') ||
+                    id.includes('@radix-ui') ||
+                    id.includes('@tanstack/react-query') ||
+                    id.includes('react-helmet') ||
+                    id.includes('react-hook-form') ||
+                    id.includes('react-day-picker') ||
+                    id.includes('react-resizable') ||
+                    id.includes('react-router') ||
+                    id.includes('embla-carousel-react') ||
+                    id.includes('sonner') ||
+                    id.includes('next-themes') ||
+                    id.includes('cmdk') ||
+                    id.includes('vaul') ||
+                    id.includes('input-otp') ||
+                    id.includes('@hookform')
+                  ) {
+                    return undefined; // ВСЕ React-зависимое в entry chunk
                   }
                   
                   // Vendor chunks - только НЕ React-зависимые библиотеки
@@ -185,6 +155,10 @@ export default defineConfig({
                     // Date libraries без React
                     if (id.includes('date-fns')) {
                       return 'date-vendor';
+                    }
+                    // Утилиты без React
+                    if (id.includes('clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
+                      return 'utils-vendor';
                     }
                     // Остальные vendor библиотеки (не React-зависимые)
                     return 'vendor';
