@@ -3,30 +3,28 @@
  * POST /api/bookings
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function createBooking(req: Request): Promise<Response> {
+
+export async function createBooking(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as { ride_id?: string; seats_booked?: number };
     const { ride_id, seats_booked } = body;
 
     if (!ride_id || !seats_booked || seats_booked < 1) {
-      return new Response(
-        JSON.stringify({ error: 'ride_id и seats_booked обязательны' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'ride_id и seats_booked обязательны' });
+      return;
     }
 
     // Проверяем, что поездка существует и активна
@@ -36,33 +34,25 @@ export async function createBooking(req: Request): Promise<Response> {
     );
 
     if (rideResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const ride = rideResult.rows[0];
 
     if (ride.status !== 'active') {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не активна' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Поездка не активна' });
+      return;
     }
 
     if (ride.driver_id === payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Нельзя забронировать свою поездку' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Нельзя забронировать свою поездку' });
+      return;
     }
 
     if (ride.seats_available < seats_booked) {
-      return new Response(
-        JSON.stringify({ error: 'Недостаточно свободных мест' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Недостаточно свободных мест' });
+      return;
     }
 
     // Проверяем, нет ли уже активного бронирования
@@ -72,10 +62,8 @@ export async function createBooking(req: Request): Promise<Response> {
     );
 
     if (existingBooking.rows.length > 0) {
-      return new Response(
-        JSON.stringify({ error: 'У вас уже есть активное бронирование на эту поездку' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(409).json({ error: 'У вас уже есть активное бронирование на эту поездку' });
+      return;
     }
 
     const total_price = parseFloat(ride.price) * seats_booked;
@@ -90,26 +78,12 @@ export async function createBooking(req: Request): Promise<Response> {
 
     const booking = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: booking.id,
-        ride_id: booking.ride_id,
-        passenger_id: booking.passenger_id,
-        seats_booked: booking.seats_booked,
-        status: booking.status,
-        payment_status: booking.payment_status,
-        total_price: parseFloat(booking.total_price),
-        created_at: booking.created_at,
-        updated_at: booking.updated_at,
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(201).json({ id: booking.id, ride_id: booking.ride_id, passenger_id: booking.passenger_id, seats_booked: booking.seats_booked, status: booking.status, payment_status: booking.payment_status, total_price: parseFloat(booking.total_price) });
+      return;
   } catch (error: any) {
     console.error('Create booking error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при создании бронирования' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при создании бронирования' });
+      return;
   }
 }
 

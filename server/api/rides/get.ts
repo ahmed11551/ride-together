@@ -3,9 +3,11 @@
  * GET /api/rides/:id
  */
 
-import { db } from '../../utils/database';
+import { db } from '../../utils/database.js';
+import { Request, Response } from 'express';
 
-export async function getRide(req: Request, rideId: string): Promise<Response> {
+
+export async function getRide(req: Request, res: Response, rideId: string): Promise<void> {
   try {
     const result = await db.query(
       `SELECT 
@@ -23,10 +25,8 @@ export async function getRide(req: Request, rideId: string): Promise<Response> {
     );
 
     if (result.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const row = result.rows[0];
@@ -60,16 +60,10 @@ export async function getRide(req: Request, rideId: string): Promise<Response> {
       } : undefined,
     };
 
-    return new Response(
-      JSON.stringify(ride),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json(ride);
   } catch (error: any) {
     console.error('Get ride error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении поездки' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при получении поездки' });
   }
 }
 

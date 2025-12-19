@@ -3,23 +3,36 @@
  * POST /api/rides
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { Request, Response } from 'express';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 
-export async function createRide(req: Request): Promise<Response> {
+export async function createRide(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as {
+      from_city?: string;
+      from_address?: string;
+      to_city?: string;
+      to_address?: string;
+      departure_date?: string;
+      departure_time?: string;
+      estimated_duration?: number;
+      price?: number;
+      seats_total?: number;
+      allow_smoking?: boolean;
+      allow_pets?: boolean;
+      allow_music?: boolean;
+      notes?: string;
+    };
     const {
       from_city,
       from_address,
@@ -38,10 +51,8 @@ export async function createRide(req: Request): Promise<Response> {
 
     // Валидация
     if (!from_city || !to_city || !departure_date || !departure_time || !price || !seats_total) {
-      return new Response(
-        JSON.stringify({ error: 'Не все обязательные поля заполнены' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Не все обязательные поля заполнены' });
+      return;
     }
 
     // Создание поездки
@@ -75,36 +86,30 @@ export async function createRide(req: Request): Promise<Response> {
 
     const ride = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: ride.id,
-        driver_id: ride.driver_id,
-        from_city: ride.from_city,
-        from_address: ride.from_address,
-        to_city: ride.to_city,
-        to_address: ride.to_address,
-        departure_date: ride.departure_date,
-        departure_time: ride.departure_time,
-        estimated_duration: ride.estimated_duration,
-        price: parseFloat(ride.price),
-        seats_total: ride.seats_total,
-        seats_available: ride.seats_available,
-        status: ride.status,
-        allow_smoking: ride.allow_smoking,
-        allow_pets: ride.allow_pets,
-        allow_music: ride.allow_music,
-        notes: ride.notes,
-        created_at: ride.created_at,
-        updated_at: ride.updated_at,
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(201).json({
+      id: ride.id,
+      driver_id: ride.driver_id,
+      from_city: ride.from_city,
+      from_address: ride.from_address,
+      to_city: ride.to_city,
+      to_address: ride.to_address,
+      departure_date: ride.departure_date,
+      departure_time: ride.departure_time,
+      estimated_duration: ride.estimated_duration,
+      price: parseFloat(ride.price),
+      seats_total: ride.seats_total,
+      seats_available: ride.seats_available,
+      status: ride.status,
+      allow_smoking: ride.allow_smoking,
+      allow_pets: ride.allow_pets,
+      allow_music: ride.allow_music,
+      notes: ride.notes,
+      created_at: ride.created_at,
+      updated_at: ride.updated_at,
+    });
   } catch (error: any) {
     console.error('Create ride error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при создании поездки' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при создании поездки' });
   }
 }
 

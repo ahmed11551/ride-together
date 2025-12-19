@@ -3,20 +3,20 @@
  * GET /api/messages/:rideId
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function listMessages(req: Request, rideId: string): Promise<Response> {
+
+export async function listMessages(req: Request, res: Response, rideId: string): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
     // Проверяем доступ к чату
@@ -26,10 +26,8 @@ export async function listMessages(req: Request, rideId: string): Promise<Respon
     );
 
     if (rideResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const isDriver = rideResult.rows[0].driver_id === payload.userId;
@@ -39,10 +37,8 @@ export async function listMessages(req: Request, rideId: string): Promise<Respon
     );
 
     if (!isDriver && isParticipant.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Нет доступа к чату этой поездки' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Нет доступа к чату этой поездки' });
+      return;
     }
 
     // Получаем сообщения
@@ -70,16 +66,10 @@ export async function listMessages(req: Request, rideId: string): Promise<Respon
       } : undefined,
     }));
 
-    return new Response(
-      JSON.stringify(messages),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json(messages);
   } catch (error: any) {
     console.error('List messages error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении сообщений' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при получении сообщений' });
   }
 }
 

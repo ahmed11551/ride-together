@@ -3,20 +3,20 @@
  * GET /api/bookings/ride/:rideId
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function getRideBookings(req: Request, rideId: string): Promise<Response> {
+
+export async function getRideBookings(req: Request, res: Response, rideId: string): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
     // Проверяем, что пользователь является водителем или участником
@@ -26,10 +26,8 @@ export async function getRideBookings(req: Request, rideId: string): Promise<Res
     );
 
     if (rideResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const isDriver = rideResult.rows[0].driver_id === payload.userId;
@@ -39,10 +37,8 @@ export async function getRideBookings(req: Request, rideId: string): Promise<Res
     );
 
     if (!isDriver && isParticipant.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Нет доступа к бронированиям этой поездки' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Нет доступа к бронированиям этой поездки' });
+      return;
     }
 
     const result = await db.query(
@@ -50,7 +46,9 @@ export async function getRideBookings(req: Request, rideId: string): Promise<Res
         b.*,
         p.full_name as passenger_full_name,
         p.avatar_url as passenger_avatar_url,
-        p.phone as passenger_phone
+        p.phone as passenger_phone,
+        p.rating as passenger_driver_rating,
+        p.passenger_rating as passenger_rating_value
       FROM bookings b
       LEFT JOIN profiles p ON b.passenger_id = p.user_id
       WHERE b.ride_id = $1
@@ -72,19 +70,15 @@ export async function getRideBookings(req: Request, rideId: string): Promise<Res
         full_name: row.passenger_full_name,
         avatar_url: row.passenger_avatar_url,
         phone: row.passenger_phone,
+        rating: row.passenger_driver_rating ? parseFloat(row.passenger_driver_rating) : 0,
+        passenger_rating: row.passenger_rating_value ? parseFloat(row.passenger_rating_value) : 0,
       } : undefined,
     }));
 
-    return new Response(
-      JSON.stringify(bookings),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json(bookings);
   } catch (error: any) {
     console.error('Get ride bookings error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении бронирований' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при получении бронирований' });
   }
 }
 

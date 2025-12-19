@@ -22,8 +22,8 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>RideConnect — Поиск попутчиков и совместные поездки</title>
-        <meta name="description" content="Найди попутчиков для поездки или предложи свой маршрут. Экономь до 75% на путешествиях с RideConnect — удобным сервисом совместных поездок." />
+        <title>Ride Together — Поиск попутчиков и совместные поездки</title>
+        <meta name="description" content="Найди попутчиков для поездки или предложи свой маршрут. Экономь до 75% на путешествиях с Ride Together — удобным сервисом совместных поездок." />
       </Helmet>
       
       {/* Skip to main content link for accessibility */}
@@ -92,7 +92,7 @@ const Index = () => {
           <footer className="py-8 border-t border-border bg-muted/30">
             <div className="container text-center">
               <p className="text-sm text-muted-foreground">
-                © 2025 RideConnect. Все права защищены. -Sebiev-
+                © 2025 Ride Together. Все права защищены.
               </p>
             </div>
           </footer>

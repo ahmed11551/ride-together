@@ -3,19 +3,18 @@
  * Замена Supabase Auth.signOut()
  */
 
-import { extractTokenFromHeader } from '../../utils/jwt';
-import { db } from '../../utils/database';
+import { Request, Response } from 'express';
+import { extractTokenFromHeader } from '../../utils/jwt.js';
+import { db } from '../../utils/database.js';
 
-export async function signOut(req: Request): Promise<Response> {
+export async function signOut(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
 
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Токен не предоставлен' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Токен не предоставлен' });
+      return;
     }
 
     // Удаление сессии
@@ -24,15 +23,9 @@ export async function signOut(req: Request): Promise<Response> {
       [token]
     );
 
-    return new Response(
-      JSON.stringify({ message: 'Выход выполнен успешно' }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json({ message: 'Выход выполнен успешно' });
   } catch (error: any) {
     console.error('Signout error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при выходе' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при выходе' });
   }
 }

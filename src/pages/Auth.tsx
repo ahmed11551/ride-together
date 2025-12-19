@@ -97,7 +97,7 @@ const Auth = () => {
         } else {
           toast({
             title: "Регистрация успешна!",
-            description: "Добро пожаловать в RideConnect",
+            description: "Добро пожаловать в Ride Together",
           });
           navigate("/");
         }

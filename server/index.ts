@@ -6,13 +6,30 @@
 // Автоматическая загрузка переменных окружения
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Загружаем .env файлы (приоритет: .env.production > .env)
-const envPath = process.env.NODE_ENV === 'production' 
-  ? path.join(__dirname, '.env.production')
-  : path.join(__dirname, '.env');
-dotenv.config({ path: envPath });
-dotenv.config(); // Также загружаем .env если есть
+// Получаем __dirname для ES модулей (только если нужно)
+let __dirname: string;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  __dirname = dirname(__filename);
+} catch {
+  // Fallback для случаев, когда import.meta.url недоступен
+  __dirname = process.cwd();
+}
+
+// Загружаем .env файлы только если переменные не установлены через PM2/system
+// Приоритет: переменные окружения (PM2) > .env.production > .env
+// В production PM2 обычно устанавливает переменные через ecosystem.config.cjs
+if (process.env.NODE_ENV !== 'production' || !process.env.JWT_SECRET || !process.env.DATABASE_URL) {
+  const envPath = process.env.NODE_ENV === 'production' 
+    ? path.join(process.cwd(), '.env.production')
+    : path.join(process.cwd(), '.env');
+  // Загружаем с опцией override: false чтобы не перезаписывать существующие переменные
+  dotenv.config({ path: envPath, override: false });
+  dotenv.config({ override: false }); // Также загружаем .env если есть
+}
 
 // Установка значений по умолчанию для Timeweb (если не заданы)
 if (!process.env.DATABASE_URL) {
@@ -21,6 +38,8 @@ if (!process.env.DATABASE_URL) {
 if (!process.env.JWT_SECRET) {
   console.warn('⚠️  JWT_SECRET не установлен! Используется временный ключ. Установите JWT_SECRET в production!');
   process.env.JWT_SECRET = 'temporary-secret-key-change-in-production-min-32-chars';
+} else if (process.env.NODE_ENV === 'production') {
+  console.log('✅ JWT_SECRET загружен из переменных окружения');
 }
 if (!process.env.PORT) {
   process.env.PORT = '3001';
@@ -32,31 +51,36 @@ if (!process.env.NODE_ENV) {
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
-import { createWebSocketServer } from './websocket/server';
-import { signUp } from './api/auth/signup';
-import { signIn } from './api/auth/signin';
-import { signOut } from './api/auth/signout';
-import { getCurrentUser } from './api/auth/me';
-import { listRides } from './api/rides/list';
-import { getRide } from './api/rides/get';
-import { createRide } from './api/rides/create';
-import { updateRide } from './api/rides/update';
-import { deleteRide } from './api/rides/delete';
-import { getMyRides } from './api/rides/my';
-import { listBookings } from './api/bookings/list';
-import { createBooking } from './api/bookings/create';
-import { updateBooking } from './api/bookings/update';
-import { getRideBookings } from './api/bookings/ride';
-import { listReviews } from './api/reviews/list';
-import { createReview } from './api/reviews/create';
-import { listMessages } from './api/messages/list';
-import { createMessage } from './api/messages/create';
-import { getProfile } from './api/profiles/get';
-import { updateProfile } from './api/profiles/update';
-import { banUser } from './api/profiles/ban';
-import { listReports } from './api/reports/list';
-import { createReport } from './api/reports/create';
-import { updateReport } from './api/reports/update';
+import { createWebSocketServer } from './websocket/server.js';
+import { signUp } from './api/auth/signup.js';
+import { signIn } from './api/auth/signin.js';
+import { signOut } from './api/auth/signout.js';
+import { getCurrentUser } from './api/auth/me.js';
+import { listRides } from './api/rides/list.js';
+import { getRide } from './api/rides/get.js';
+import { createRide } from './api/rides/create.js';
+import { updateRide } from './api/rides/update.js';
+import { deleteRide } from './api/rides/delete.js';
+import { getMyRides } from './api/rides/my.js';
+import { listBookings } from './api/bookings/list.js';
+import { createBooking } from './api/bookings/create.js';
+import { updateBooking } from './api/bookings/update.js';
+import { getRideBookings } from './api/bookings/ride.js';
+import { listReviews } from './api/reviews/list.js';
+import { createReview } from './api/reviews/create.js';
+import { listMessages } from './api/messages/list.js';
+import { createMessage } from './api/messages/create.js';
+import { getProfile } from './api/profiles/get.js';
+import { updateProfile } from './api/profiles/update.js';
+import { banUser } from './api/profiles/ban.js';
+import { listReports } from './api/reports/list.js';
+import { createReport } from './api/reports/create.js';
+import { updateReport } from './api/reports/update.js';
+import { listUsers } from './api/users/list.js';
+import { subscribeToBot } from './api/telegram/subscribe.js';
+import { unsubscribeFromBot } from './api/telegram/unsubscribe.js';
+import { getSubscriptionStatus } from './api/telegram/status.js';
+import { telegramWebhook } from './api/telegram/webhook.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -126,168 +150,141 @@ app.get('/health', (req, res) => {
 
 // Auth routes
 app.post('/api/auth/signup', async (req, res) => {
-  const response = await signUp(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await signUp(req, res);
 });
 
 app.post('/api/auth/signin', async (req, res) => {
-  const response = await signIn(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await signIn(req, res);
 });
 
 app.post('/api/auth/signout', async (req, res) => {
-  const response = await signOut(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await signOut(req, res);
 });
 
 app.get('/api/auth/me', async (req, res) => {
-  const response = await getCurrentUser(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await getCurrentUser(req, res);
 });
 
 // Rides routes
 app.get('/api/rides', async (req, res) => {
-  const response = await listRides(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await listRides(req, res);
 });
 
 app.get('/api/rides/my', async (req, res) => {
-  const response = await getMyRides(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await getMyRides(req, res);
 });
 
 app.get('/api/rides/:id', async (req, res) => {
   const rideId = req.params.id;
-  const response = await getRide(req, rideId);
-  res.status(response.status);
-  res.json(await response.json());
+  await getRide(req, res, rideId);
 });
 
 app.post('/api/rides', async (req, res) => {
-  const response = await createRide(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await createRide(req, res);
 });
 
 app.put('/api/rides/:id', async (req, res) => {
   const rideId = req.params.id;
-  const response = await updateRide(req, rideId);
-  res.status(response.status);
-  res.json(await response.json());
+  await updateRide(req, res, rideId);
 });
 
 app.delete('/api/rides/:id', async (req, res) => {
   const rideId = req.params.id;
-  const response = await deleteRide(req, rideId);
-  res.status(response.status);
-  res.json(await response.json());
+  await deleteRide(req, res, rideId);
 });
 
 // Bookings routes
 app.get('/api/bookings', async (req, res) => {
-  const response = await listBookings(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await listBookings(req, res);
 });
 
 app.get('/api/bookings/ride/:rideId', async (req, res) => {
   const rideId = req.params.rideId;
-  const response = await getRideBookings(req, rideId);
-  res.status(response.status);
-  res.json(await response.json());
+  await getRideBookings(req, res, rideId);
 });
 
 app.post('/api/bookings', async (req, res) => {
-  const response = await createBooking(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await createBooking(req, res);
 });
 
 app.put('/api/bookings/:id', async (req, res) => {
   const bookingId = req.params.id;
-  const response = await updateBooking(req, bookingId);
-  res.status(response.status);
-  res.json(await response.json());
+  await updateBooking(req, res, bookingId);
 });
 
 // Reviews routes
 app.get('/api/reviews', async (req, res) => {
-  const response = await listReviews(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await listReviews(req, res);
 });
 
 app.post('/api/reviews', async (req, res) => {
-  const response = await createReview(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await createReview(req, res);
 });
 
 // Messages routes
 app.get('/api/messages/:rideId', async (req, res) => {
   const rideId = req.params.rideId;
-  const response = await listMessages(req, rideId);
-  res.status(response.status);
-  res.json(await response.json());
+  await listMessages(req, res, rideId);
 });
 
 app.post('/api/messages', async (req, res) => {
-  const response = await createMessage(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await createMessage(req, res);
 });
 
 // Profiles routes
 app.get('/api/profiles/me', async (req, res) => {
-  const response = await getProfile(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await getProfile(req, res);
 });
 
 app.get('/api/profiles/:userId', async (req, res) => {
   const userId = req.params.userId;
-  const response = await getProfile(req, userId);
-  res.status(response.status);
-  res.json(await response.json());
+  await getProfile(req, res, userId);
 });
 
 app.put('/api/profiles/me', async (req, res) => {
-  const response = await updateProfile(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await updateProfile(req, res);
 });
 
 app.put('/api/profiles/:userId/ban', async (req, res) => {
   const userId = req.params.userId;
-  const response = await banUser(req, userId);
-  res.status(response.status);
-  res.json(await response.json());
+  await banUser(req, res, userId);
 });
 
 // Reports routes
 app.get('/api/reports', async (req, res) => {
-  const response = await listReports(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await listReports(req, res);
 });
 
 app.post('/api/reports', async (req, res) => {
-  const response = await createReport(req);
-  res.status(response.status);
-  res.json(await response.json());
+  await createReport(req, res);
 });
 
 app.put('/api/reports/:id', async (req, res) => {
   const reportId = req.params.id;
-  const response = await updateReport(req, reportId);
-  res.status(response.status);
-  res.json(await response.json());
+  await updateReport(req, res, reportId);
+});
+
+// Users routes (admin only)
+app.get('/api/users', async (req, res) => {
+  await listUsers(req, res);
+});
+
+// Telegram bot routes
+app.post('/api/telegram/subscribe', async (req, res) => {
+  await subscribeToBot(req, res);
+});
+
+app.post('/api/telegram/unsubscribe', async (req, res) => {
+  await unsubscribeFromBot(req, res);
+});
+
+app.get('/api/telegram/status', async (req, res) => {
+  await getSubscriptionStatus(req, res);
+});
+
+// Telegram webhook (для обработки обновлений от Telegram)
+app.post('/api/telegram/webhook', async (req, res) => {
+  await telegramWebhook(req, res);
 });
 
 // WebSocket server
@@ -296,7 +293,7 @@ const io = createWebSocketServer(httpServer);
 // Export io for use in other modules (lazy export to avoid circular dependencies)
 export { io };
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0'; // Слушаем на всех интерфейсах для Docker/Cloud
 
 httpServer.listen(PORT, HOST, () => {

@@ -3,29 +3,26 @@
  * Замена Supabase Auth.getUser()
  */
 
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
-import { db } from '../../utils/database';
+import { Request, Response } from 'express';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { db } from '../../utils/database.js';
 
-export async function getCurrentUser(req: Request): Promise<Response> {
+export async function getCurrentUser(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
 
     if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'Токен не предоставлен' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Токен не предоставлен' });
+      return;
     }
 
     // Валидация токена
     const payload = verifyToken(token);
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Неверный токен' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Неверный токен' });
+      return;
     }
 
     // Проверка сессии в БД
@@ -35,10 +32,8 @@ export async function getCurrentUser(req: Request): Promise<Response> {
     );
 
     if (sessionResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Сессия истекла' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Сессия истекла' });
+      return;
     }
 
     // Обновление last_used_at
@@ -54,10 +49,8 @@ export async function getCurrentUser(req: Request): Promise<Response> {
     );
 
     if (userResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Пользователь не найден' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Пользователь не найден' });
+      return;
     }
 
     const user = userResult.rows[0];
@@ -70,26 +63,20 @@ export async function getCurrentUser(req: Request): Promise<Response> {
 
     const profile = profileResult.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        user: {
-          id: user.id,
-          email: user.email,
-          user_metadata: {
-            full_name: profile?.full_name || null,
-          },
-          email_verified: user.email_verified,
-          created_at: user.created_at,
+    res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        user_metadata: {
+          full_name: profile?.full_name || null,
         },
-        token, // Возвращаем тот же токен для удобства
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+        email_verified: user.email_verified,
+        created_at: user.created_at,
+      },
+      token, // Возвращаем тот же токен для удобства
+    });
   } catch (error: any) {
     console.error('Get current user error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении пользователя' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при получении пользователя' });
   }
 }

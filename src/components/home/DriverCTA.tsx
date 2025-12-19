@@ -27,7 +27,7 @@ const DriverCTA = () => {
               
               <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-4 leading-tight">
                 Стань водителем
-                <span className="block text-primary">RideConnect</span>
+                <span className="block text-primary">Ride Together</span>
               </h2>
               <p className="text-muted-foreground mb-6">
                 Публикуй поездки и получай дополнительный доход. Присоединяйся к сообществу водителей.

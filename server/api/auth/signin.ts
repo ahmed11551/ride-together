@@ -3,20 +3,19 @@
  * Замена Supabase Auth.signInWithPassword()
  */
 
+import { Request, Response } from 'express';
 import { compare } from 'bcrypt';
-import { generateToken, generateRefreshToken } from '../utils/jwt';
-import { db } from '../utils/database';
+import { generateToken, generateRefreshToken } from '../../utils/jwt.js';
+import { db } from '../../utils/database.js';
 
-export async function signIn(req: Request): Promise<Response> {
+export async function signIn(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password } = await req.json();
+    const { email, password } = req.body as { email?: string; password?: string };
 
     // Валидация
     if (!email || !password) {
-      return new Response(
-        JSON.stringify({ error: 'Email и password обязательны' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Email и password обязательны' });
+      return;
     }
 
     // Поиск пользователя
@@ -26,10 +25,8 @@ export async function signIn(req: Request): Promise<Response> {
     );
 
     if (userResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Неверный email или password' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Неверный email или password' });
+      return;
     }
 
     const user = userResult.rows[0];
@@ -38,10 +35,8 @@ export async function signIn(req: Request): Promise<Response> {
     const passwordMatch = await compare(password, user.password_hash);
 
     if (!passwordMatch) {
-      return new Response(
-        JSON.stringify({ error: 'Неверный email или password' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Неверный email или password' });
+      return;
     }
 
     // Генерация токенов
@@ -65,8 +60,8 @@ export async function signIn(req: Request): Promise<Response> {
         refreshToken,
         expiresAt,
         refreshExpiresAt,
-        req.headers.get('x-forwarded-for') || 'unknown',
-        req.headers.get('user-agent') || 'unknown'
+        req.headers['x-forwarded-for'] || req.ip || 'unknown',
+        req.headers['user-agent'] || 'unknown'
       ]
     );
 
@@ -78,26 +73,20 @@ export async function signIn(req: Request): Promise<Response> {
 
     const profile = profileResult.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        user: {
-          id: user.id,
-          email: user.email,
-          user_metadata: {
-            full_name: profile?.full_name || null,
-          },
-          email_verified: user.email_verified,
+    res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        user_metadata: {
+          full_name: profile?.full_name || null,
         },
-        token,
-        refresh_token: refreshToken,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+        email_verified: user.email_verified,
+      },
+      token,
+      refresh_token: refreshToken,
+    });
   } catch (error: any) {
     console.error('Signin error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при входе' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при входе' });
   }
 }

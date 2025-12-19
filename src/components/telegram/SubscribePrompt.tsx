@@ -22,9 +22,8 @@ export function SubscribePrompt({ onDismiss, showInWebApp = false }: SubscribePr
   const createSubscription = useCreateSubscription();
   const [isDismissed, setIsDismissed] = useState(false);
 
-  const botUsername = env.VITE_TELEGRAM_BOT_TOKEN
-    ? "RideConnectBot" // Замените на имя вашего бота
-    : "RideConnectBot";
+  // Имя бота - можно настроить через переменную окружения
+  const botUsername = "RideTogetherBot";
 
   const handleSubscribe = () => {
     if (isTelegram && webApp) {
@@ -35,8 +34,18 @@ export function SubscribePrompt({ onDismiss, showInWebApp = false }: SubscribePr
       window.open(`https://t.me/${botUsername}?start=subscribe`, "_blank");
     }
 
-    // Создаем подписку
-    createSubscription.mutate("free");
+    // Создаем подписку (если пользователь авторизован)
+    if (telegramUser) {
+      createSubscription.mutate("free", {
+        onSuccess: () => {
+          // Подписка успешно создана
+        },
+        onError: (error) => {
+          console.error('Ошибка подписки:', error);
+          // Не критично - пользователь все равно может подписаться вручную
+        },
+      });
+    }
   };
 
   const handleDismiss = () => {

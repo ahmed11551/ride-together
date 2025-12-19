@@ -1,5 +1,5 @@
 -- =============================================
--- RideConnect Database Schema
+-- Ride Together Database Schema
 -- =============================================
 
 -- Create enum types

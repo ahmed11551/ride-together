@@ -3,24 +3,23 @@
  * GET /api/reports
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function listReports(req: Request): Promise<Response> {
+
+export async function listReports(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const url = new URL(req.url);
-    const myOnly = url.searchParams.get('my') === 'true';
+    const myOnly = req.query.my === 'true';
 
     let query = `
       SELECT 
@@ -47,10 +46,8 @@ export async function listReports(req: Request): Promise<Response> {
       );
 
       if (!adminCheck.rows[0]?.is_admin) {
-        return new Response(
-          JSON.stringify({ error: 'Доступ запрещен' }),
-          { status: 403, headers: { 'Content-Type': 'application/json' } }
-        );
+      res.status(403).json({ error: 'Доступ запрещен' });
+      return;
       }
     }
 
@@ -82,16 +79,12 @@ export async function listReports(req: Request): Promise<Response> {
       } : undefined,
     }));
 
-    return new Response(
-      JSON.stringify(reports),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(200).json(reports);
+      return;
   } catch (error: any) {
     console.error('List reports error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении жалоб' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при получении жалоб' });
+      return;
   }
 }
 

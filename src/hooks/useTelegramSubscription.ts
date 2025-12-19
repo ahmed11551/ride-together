@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTelegram } from "@/contexts/TelegramContext";
+import { apiClient } from "@/lib/api-client";
 
 export interface Subscription {
   id: string;
@@ -36,17 +36,8 @@ export const useSubscription = () => {
     queryFn: async () => {
       if (!user) return null;
 
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        throw error;
-      }
-
-      return data as Subscription | null;
+      const response = await apiClient.get('/api/telegram/status');
+      return response.data.subscription as Subscription | null;
     },
     enabled: !!user,
   });
@@ -66,27 +57,20 @@ export const useCreateSubscription = () => {
         throw new Error("User not authenticated");
       }
 
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .upsert({
-          user_id: user.id,
-          telegram_user_id: telegramUser.id,
-          telegram_username: telegramUser.username,
-          telegram_first_name: telegramUser.first_name,
-          telegram_last_name: telegramUser.last_name,
-          subscription_type: type,
-          subscription_status: "active",
-        }, {
-          onConflict: "user_id",
-        })
-        .select()
-        .single();
+      const response = await apiClient.post('/api/telegram/subscribe', {
+        telegram_user_id: telegramUser.id,
+        telegram_username: telegramUser.username,
+        telegram_first_name: telegramUser.first_name,
+        telegram_last_name: telegramUser.last_name,
+      });
 
-      if (error) throw error;
-      return data as Subscription;
+      // Получаем обновленную подписку
+      const statusResponse = await apiClient.get('/api/telegram/status');
+      return statusResponse.data.subscription as Subscription;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["bot-subscription"] });
     },
   });
 };
@@ -95,31 +79,36 @@ export const useCreateSubscription = () => {
  * Check if user is subscribed to bot
  */
 export const useBotSubscription = () => {
-  const { user: telegramUser } = useTelegram();
+  const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["bot-subscription", telegramUser?.id],
+    queryKey: ["bot-subscription", user?.id],
     queryFn: async () => {
-      if (!telegramUser) return null;
+      if (!user) return null;
 
-      const { data, error } = await supabase
-        .from("bot_users")
-        .select("*")
-        .eq("telegram_user_id", telegramUser.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        throw error;
+      const response = await apiClient.get('/api/telegram/status');
+      const status = response.data;
+      
+      if (!status.is_subscribed || !status.subscription) {
+        return null;
       }
 
-      return data as BotUser | null;
+      return {
+        id: status.subscription.id,
+        telegram_user_id: status.subscription.telegram_user_id,
+        telegram_username: status.subscription.telegram_username,
+        telegram_first_name: null,
+        is_subscribed: status.is_subscribed,
+        last_interaction_at: status.subscription.subscribed_at,
+      } as BotUser;
     },
-    enabled: !!telegramUser,
+    enabled: !!user,
   });
 };
 
 /**
  * Get bot statistics (admin only)
+ * TODO: Реализовать через API endpoint
  */
 export const useBotStats = () => {
   const { user } = useAuth();
@@ -127,29 +116,11 @@ export const useBotStats = () => {
   return useQuery({
     queryKey: ["bot-stats"],
     queryFn: async () => {
-      const { data: totalUsers, error: usersError } = await supabase
-        .from("bot_users")
-        .select("id", { count: "exact", head: true });
-
-      if (usersError) throw usersError;
-
-      const { data: subscribedUsers, error: subscribedError } = await supabase
-        .from("bot_users")
-        .select("id", { count: "exact", head: true })
-        .eq("is_subscribed", true);
-
-      if (subscribedError) throw subscribedError;
-
-      const { data: subscriptions, error: subsError } = await supabase
-        .from("subscriptions")
-        .select("subscription_type", { count: "exact", head: true });
-
-      if (subsError) throw subsError;
-
+      // TODO: Создать API endpoint /api/telegram/stats для администраторов
       return {
-        totalUsers: totalUsers || 0,
-        subscribedUsers: subscribedUsers || 0,
-        subscriptions: subscriptions || 0,
+        totalUsers: 0,
+        subscribedUsers: 0,
+        subscriptions: 0,
       };
     },
     enabled: !!user,

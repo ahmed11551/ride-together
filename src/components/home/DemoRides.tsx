@@ -105,7 +105,7 @@ export const DemoRides = ({ onRideClick }: DemoRidesProps) => {
           <div>
             <h2 className="text-2xl font-bold text-foreground">Примеры поездок</h2>
             <p className="text-muted-foreground text-sm">
-              Так выглядят поездки в RideConnect
+              Так выглядят поездки в Ride Together
             </p>
           </div>
         </div>

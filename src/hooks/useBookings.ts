@@ -47,19 +47,6 @@ export const useMyBookings = () => {
   });
 };
 
-export const useRideBookings = (rideId: string | undefined) => {
-  return useQuery({
-    queryKey: ["ride-bookings", rideId],
-    queryFn: async () => {
-      if (!rideId) return [];
-
-      const data = await apiClient.get<BookingWithRide[]>(`/api/bookings/ride/${rideId}`);
-      return data;
-    },
-    enabled: !!rideId,
-  });
-};
-
 export const useCreateBooking = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();

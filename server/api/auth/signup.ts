@@ -3,21 +3,20 @@
  * Замена Supabase Auth.signUp()
  */
 
+import { Request, Response } from 'express';
 import { hash } from 'bcrypt';
-import { generateToken, generateRefreshToken } from '../utils/jwt';
-import { db } from '../utils/database';
-import { createProfile } from '../utils/profile';
+import { generateToken, generateRefreshToken } from '../../utils/jwt.js';
+import { db } from '../../utils/database.js';
+import { createProfile } from '../../utils/profile.js';
 
-export async function signUp(req: Request): Promise<Response> {
+export async function signUp(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, fullName } = await req.json();
+    const { email, password, fullName } = req.body as { email?: string; password?: string; fullName?: string };
 
     // Валидация
     if (!email || !password || !fullName) {
-      return new Response(
-        JSON.stringify({ error: 'Email, password и fullName обязательны' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Email, password и fullName обязательны' });
+      return;
     }
 
     // Проверка существующего пользователя
@@ -27,10 +26,8 @@ export async function signUp(req: Request): Promise<Response> {
     );
 
     if (existingUser.rows.length > 0) {
-      return new Response(
-        JSON.stringify({ error: 'Пользователь с таким email уже существует' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(409).json({ error: 'Пользователь с таким email уже существует' });
+      return;
     }
 
     // Хеширование пароля
@@ -69,8 +66,8 @@ export async function signUp(req: Request): Promise<Response> {
         refreshToken,
         expiresAt,
         refreshExpiresAt,
-        req.headers.get('x-forwarded-for') || 'unknown',
-        req.headers.get('user-agent') || 'unknown'
+        req.headers['x-forwarded-for'] || req.ip || 'unknown',
+        req.headers['user-agent'] || 'unknown'
       ]
     );
 
@@ -80,26 +77,20 @@ export async function signUp(req: Request): Promise<Response> {
       [user.id]
     );
 
-    return new Response(
-      JSON.stringify({
-        user: {
-          id: user.id,
-          email: user.email,
-          user_metadata: {
-            full_name: fullName,
-          },
-          created_at: user.created_at,
+    res.status(201).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        user_metadata: {
+          full_name: fullName,
         },
-        token,
-        refresh_token: refreshToken,
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+        created_at: user.created_at,
+      },
+      token,
+      refresh_token: refreshToken,
+    });
   } catch (error: any) {
     console.error('Signup error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при регистрации' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при регистрации' });
   }
 }

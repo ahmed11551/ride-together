@@ -4,8 +4,8 @@
  */
 
 import { Server } from 'socket.io';
-import { verifyToken } from '../utils/jwt';
-import { db } from '../utils/database';
+import { verifyToken } from '../utils/jwt.js';
+import { db } from '../utils/database.js';
 
 export function createWebSocketServer(httpServer: any) {
   const io = new Server(httpServer, {

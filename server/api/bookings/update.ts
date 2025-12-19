@@ -3,30 +3,28 @@
  * PUT /api/bookings/:id
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function updateBooking(req: Request, bookingId: string): Promise<Response> {
+
+export async function updateBooking(req: Request, res: Response, bookingId: string): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as { status?: string; payment_status?: string };
     const { status, payment_status } = body;
 
     if (!status) {
-      return new Response(
-        JSON.stringify({ error: 'status обязателен' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'status обязателен' });
+      return;
     }
 
     // Получаем текущее бронирование
@@ -36,10 +34,8 @@ export async function updateBooking(req: Request, bookingId: string): Promise<Re
     );
 
     if (bookingResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Бронирование не найдено' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Бронирование не найдено' });
+      return;
     }
 
     const booking = bookingResult.rows[0];
@@ -56,27 +52,21 @@ export async function updateBooking(req: Request, bookingId: string): Promise<Re
     const isPassenger = booking.passenger_id === payload.userId;
 
     if (!isDriver && !isPassenger) {
-      return new Response(
-        JSON.stringify({ error: 'Нет доступа к этому бронированию' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Нет доступа к этому бронированию' });
+      return;
     }
 
     // Валидация статуса
     const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
     if (!validStatuses.includes(status)) {
-      return new Response(
-        JSON.stringify({ error: 'Неверный статус' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Неверный статус' });
+      return;
     }
 
     // Пассажир может только отменять
     if (isPassenger && !isDriver && status !== 'cancelled') {
-      return new Response(
-        JSON.stringify({ error: 'Пассажир может только отменять бронирование' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Пассажир может только отменять бронирование' });
+      return;
     }
 
     // Обновляем статус
@@ -96,26 +86,20 @@ export async function updateBooking(req: Request, bookingId: string): Promise<Re
 
     const updatedBooking = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: updatedBooking.id,
-        ride_id: updatedBooking.ride_id,
-        passenger_id: updatedBooking.passenger_id,
-        seats_booked: updatedBooking.seats_booked,
-        status: updatedBooking.status,
-        payment_status: updatedBooking.payment_status,
-        total_price: parseFloat(updatedBooking.total_price),
-        created_at: updatedBooking.created_at,
-        updated_at: updatedBooking.updated_at,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json({
+      id: updatedBooking.id,
+      ride_id: updatedBooking.ride_id,
+      passenger_id: updatedBooking.passenger_id,
+      seats_booked: updatedBooking.seats_booked,
+      status: updatedBooking.status,
+      payment_status: updatedBooking.payment_status,
+      total_price: parseFloat(updatedBooking.total_price),
+      created_at: updatedBooking.created_at,
+      updated_at: updatedBooking.updated_at,
+    });
   } catch (error: any) {
     console.error('Update booking error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при обновлении бронирования' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при обновлении бронирования' });
   }
 }
 

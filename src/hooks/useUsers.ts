@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useIsAdmin } from "./useReports";
 
 export interface UserProfile {
@@ -25,27 +25,8 @@ export const useAllUsers = () => {
   return useQuery({
     queryKey: ["users", "all"],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select(`
-          user_id,
-          full_name,
-          phone,
-          avatar_url,
-          rating,
-          trips_count,
-          is_verified,
-          is_admin,
-          is_banned,
-          created_at
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Get emails from auth.users (requires service role or admin function)
-      // For now, we'll just return profiles without emails
-      return profiles as UserProfile[];
+      const users = await apiClient.get<UserProfile[]>('/api/users');
+      return users;
     },
     enabled: !!isAdmin,
   });

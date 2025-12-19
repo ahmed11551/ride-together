@@ -1,0 +1,56 @@
+# ============================================================
+# ВЫПОЛНИТЕ ЭТУ КОМАНДУ НА СЕРВЕРЕ (скопируйте и вставьте):
+# ============================================================
+
+cd /var/www/ride-together/server && cat > fix-server.sh << 'EOFFIX'
+#!/bin/bash
+set -e
+cd /var/www/ride-together/server
+echo "🛑 Остановка..."
+pm2 stop ride-backend 2>/dev/null || true
+pm2 delete ride-backend 2>/dev/null || true
+sleep 2
+PID=$(ss -tlnp 2>/dev/null | grep ":3001 " | grep -oP 'pid=\K\d+' | head -1 || echo "")
+[ ! -z "$PID" ] && kill -9 $PID 2>/dev/null || true
+sleep 1
+echo "🔧 Исправление..."
+cd dist && python3 << 'PYTHON'
+import re
+with open('index.js', 'r') as f: content = f.read()
+content = re.sub(r'path\.join\(__dirname,', r'path.join(process.cwd(),', content)
+with open('index.js', 'w') as f: f.write(content)
+print("✅ Исправлено")
+PYTHON
+cd ..
+node --check dist/index.js && echo "✅ OK" || echo "⚠️ Ошибки"
+pm2 flush 2>/dev/null || true
+echo "🚀 Запуск..."
+pm2 start ecosystem.config.cjs
+sleep 5
+echo "🏥 Проверка..."
+curl -s http://localhost:3001/health && echo "" || echo "❌ Не работает"
+pm2 status
+EOFFIX
+chmod +x fix-server.sh && ./fix-server.sh
+
+# ============================================================
+# ИЛИ ПРОСТО ВЫПОЛНИТЕ ВРУЧНУЮ:
+# ============================================================
+
+# cd /var/www/ride-together/server
+# pm2 stop ride-backend
+# pm2 delete ride-backend
+# cd dist
+# python3 << 'PYTHON'
+# import re
+# with open('index.js', 'r') as f: content = f.read()
+# content = re.sub(r'path\.join\(__dirname,', r'path.join(process.cwd(),', content)
+# with open('index.js', 'w') as f: f.write(content)
+# print("✅ Исправлено")
+# PYTHON
+# cd ..
+# node --check dist/index.js
+# pm2 start ecosystem.config.cjs
+# sleep 3
+# curl http://localhost:3001/health
+

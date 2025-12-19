@@ -4,12 +4,58 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+      - master
+  workflow_dispatch:  # Ручной запуск
+
+env:
+  NODE_VERSION: '20'
 
 jobs:
-  build-and-deploy:
+  # Проверка инфраструктуры перед деплоем
+  check-infrastructure:
+    name: Проверка инфраструктуры
     runs-on: ubuntu-latest
-    
+    steps:
+      - name: Install twc CLI
+        run: |
+          pip install twc-cli
+          twc --version
+      
+      - name: Configure twc
+        run: |
+          echo "${{ secrets.TIMEWEB_CLOUD_TOKEN }}" | twc auth --token-stdin || echo "${{ secrets.TIMEWEB_CLOUD_TOKEN }}" > /tmp/token && twc auth < /tmp/token
+        env:
+          TIMEWEB_CLOUD_TOKEN: ${{ secrets.TIMEWEB_CLOUD_TOKEN }}
+      
+      - name: Check database status
+        run: |
+          if [ -n "${{ secrets.TIMEWEB_DB_ID }}" ]; then
+            twc database get "${{ secrets.TIMEWEB_DB_ID }}"
+          else
+            echo "⚠️ TIMEWEB_DB_ID не установлен, пропускаю проверку БД"
+          fi
+      
+      - name: Check balance
+        run: |
+          twc account finances
+      
+      - name: Check servers
+        run: |
+          twc server list || echo "⚠️ Не удалось получить список серверов"
+      
+      - name: Create backup before deploy
+        if: github.event_name != 'workflow_dispatch' && secrets.TIMEWEB_DB_ID != ''
+        run: |
+          BACKUP_NAME="pre-deploy-$(date +%Y%m%d-%H%M%S)"
+          twc database backup create "${{ secrets.TIMEWEB_DB_ID }}" --name "$BACKUP_NAME" || echo "⚠️ Не удалось создать бэкап"
+        continue-on-error: true
+
+  # Деплой Backend
+  deploy-backend:
+    name: Деплой Backend
+    runs-on: ubuntu-latest
+    needs: check-infrastructure
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,36 +63,128 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./server
+        run: npm ci
+      
+      - name: Build backend
+        working-directory: ./server
+        run: npm run build
+        env:
+          NODE_ENV: production
+      
+      - name: Check build
+        working-directory: ./server
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Backend собран успешно"
+            ls -la dist/
+          else
+            echo "❌ Директория dist не найдена"
+            exit 1
+          fi
+      
+      - name: Deploy to Timeweb (info)
+        run: |
+          echo "📝 Для автоматического деплоя настройте:"
+          echo "   1. Timeweb App Platform подключение к GitHub"
+          echo "   2. Автоматический деплой при push в main"
+          echo "   3. Build command: npm install && npm run build"
+          echo "   4. Start command: npm start"
+          echo ""
+          echo "Или используйте twc CLI для деплоя (требует дополнительной настройки)"
+
+  # Деплой Frontend
+  deploy-frontend:
+    name: Деплой Frontend
+    runs-on: ubuntu-latest
+    needs: check-infrastructure
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Run linter
-        run: npm run lint
-        continue-on-error: true
+      - name: Create .env.production
+        run: |
+          cat > .env.production << EOF
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_WS_URL=${{ secrets.VITE_WS_URL }}
+          EOF
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
       
-      - name: Build project
+      - name: Build frontend
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_YANDEX_MAPS_API_KEY: ${{ secrets.VITE_YANDEX_MAPS_API_KEY }}
-          VITE_TELEGRAM_BOT_TOKEN: ${{ secrets.VITE_TELEGRAM_BOT_TOKEN }}
-          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          NODE_ENV: production
       
-      - name: Deploy to Timeweb via FTP
-        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+      - name: Check build
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Frontend собран успешно"
+            echo "Размер dist/: $(du -sh dist | cut -f1)"
+          else
+            echo "❌ Директория dist не найдена"
+            exit 1
+          fi
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          server: ${{ secrets.TIMEWEB_FTP_HOST }}
-          username: ${{ secrets.TIMEWEB_FTP_USER }}
-          password: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: /public_html/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            README.md
-            .env*
+          name: frontend-dist
+          path: dist/
+          retention-days: 7
+      
+      - name: Deploy info
+        run: |
+          echo "📝 Для автоматического деплоя:"
+          echo "   1. Загрузите содержимое dist/ в Timeweb Static Hosting"
+          echo "   2. Или настройте автоматический деплой через Timeweb App Platform"
+          echo ""
+          echo "Артефакты сохранены для ручной загрузки"
+
+  # Мониторинг после деплоя
+  post-deploy-monitoring:
+    name: Мониторинг после деплоя
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+    steps:
+      - name: Install twc CLI
+        run: pip install twc-cli
+      
+      - name: Configure twc
+        run: |
+          echo "${{ secrets.TIMEWEB_CLOUD_TOKEN }}" | twc auth --token-stdin || echo "${{ secrets.TIMEWEB_CLOUD_TOKEN }}" > /tmp/token && twc auth < /tmp/token
+      
+      - name: Verify infrastructure
+        run: |
+          echo "📊 Проверка инфраструктуры после деплоя..."
+          
+          if [ -n "${{ secrets.TIMEWEB_DB_ID }}" ]; then
+            echo "База данных:"
+            twc database get "${{ secrets.TIMEWEB_DB_ID }}" || echo "⚠️ Ошибка проверки БД"
+          fi
+          
+          echo ""
+          echo "Серверы:"
+          twc server list || echo "⚠️ Ошибка проверки серверов"
+          
+          echo ""
+          echo "Баланс:"
+          twc account finances || echo "⚠️ Ошибка проверки баланса"
+        continue-on-error: true

@@ -3,20 +3,20 @@
  * PUT /api/rides/:id
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function updateRide(req: Request, rideId: string): Promise<Response> {
+
+export async function updateRide(req: Request, res: Response, rideId: string): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
     // Проверяем, что пользователь является водителем
@@ -26,20 +26,16 @@ export async function updateRide(req: Request, rideId: string): Promise<Response
     );
 
     if (rideCheck.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     if (rideCheck.rows[0].driver_id !== payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Нет доступа к этой поездке' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Нет доступа к этой поездке' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as Record<string, any>;
     const updates: any = {};
 
     // Разрешенные поля для обновления
@@ -57,10 +53,8 @@ export async function updateRide(req: Request, rideId: string): Promise<Response
     }
 
     if (Object.keys(updates).length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Нет полей для обновления' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Нет полей для обновления' });
+      return;
     }
 
     // Если обновляется seats_total, нужно пересчитать seats_available
@@ -86,36 +80,30 @@ export async function updateRide(req: Request, rideId: string): Promise<Response
 
     const ride = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: ride.id,
-        driver_id: ride.driver_id,
-        from_city: ride.from_city,
-        from_address: ride.from_address,
-        to_city: ride.to_city,
-        to_address: ride.to_address,
-        departure_date: ride.departure_date,
-        departure_time: ride.departure_time,
-        estimated_duration: ride.estimated_duration,
-        price: parseFloat(ride.price),
-        seats_total: ride.seats_total,
-        seats_available: ride.seats_available,
-        status: ride.status,
-        allow_smoking: ride.allow_smoking,
-        allow_pets: ride.allow_pets,
-        allow_music: ride.allow_music,
-        notes: ride.notes,
-        created_at: ride.created_at,
-        updated_at: ride.updated_at,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json({
+      id: ride.id,
+      driver_id: ride.driver_id,
+      from_city: ride.from_city,
+      from_address: ride.from_address,
+      to_city: ride.to_city,
+      to_address: ride.to_address,
+      departure_date: ride.departure_date,
+      departure_time: ride.departure_time,
+      estimated_duration: ride.estimated_duration,
+      price: parseFloat(ride.price),
+      seats_total: ride.seats_total,
+      seats_available: ride.seats_available,
+      status: ride.status,
+      allow_smoking: ride.allow_smoking,
+      allow_pets: ride.allow_pets,
+      allow_music: ride.allow_music,
+      notes: ride.notes,
+      created_at: ride.created_at,
+      updated_at: ride.updated_at,
+    });
   } catch (error: any) {
     console.error('Update ride error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при обновлении поездки' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при обновлении поездки' });
   }
 }
 

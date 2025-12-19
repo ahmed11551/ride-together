@@ -19,7 +19,7 @@ const Header = () => {
             onClick={() => navigate("/")}
             aria-label="Перейти на главную страницу"
           >
-            <span className="text-xl font-bold text-foreground">RideConnect</span>
+            <span className="text-xl font-bold text-foreground">Ride Together</span>
           </button>
 
           <nav className="hidden md:flex items-center gap-6" role="navigation" aria-label="Основная навигация">

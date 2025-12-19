@@ -3,26 +3,25 @@
  * GET /api/rides/my
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function getMyRides(req: Request): Promise<Response> {
+
+export async function getMyRides(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const url = new URL(req.url);
-    const status = url.searchParams.get('status');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const status = req.query.status as string | undefined;
+    const limit = parseInt((req.query.limit as string) || '50');
+    const offset = parseInt((req.query.offset as string) || '0');
 
     let query = 'SELECT * FROM rides WHERE driver_id = $1';
     const params: any[] = [payload.userId];
@@ -60,16 +59,12 @@ export async function getMyRides(req: Request): Promise<Response> {
       updated_at: row.updated_at,
     }));
 
-    return new Response(
-      JSON.stringify(rides),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(200).json(rides);
+      return;
   } catch (error: any) {
     console.error('Get my rides error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении поездок' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при получении поездок' });
+      return;
   }
 }
 

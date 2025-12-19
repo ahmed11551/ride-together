@@ -3,30 +3,28 @@
  * POST /api/reviews
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function createReview(req: Request): Promise<Response> {
+
+export async function createReview(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as { ride_id?: string; to_user_id?: string; rating?: number; comment?: string };
     const { ride_id, to_user_id, rating, comment } = body;
 
     if (!ride_id || !to_user_id || !rating || rating < 1 || rating > 5) {
-      return new Response(
-        JSON.stringify({ error: 'Не все обязательные поля заполнены или рейтинг неверный' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Не все обязательные поля заполнены или рейтинг неверный' });
+      return;
     }
 
     // Проверяем, что поездка завершена
@@ -36,19 +34,15 @@ export async function createReview(req: Request): Promise<Response> {
     );
 
     if (rideResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const ride = rideResult.rows[0];
 
     if (ride.status !== 'completed') {
-      return new Response(
-        JSON.stringify({ error: 'Можно оставить отзыв только на завершенную поездку' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Можно оставить отзыв только на завершенную поездку' });
+      return;
     }
 
     // Проверяем, что пользователь участвовал в поездке
@@ -59,10 +53,8 @@ export async function createReview(req: Request): Promise<Response> {
     );
 
     if (!isDriver && isPassenger.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Вы не участвовали в этой поездке' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Вы не участвовали в этой поездке' });
+      return;
     }
 
     // Проверяем, что отзыв еще не оставлен
@@ -72,10 +64,8 @@ export async function createReview(req: Request): Promise<Response> {
     );
 
     if (existingReview.rows.length > 0) {
-      return new Response(
-        JSON.stringify({ error: 'Отзыв уже оставлен' }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(409).json({ error: 'Отзыв уже оставлен' });
+      return;
     }
 
     // Создаем отзыв
@@ -96,24 +86,12 @@ export async function createReview(req: Request): Promise<Response> {
       // Продолжаем, даже если обновление рейтинга не удалось
     }
 
-    return new Response(
-      JSON.stringify({
-        id: review.id,
-        ride_id: review.ride_id,
-        from_user_id: review.from_user_id,
-        to_user_id: review.to_user_id,
-        rating: review.rating,
-        comment: review.comment,
-        created_at: review.created_at,
-      }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(201).json({ id: review.id, ride_id: review.ride_id, from_user_id: review.from_user_id, to_user_id: review.to_user_id, rating: review.rating, comment: review.comment, created_at: review.created_at, });
+      return;
   } catch (error: any) {
     console.error('Create review error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при создании отзыва' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при создании отзыва' });
+      return;
   }
 }
 

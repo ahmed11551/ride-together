@@ -26,7 +26,7 @@ const HeroSection = () => {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-4 leading-tight tracking-tight">
             Путешествуй вместе
             <span className="block bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-              с RideConnect
+              с Ride Together
             </span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-md mx-auto">

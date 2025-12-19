@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface RideBooking {
@@ -32,27 +32,8 @@ export const useRideBookings = (rideId: string | undefined) => {
     queryFn: async () => {
       if (!rideId || !user) return [];
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("ride_id", rideId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch passenger profiles
-      const passengerIds = [...new Set(data?.map(b => b.passenger_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, rating, passenger_rating")
-        .in("user_id", passengerIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      return (data || []).map(booking => ({
-        ...booking,
-        passenger: profileMap.get(booking.passenger_id),
-      })) as RideBooking[];
+      const bookings = await apiClient.get<RideBooking[]>(`/api/bookings/ride/${rideId}`);
+      return bookings;
     },
     enabled: !!rideId && !!user,
   });

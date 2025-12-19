@@ -3,19 +3,18 @@
  * GET /api/reviews
  */
 
-import { db } from '../../utils/database';
+import { db } from '../../utils/database.js';
+import { Request, Response } from 'express';
 
-export async function listReviews(req: Request): Promise<Response> {
+
+export async function listReviews(req: Request, res: Response): Promise<void> {
   try {
-    const url = new URL(req.url);
-    const userId = url.searchParams.get('user_id');
-    const rideId = url.searchParams.get('ride_id');
+    const userId = req.query.user_id as string | undefined;
+    const rideId = req.query.ride_id as string | undefined;
 
     if (!userId && !rideId) {
-      return new Response(
-        JSON.stringify({ error: 'Необходимо указать user_id или ride_id' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Необходимо указать user_id или ride_id' });
+      return;
     }
 
     let query = `
@@ -64,16 +63,12 @@ export async function listReviews(req: Request): Promise<Response> {
       } : undefined,
     }));
 
-    return new Response(
-      JSON.stringify(reviews),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(200).json(reviews);
+      return;
   } catch (error: any) {
     console.error('List reviews error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при получении отзывов' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при получении отзывов' });
+      return;
   }
 }
 

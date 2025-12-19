@@ -3,30 +3,28 @@
  * POST /api/messages
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function createMessage(req: Request): Promise<Response> {
+
+export async function createMessage(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as { ride_id?: string; content?: string };
     const { ride_id, content } = body;
 
     if (!ride_id || !content || !content.trim()) {
-      return new Response(
-        JSON.stringify({ error: 'ride_id и content обязательны' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'ride_id и content обязательны' });
+      return;
     }
 
     // Проверяем доступ к чату
@@ -36,10 +34,8 @@ export async function createMessage(req: Request): Promise<Response> {
     );
 
     if (rideResult.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Поездка не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Поездка не найдена' });
+      return;
     }
 
     const isDriver = rideResult.rows[0].driver_id === payload.userId;
@@ -50,10 +46,8 @@ export async function createMessage(req: Request): Promise<Response> {
     const isParticipant = isParticipantResult.rows.length > 0;
 
     if (!isDriver && !isParticipant) {
-      return new Response(
-        JSON.stringify({ error: 'Нет доступа к чату этой поездки' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Нет доступа к чату этой поездки' });
+      return;
     }
 
     // Создаем сообщение
@@ -88,21 +82,17 @@ export async function createMessage(req: Request): Promise<Response> {
 
     // Отправляем через WebSocket всем участникам
     // Используем broadcastMessage из websocket/server
-    const { io } = await import('../../index').catch(() => ({ io: null }));
+    const { io } = await import('../../index.js').catch(() => ({ io: null }));
     if (io) {
       io.to(`ride-${ride_id}`).emit('new-message', messageWithSender);
     }
 
-    return new Response(
-      JSON.stringify(messageWithSender),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(201).json(messageWithSender);
+      return;
   } catch (error: any) {
     console.error('Create message error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при отправке сообщения' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при отправке сообщения' });
+      return;
   }
 }
 

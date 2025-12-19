@@ -3,23 +3,23 @@
  * PUT /api/profiles/me
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function updateProfile(req: Request): Promise<Response> {
+
+export async function updateProfile(req: Request, res: Response): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as Record<string, any>;
     const updates: any = {};
 
     // Разрешенные поля для обновления
@@ -31,10 +31,8 @@ export async function updateProfile(req: Request): Promise<Response> {
     }
 
     if (Object.keys(updates).length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Нет полей для обновления' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'Нет полей для обновления' });
+      return;
     }
 
     // Если обновляется full_name, обновляем и display_name
@@ -80,23 +78,8 @@ export async function updateProfile(req: Request): Promise<Response> {
       );
 
       const profile = result.rows[0];
-      return new Response(
-        JSON.stringify({
-          id: profile.id,
-          user_id: profile.user_id,
-          full_name: profile.full_name,
-          phone: profile.phone,
-          avatar_url: profile.avatar_url,
-          bio: profile.bio,
-          rating: parseFloat(profile.rating),
-          passenger_rating: profile.passenger_rating ? parseFloat(profile.passenger_rating) : undefined,
-          trips_count: profile.trips_count || 0,
-          is_verified: profile.is_verified || false,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(200).json({ id: profile.id, user_id: profile.user_id, full_name: profile.full_name, phone: profile.phone, avatar_url: profile.avatar_url, bio: profile.bio, rating: parseFloat(profile.rating) });
+      return;
     }
 
     // Обновляем существующий профиль
@@ -111,29 +94,12 @@ export async function updateProfile(req: Request): Promise<Response> {
 
     const profile = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: profile.id,
-        user_id: profile.user_id,
-        full_name: profile.full_name,
-        phone: profile.phone,
-        avatar_url: profile.avatar_url,
-        bio: profile.bio,
-        rating: parseFloat(profile.rating),
-        passenger_rating: profile.passenger_rating ? parseFloat(profile.passenger_rating) : undefined,
-        trips_count: profile.trips_count || 0,
-        is_verified: profile.is_verified || false,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(200).json({ id: profile.id, user_id: profile.user_id, full_name: profile.full_name, phone: profile.phone, avatar_url: profile.avatar_url, bio: profile.bio, rating: parseFloat(profile.rating) });
+      return;
   } catch (error: any) {
     console.error('Update profile error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при обновлении профиля' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+      res.status(500).json({ error: 'Ошибка при обновлении профиля' });
+      return;
   }
 }
 

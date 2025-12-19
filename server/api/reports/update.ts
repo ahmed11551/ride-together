@@ -3,20 +3,20 @@
  * PUT /api/reports/:id
  */
 
-import { db } from '../../utils/database';
-import { extractTokenFromHeader, verifyToken } from '../../utils/jwt';
+import { db } from '../../utils/database.js';
+import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { Request, Response } from 'express';
 
-export async function updateReport(req: Request, reportId: string): Promise<Response> {
+
+export async function updateReport(req: Request, res: Response, reportId: string): Promise<void> {
   try {
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers['authorization'] as string | undefined;
     const token = extractTokenFromHeader(authHeader);
     const payload = verifyToken(token || '');
 
     if (!payload || !payload.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Не авторизован' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
     }
 
     // Проверяем, является ли пользователь админом
@@ -26,20 +26,16 @@ export async function updateReport(req: Request, reportId: string): Promise<Resp
     );
 
     if (!adminCheck.rows[0]?.is_admin) {
-      return new Response(
-        JSON.stringify({ error: 'Доступ запрещен' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(403).json({ error: 'Доступ запрещен' });
+      return;
     }
 
-    const body = await req.json();
+    const body = req.body as { status?: string; admin_notes?: string };
     const { status, admin_notes } = body;
 
     if (!status) {
-      return new Response(
-        JSON.stringify({ error: 'status обязателен' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(400).json({ error: 'status обязателен' });
+      return;
     }
 
     const updates: any = { status, updated_at: new Date() };
@@ -57,35 +53,27 @@ export async function updateReport(req: Request, reportId: string): Promise<Resp
     );
 
     if (result.rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Жалоба не найдена' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      res.status(404).json({ error: 'Жалоба не найдена' });
+      return;
     }
 
     const report = result.rows[0];
 
-    return new Response(
-      JSON.stringify({
-        id: report.id,
-        reporter_id: report.reporter_id,
-        reported_user_id: report.reported_user_id,
-        ride_id: report.ride_id,
-        reason: report.reason,
-        description: report.description,
-        status: report.status,
-        admin_notes: report.admin_notes,
-        created_at: report.created_at,
-        updated_at: report.updated_at,
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(200).json({
+      id: report.id,
+      reporter_id: report.reporter_id,
+      reported_user_id: report.reported_user_id,
+      ride_id: report.ride_id,
+      reason: report.reason,
+      description: report.description,
+      status: report.status,
+      admin_notes: report.admin_notes,
+      created_at: report.created_at,
+      updated_at: report.updated_at,
+    });
   } catch (error: any) {
     console.error('Update report error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Ошибка при обновлении жалобы' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    res.status(500).json({ error: 'Ошибка при обновлении жалобы' });
   }
 }
 

@@ -93,7 +93,7 @@ async function handleStartCommand(chatId: number, userId: number, username?: str
       onConflict: "telegram_user_id",
     });
 
-  const welcomeMessage = `🚗 Добро пожаловать в RideConnect!
+  const welcomeMessage = `🚗 Добро пожаловать в Ride Together!
 
 Я помогу вам найти попутчиков или стать водителем.
 
@@ -438,7 +438,7 @@ async function handleCallbackQuery(
       await sendTelegramMessage({
         chat_id: chatId,
         text: "⭐ <b>Отзывы</b>\n\n" +
-          "Поделитесь своим мнением о RideConnect!\n\n" +
+          "Поделитесь своим мнением о Ride Together!\n\n" +
           "Ваш отзыв поможет нам стать лучше.",
         parse_mode: "HTML",
         reply_markup: {
