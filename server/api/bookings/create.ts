@@ -6,6 +6,8 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { notificationService } from '../../services/notificationService.js';
+import { logger } from '../../utils/logger.js';
 
 
 export async function createBooking(req: Request, res: Response): Promise<void> {
@@ -78,12 +80,48 @@ export async function createBooking(req: Request, res: Response): Promise<void> 
 
     const booking = result.rows[0];
 
-      res.status(201).json({ id: booking.id, ride_id: booking.ride_id, passenger_id: booking.passenger_id, seats_booked: booking.seats_booked, status: booking.status, payment_status: booking.payment_status, total_price: parseFloat(booking.total_price) });
-      return;
+    // Получаем информацию о пассажире и водителе для уведомлений
+    const [passengerResult, driverResult] = await Promise.all([
+      db.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [payload.userId]),
+      db.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [ride.driver_id]),
+    ]);
+
+    const passenger = passengerResult.rows[0];
+    const driver = driverResult.rows[0];
+    const passengerName = `${passenger?.first_name || ''} ${passenger?.last_name || ''}`.trim() || 'Пассажир';
+    const driverName = `${driver?.first_name || ''} ${driver?.last_name || ''}`.trim() || 'Водитель';
+
+    // Отправляем уведомления асинхронно (не ждём результат)
+    Promise.all([
+      // Уведомление водителю
+      notificationService.notifyDriverAboutBooking(
+        ride.driver_id,
+        passengerName,
+        ride_id,
+        ride.from_city || '',
+        ride.to_city || '',
+        ride.departure_date || ''
+      ),
+      // Подтверждение пассажиру
+      notificationService.confirmBookingToPassenger(
+        payload.userId,
+        driverName,
+        ride_id,
+        ride.from_city || '',
+        ride.to_city || '',
+        ride.departure_date || '',
+        ride.departure_time || ''
+      ),
+    ]).catch((err) => {
+      logger.error('Error sending booking notifications', err, { bookingId: booking.id });
+    });
+
+    res.status(201).json({ id: booking.id, ride_id: booking.ride_id, passenger_id: booking.passenger_id, seats_booked: booking.seats_booked, status: booking.status, payment_status: booking.payment_status, total_price: parseFloat(booking.total_price) });
+    return;
   } catch (error: any) {
-    console.error('Create booking error:', error);
-      res.status(500).json({ error: 'Ошибка при создании бронирования' });
-      return;
+    logger.error('Create booking error', error, { userId: (req as any).userId });
+    res.status(500).json({ error: 'Ошибка при создании бронирования' });
+    return;
   }
 }
 

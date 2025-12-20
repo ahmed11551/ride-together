@@ -97,8 +97,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'Ride Together',
     body: 'У вас новое уведомление',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     tag: 'ride-connect-notification',
     requireInteraction: false,
     data: {},

@@ -57,6 +57,8 @@ import { signIn } from './api/auth/signin.js';
 import { signOut } from './api/auth/signout.js';
 import { getCurrentUser } from './api/auth/me.js';
 import { listRides } from './api/rides/list.js';
+import { searchRides } from './api/rides/search.js';
+import { findNearbyRides } from './api/rides/nearby.js';
 import { getRide } from './api/rides/get.js';
 import { createRide } from './api/rides/create.js';
 import { updateRide } from './api/rides/update.js';
@@ -81,9 +83,41 @@ import { subscribeToBot } from './api/telegram/subscribe.js';
 import { unsubscribeFromBot } from './api/telegram/unsubscribe.js';
 import { getSubscriptionStatus } from './api/telegram/status.js';
 import { telegramWebhook } from './api/telegram/webhook.js';
+import { securityMiddleware } from './middleware/security.js';
+import { apiLimiter, authLimiter, createContentLimiter, messageLimiter } from './middleware/rateLimiter.js';
+import { validateSignup, validateSignin, validateCreateRide, validateUUIDParam } from './middleware/validator.js';
+import { requestLogger } from './middleware/requestLogger.js';
+import { logger } from './utils/logger.js';
+import { initSentry } from './utils/sentry.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { listNotifications } from './api/notifications/list.js';
+import { markNotificationRead } from './api/notifications/markRead.js';
+import { markAllNotificationsRead } from './api/notifications/markAllRead.js';
+import { listSavedSearches } from './api/saved-searches/list.js';
+import { createSavedSearch } from './api/saved-searches/create.js';
+import { updateSavedSearch } from './api/saved-searches/update.js';
+import { deleteSavedSearch } from './api/saved-searches/delete.js';
+import { incrementSavedSearchUsage } from './api/saved-searches/increment.js';
+import { geocodeAddress } from './api/geocoding/geocode.js';
+import { reverseGeocode } from './api/geocoding/reverse.js';
+import { updateUserLocation } from './api/location/update.js';
+import { getUserLocation } from './api/location/get.js';
+import { getPlatformStats } from './api/stats/platform.js';
+import { getUserStats } from './api/stats/user.js';
+
+// Инициализация Sentry (опционально)
+initSentry();
 
 const app = express();
 const httpServer = createServer(app);
+
+logger.info('Server starting...', { nodeEnv: process.env.NODE_ENV });
+
+// Security middleware (должен быть первым)
+app.use(securityMiddleware);
+
+// Request logging middleware
+app.use(requestLogger);
 
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').filter(Boolean) || [];
@@ -143,17 +177,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Health check
+// Health check (без rate limiting)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Auth routes
-app.post('/api/auth/signup', async (req, res) => {
+// Общий rate limiter для всех API routes
+app.use('/api', apiLimiter);
+
+// Auth routes (с более строгим rate limiting и валидацией)
+app.post('/api/auth/signup', authLimiter, validateSignup, async (req, res) => {
   await signUp(req, res);
 });
 
-app.post('/api/auth/signin', async (req, res) => {
+app.post('/api/auth/signin', authLimiter, validateSignin, async (req, res) => {
   await signIn(req, res);
 });
 
@@ -166,6 +203,16 @@ app.get('/api/auth/me', async (req, res) => {
 });
 
 // Rides routes
+// Поиск поблизости (должен быть перед другими, так как более специфичный)
+app.get('/api/rides/nearby', async (req, res) => {
+  await findNearbyRides(req, res);
+});
+
+// Расширенный поиск (должен быть перед общим list, так как более специфичный)
+app.get('/api/rides/search', async (req, res) => {
+  await searchRides(req, res);
+});
+
 app.get('/api/rides', async (req, res) => {
   await listRides(req, res);
 });
@@ -174,21 +221,21 @@ app.get('/api/rides/my', async (req, res) => {
   await getMyRides(req, res);
 });
 
-app.get('/api/rides/:id', async (req, res) => {
+app.get('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
   const rideId = req.params.id;
   await getRide(req, res, rideId);
 });
 
-app.post('/api/rides', async (req, res) => {
+app.post('/api/rides', createContentLimiter, validateCreateRide, async (req, res) => {
   await createRide(req, res);
 });
 
-app.put('/api/rides/:id', async (req, res) => {
+app.put('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
   const rideId = req.params.id;
   await updateRide(req, res, rideId);
 });
 
-app.delete('/api/rides/:id', async (req, res) => {
+app.delete('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
   const rideId = req.params.id;
   await deleteRide(req, res, rideId);
 });
@@ -198,16 +245,16 @@ app.get('/api/bookings', async (req, res) => {
   await listBookings(req, res);
 });
 
-app.get('/api/bookings/ride/:rideId', async (req, res) => {
+app.get('/api/bookings/ride/:rideId', validateUUIDParam('rideId'), async (req, res) => {
   const rideId = req.params.rideId;
   await getRideBookings(req, res, rideId);
 });
 
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', createContentLimiter, async (req, res) => {
   await createBooking(req, res);
 });
 
-app.put('/api/bookings/:id', async (req, res) => {
+app.put('/api/bookings/:id', validateUUIDParam('id'), async (req, res) => {
   const bookingId = req.params.id;
   await updateBooking(req, res, bookingId);
 });
@@ -217,17 +264,17 @@ app.get('/api/reviews', async (req, res) => {
   await listReviews(req, res);
 });
 
-app.post('/api/reviews', async (req, res) => {
+app.post('/api/reviews', createContentLimiter, async (req, res) => {
   await createReview(req, res);
 });
 
 // Messages routes
-app.get('/api/messages/:rideId', async (req, res) => {
+app.get('/api/messages/:rideId', validateUUIDParam('rideId'), async (req, res) => {
   const rideId = req.params.rideId;
   await listMessages(req, res, rideId);
 });
 
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', messageLimiter, async (req, res) => {
   await createMessage(req, res);
 });
 
@@ -236,7 +283,7 @@ app.get('/api/profiles/me', async (req, res) => {
   await getProfile(req, res);
 });
 
-app.get('/api/profiles/:userId', async (req, res) => {
+app.get('/api/profiles/:userId', validateUUIDParam('userId'), async (req, res) => {
   const userId = req.params.userId;
   await getProfile(req, res, userId);
 });
@@ -245,7 +292,7 @@ app.put('/api/profiles/me', async (req, res) => {
   await updateProfile(req, res);
 });
 
-app.put('/api/profiles/:userId/ban', async (req, res) => {
+app.put('/api/profiles/:userId/ban', validateUUIDParam('userId'), async (req, res) => {
   const userId = req.params.userId;
   await banUser(req, res, userId);
 });
@@ -255,11 +302,11 @@ app.get('/api/reports', async (req, res) => {
   await listReports(req, res);
 });
 
-app.post('/api/reports', async (req, res) => {
+app.post('/api/reports', createContentLimiter, async (req, res) => {
   await createReport(req, res);
 });
 
-app.put('/api/reports/:id', async (req, res) => {
+app.put('/api/reports/:id', validateUUIDParam('id'), async (req, res) => {
   const reportId = req.params.id;
   await updateReport(req, res, reportId);
 });
@@ -287,6 +334,70 @@ app.post('/api/telegram/webhook', async (req, res) => {
   await telegramWebhook(req, res);
 });
 
+// Notifications endpoints
+app.get('/api/notifications', async (req, res) => {
+  await listNotifications(req, res);
+});
+
+app.put('/api/notifications/:id/read', async (req, res) => {
+  await markNotificationRead(req, res);
+});
+
+app.put('/api/notifications/read-all', async (req, res) => {
+  await markAllNotificationsRead(req, res);
+});
+
+// Saved searches endpoints
+app.get('/api/saved-searches', async (req, res) => {
+  await listSavedSearches(req, res);
+});
+
+app.post('/api/saved-searches', async (req, res) => {
+  await createSavedSearch(req, res);
+});
+
+app.put('/api/saved-searches/:id', async (req, res) => {
+  await updateSavedSearch(req, res);
+});
+
+app.delete('/api/saved-searches/:id', async (req, res) => {
+  await deleteSavedSearch(req, res);
+});
+
+app.post('/api/saved-searches/:id/increment', async (req, res) => {
+  await incrementSavedSearchUsage(req, res);
+});
+
+// Geocoding endpoints
+app.get('/api/geocoding/geocode', async (req, res) => {
+  await geocodeAddress(req, res);
+});
+
+app.get('/api/geocoding/reverse', async (req, res) => {
+  await reverseGeocode(req, res);
+});
+
+// Location endpoints
+app.get('/api/location', async (req, res) => {
+  await getUserLocation(req, res);
+});
+
+app.post('/api/location', async (req, res) => {
+  await updateUserLocation(req, res);
+});
+
+// Stats endpoints
+app.get('/api/stats/platform', async (req, res) => {
+  await getPlatformStats(req, res);
+});
+
+app.get('/api/stats/user', async (req, res) => {
+  await getUserStats(req, res);
+});
+
+// Error handler (должен быть последним middleware)
+app.use(errorHandler);
+
 // WebSocket server
 const io = createWebSocketServer(httpServer);
 
@@ -297,6 +408,12 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0'; // Слушаем на всех интерфейсах для Docker/Cloud
 
 httpServer.listen(PORT, HOST, () => {
+  logger.info('Server started successfully', {
+    port: PORT,
+    host: HOST,
+    corsOrigins: allowedOrigins.length > 0 ? allowedOrigins : ['all (dev mode)'],
+    nodeEnv: process.env.NODE_ENV,
+  });
   console.log(`🚀 Server running on http://${HOST}:${PORT}`);
   console.log(`📡 WebSocket server ready`);
   console.log(`🌍 CORS allowed origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'all (dev mode)'}`);

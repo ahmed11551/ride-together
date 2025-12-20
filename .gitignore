@@ -30,3 +30,6 @@ dist-ssr
 *.sln
 *.sw?
 .env.regru.token
+*.tar.gz
+.env.production
+connect.sh

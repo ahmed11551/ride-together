@@ -18,6 +18,14 @@ async function fixImportsInFile(filePath) {
     
     // Исправляем __dirname для ESM (если это index.js)
     if (filePath.endsWith('/index.js')) {
+      // Заменяем все path.join(__dirname на path.join(process.cwd()
+      if (content.includes('path.join(__dirname')) {
+        content = content.replace(/path\.join\(__dirname/g, 'path.join(process.cwd()');
+        modified = true;
+        console.log(`✅ Fixed path.join(__dirname in: ${filePath}`);
+      }
+      
+      // Также заменяем использование __dirname в других местах если нужно
       const oldDirnamePattern = /const __filename = fileURLToPath\(import\.meta\.url\);\s*const __dirname = dirname\(__filename\);/;
       const newDirnameCode = `let __dirname;
 try {
@@ -30,7 +38,7 @@ try {
       if (oldDirnamePattern.test(content)) {
         content = content.replace(oldDirnamePattern, newDirnameCode);
         modified = true;
-        console.log(`✅ Fixed __dirname in: ${filePath}`);
+        console.log(`✅ Fixed __dirname definition in: ${filePath}`);
       }
     }
     
