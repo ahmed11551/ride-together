@@ -1,0 +1,33 @@
+# Быстрое исправление ERR_INVALID_URL
+# Скопируйте и выполните на сервере:
+
+cd /var/www/ride-together/server
+
+# Исправить dist/api/rides/list.js
+python3 << 'EOF'
+import re
+f = 'dist/api/rides/list.js'
+with open(f, 'r', encoding='utf-8') as file:
+    lines = file.readlines()
+
+new_lines = []
+for line in lines:
+    # Пропускаем строки с new URL(req.url)
+    if 'new URL' in line and 'req.url' in line:
+        continue
+    # Заменяем url.searchParams на req.query
+    if 'url.searchParams' in line:
+        line = line.replace('url.searchParams.get', 'req.query')
+        line = line.replace('url.searchParams', 'req.query')
+        line = re.sub(r"req\.query\(['\"](\w+)['\"]\)", r"req.query.\1", line)
+    new_lines.append(line)
+
+with open(f, 'w', encoding='utf-8') as file:
+    file.writelines(new_lines)
+print("✅ Исправлено")
+EOF
+
+pm2 restart ride-backend
+sleep 3
+pm2 logs ride-backend --err --lines 10 --nostream
+
