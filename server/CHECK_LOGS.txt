@@ -1,0 +1,20 @@
+# Проверка логов на сервере
+# Скопируйте и выполните на сервере:
+
+cd /var/www/ride-together/server
+
+echo "=== Проверка ошибок ==="
+pm2 logs ride-backend --err --lines 50 --nostream
+
+echo ""
+echo "=== Проверка статуса ==="
+pm2 status
+
+echo ""
+echo "=== Проверка переменных окружения ==="
+pm2 show ride-backend | grep -E "DATABASE_URL|JWT_SECRET"
+
+echo ""
+echo "=== Проверка синтаксиса ==="
+node -c dist/index.js 2>&1 || echo "Ошибка!"
+

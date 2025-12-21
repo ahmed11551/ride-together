@@ -1,0 +1,23 @@
+# Команды для проверки и исправления на сервере
+
+cd /var/www/ride-together/server
+
+echo "=== 1. Проверка ошибок ==="
+pm2 logs ride-backend --err --lines 30 --nostream
+
+echo ""
+echo "=== 2. Проверка статуса ==="
+pm2 status
+
+echo ""
+echo "=== 3. Проверка переменных ==="
+pm2 show ride-backend | grep -E "DATABASE_URL|JWT_SECRET|TELEGRAM_BOT_TOKEN"
+
+echo ""
+echo "=== 4. Тест API ==="
+curl -s http://localhost:3001/health | head -5
+
+echo ""
+echo "=== 5. Тест Telegram webhook ==="
+curl -s "https://api.telegram.org/bot8346758333:AAFJgFLdLHe4wSRWjZReGFYvwNsOOWYScyY/getWebhookInfo" | python3 -m json.tool
+

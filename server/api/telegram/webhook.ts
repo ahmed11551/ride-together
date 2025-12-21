@@ -7,6 +7,7 @@
 
 import { Request, Response } from 'express';
 import { db } from '../../utils/database.js';
+import { logger } from '../../utils/logger.js';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -48,7 +49,7 @@ interface TelegramUpdate {
 
 async function sendTelegramMessage(chatId: number, text: string, options?: any): Promise<void> {
   if (!TELEGRAM_BOT_TOKEN) {
-    console.error('TELEGRAM_BOT_TOKEN not set');
+    logger.error('TELEGRAM_BOT_TOKEN not set', undefined, { chatId });
     return;
   }
 
@@ -244,8 +245,11 @@ export async function telegramWebhook(req: Request, res: Response): Promise<void
 
     // Если обновление не обработано, просто отвечаем OK
     res.status(200).json({ ok: true });
-  } catch (error: any) {
-    console.error('Telegram webhook error:', error);
+  } catch (error: unknown) {
+    logger.error('Telegram webhook error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      body: req.body,
+    });
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 }
