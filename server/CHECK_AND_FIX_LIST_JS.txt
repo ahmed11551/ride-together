@@ -1,0 +1,93 @@
+# Проверка и исправление list.js
+# Выполнить на сервере:
+
+cd /var/www/ride-together/server
+
+echo "=== Показываем строки 8-18 (где ошибка) ==="
+sed -n '8,18p' dist/api/rides/list.js
+
+echo ""
+echo "=== Ищем все использования new URL ==="
+grep -n "new URL\|searchParams" dist/api/rides/list.js
+
+echo ""
+echo "=== Исправляем ==="
+python3 << 'EOF'
+import re
+
+filepath = 'dist/api/rides/list.js'
+
+# Читаем файл
+with open(filepath, 'r', encoding='utf-8') as f:
+    content = f.read()
+
+print(f"Размер файла: {len(content)} символов")
+print(f"Строк: {len(content.splitlines())}")
+
+# Проверяем что есть
+if 'new URL' in content:
+    print("\n❌ Найден 'new URL'")
+    lines = content.splitlines()
+    for i, line in enumerate(lines[:20], 1):
+        if 'new URL' in line:
+            print(f"Строка {i}: {line}")
+else:
+    print("\n✅ 'new URL' не найден")
+
+if 'url.searchParams' in content:
+    print("\n❌ Найден 'url.searchParams'")
+    lines = content.splitlines()
+    for i, line in enumerate(lines[:20], 1):
+        if 'url.searchParams' in line:
+            print(f"Строка {i}: {line}")
+else:
+    print("\n✅ 'url.searchParams' не найден")
+
+# Исправляем
+original = content
+lines = content.split('\n')
+new_lines = []
+
+for i, line in enumerate(lines, 1):
+    # Пропускаем строки с new URL(req.url)
+    if 'new URL' in line and 'req.url' in line:
+        print(f"Удаляем строку {i}: {line.strip()[:60]}")
+        continue
+    
+    # Заменяем url.searchParams на req.query
+    if 'url.searchParams' in line:
+        old_line = line
+        line = line.replace('url.searchParams.get', 'req.query')
+        line = line.replace('url.searchParams', 'req.query')
+        # Исправляем паттерн req.query('param') на req.query.param
+        line = re.sub(r"req\.query\(['\"](\w+)['\"]\)", r"req.query.\1", line)
+        line = re.sub(r"req\.query\([\"'](\w+)[\"']\)", r"req.query.\1", line)
+        if line != old_line:
+            print(f"Исправляем строку {i}:")
+            print(f"  Было: {old_line.strip()[:60]}")
+            print(f"  Стало: {line.strip()[:60]}")
+    
+    new_lines.append(line)
+
+new_content = '\n'.join(new_lines)
+
+if new_content != original:
+    # Бэкап
+    with open(filepath + '.backup', 'w', encoding='utf-8') as f:
+        f.write(original)
+    
+    # Сохраняем исправленный
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(new_content)
+    print(f"\n✅ Файл исправлен и сохранен")
+    print(f"Бэкап: {filepath}.backup")
+else:
+    print("\n⚠️  Файл не изменен")
+EOF
+
+echo ""
+echo "=== Перезапускаем ==="
+pm2 restart ride-backend
+sleep 3
+pm2 logs ride-backend --err --lines 5 --nostream
+
