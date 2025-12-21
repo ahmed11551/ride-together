@@ -1,0 +1,14 @@
+# Быстрое обновление на сервере
+
+Подключитесь к серверу и выполните:
+
+cd /var/www/ride-together/server
+git pull origin main 2>/dev/null || echo "Git не настроен"
+npm ci --production
+npm run build
+node fix-imports.js
+python3 -c "import re; f='dist/index.js'; c=open(f).read(); c=re.sub(r'path\.join\(__dirname', 'path.join(process.cwd()', c); open(f,'w').write(c)"
+find dist/api -name "*.js" -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \;
+pm2 restart ride-backend --update-env
+pm2 logs ride-backend --err --lines 10 --nostream
+

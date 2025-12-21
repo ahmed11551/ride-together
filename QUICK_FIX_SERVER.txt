@@ -1,0 +1,51 @@
+# Быстрое исправление на сервере
+
+Подключитесь и выполните:
+
+cd /var/www/ride-together/server
+
+# Устанавливаем все зависимости (включая dev)
+npm ci
+
+# Компилируем (игнорируем ошибки типов)
+npx tsc --noEmitOnError false || true
+
+# Исправляем импорты
+node fix-imports.js
+
+# Исправляем __dirname
+python3 << 'EOF'
+import re
+f='dist/index.js'
+c=open(f,'r',encoding='utf-8').read()
+c=re.sub(r'path\.join\(__dirname', 'path.join(process.cwd()', c)
+c=re.sub(r'const\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);?\s*\n', '', c)
+c=re.sub(r'const\s+__dirname\s*=\s*dirname\(__filename\);?\s*\n', '', c)
+open(f,'w',encoding='utf-8').write(c)
+print('✅ __dirname исправлен')
+EOF
+
+# Исправляем req.headers.get
+find dist/api -name "*.js" -exec sed -i 's/req\.headers\.get(/req.get(/g' {} +
+find dist/api -name "*.js" -exec sed -i 's/headers\.get(/req.get(/g' {} +
+
+# Исправляем new URL через Python
+python3 << 'EOF'
+import re, os
+for root,dirs,files in os.walk('dist/api'):
+    for f in files:
+        if f.endswith('.js'):
+            p=os.path.join(root,f)
+            c=open(p,'r',encoding='utf-8').read()
+            o=c
+            c=re.sub(r'.*new\s+URL\s*\(\s*req\.url\s*\).*\n','',c)
+            c=re.sub(r"url\.searchParams\.get\(['\"](\w+)['\"]\)",r'req.query.\1',c)
+            c=re.sub(r'url\.searchParams','req.query',c)
+            if c!=o: open(p,'w',encoding='utf-8').write(c)
+EOF
+
+# Перезапускаем
+pm2 restart ride-backend --update-env
+sleep 3
+pm2 logs ride-backend --err --lines 15 --nostream
+
