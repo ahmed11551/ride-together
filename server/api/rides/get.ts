@@ -5,6 +5,7 @@
 
 import { db } from '../../utils/database.js';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger.js';
 
 
 export async function getRide(req: Request, res: Response, rideId: string): Promise<void> {
@@ -61,8 +62,11 @@ export async function getRide(req: Request, res: Response, rideId: string): Prom
     };
 
     res.status(200).json(ride);
-  } catch (error: any) {
-    console.error('Get ride error:', error);
+  } catch (error: unknown) {
+    logger.error('Get ride error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      rideId: req.params.id,
+    });
     res.status(500).json({ error: 'Ошибка при получении поездки' });
   }
 }

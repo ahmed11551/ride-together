@@ -1,0 +1,10 @@
+cd /var/www/ride-together/server
+grep -r "new URL" dist/api/rides/list.js
+find dist -name "*.js" -type f -exec sed -i '/const url = new URL(req\.url);/d' {} \;
+find dist -name "*.js" -type f -exec sed -i '/let url = new URL(req\.url);/d' {} \;
+find dist -name "*.js" -type f -exec sed -i "s/url\.searchParams\.get('limit')/req.query.limit/g" {} \;
+find dist -name "*.js" -type f -exec sed -i "s/url\.searchParams\.get('status')/req.query.status/g" {} \;
+find dist -name "*.js" -type f -exec sed -i "s/url\.searchParams/req.query/g" {} \;
+pm2 restart ride-backend
+pm2 logs ride-backend --err --lines 10 --nostream
+

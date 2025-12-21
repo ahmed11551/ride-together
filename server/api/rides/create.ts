@@ -6,6 +6,7 @@
 import { Request, Response } from 'express';
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
+import { logger } from '../../utils/logger.js';
 
 export async function createRide(req: Request, res: Response): Promise<void> {
   try {
@@ -107,8 +108,11 @@ export async function createRide(req: Request, res: Response): Promise<void> {
       created_at: ride.created_at,
       updated_at: ride.updated_at,
     });
-  } catch (error: any) {
-    console.error('Create ride error:', error);
+  } catch (error: unknown) {
+    logger.error('Create ride error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      body: req.body,
+    });
     res.status(500).json({ error: 'Ошибка при создании поездки' });
   }
 }

@@ -31,15 +31,14 @@ if (process.env.NODE_ENV !== 'production' || !process.env.JWT_SECRET || !process
   dotenv.config({ override: false }); // Также загружаем .env если есть
 }
 
-// Установка значений по умолчанию для Timeweb (если не заданы)
+// Проверка обязательных переменных окружения
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgresql://gen_user:fn)un5%40K2oLrBJ@9d497bc2bf9dd679bd9834af.twc1.net:5432/default_db?sslmode=verify-full';
+  console.error('❌ DATABASE_URL не установлен! Установите переменную окружения DATABASE_URL');
+  throw new Error('DATABASE_URL is required');
 }
 if (!process.env.JWT_SECRET) {
-  console.warn('⚠️  JWT_SECRET не установлен! Используется временный ключ. Установите JWT_SECRET в production!');
-  process.env.JWT_SECRET = 'temporary-secret-key-change-in-production-min-32-chars';
-} else if (process.env.NODE_ENV === 'production') {
-  console.log('✅ JWT_SECRET загружен из переменных окружения');
+  console.error('❌ JWT_SECRET не установлен! Установите переменную окружения JWT_SECRET в production!');
+  throw new Error('JWT_SECRET is required');
 }
 if (!process.env.PORT) {
   process.env.PORT = '3001';
@@ -48,7 +47,7 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production';
 }
 
-import express from 'express';
+import express, { type Request as ExpressRequest, type Response as ExpressResponse } from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { createWebSocketServer } from './websocket/server.js';
@@ -186,212 +185,212 @@ app.get('/health', (req, res) => {
 app.use('/api', apiLimiter);
 
 // Auth routes (с более строгим rate limiting и валидацией)
-app.post('/api/auth/signup', authLimiter, validateSignup, async (req, res) => {
+app.post('/api/auth/signup', authLimiter, validateSignup, async (req: ExpressRequest, res: ExpressResponse) => {
   await signUp(req, res);
 });
 
-app.post('/api/auth/signin', authLimiter, validateSignin, async (req, res) => {
+app.post('/api/auth/signin', authLimiter, validateSignin, async (req: ExpressRequest, res: ExpressResponse) => {
   await signIn(req, res);
 });
 
-app.post('/api/auth/signout', async (req, res) => {
+app.post('/api/auth/signout', async (req: ExpressRequest, res: ExpressResponse) => {
   await signOut(req, res);
 });
 
-app.get('/api/auth/me', async (req, res) => {
+app.get('/api/auth/me', async (req: ExpressRequest, res: ExpressResponse) => {
   await getCurrentUser(req, res);
 });
 
 // Rides routes
 // Поиск поблизости (должен быть перед другими, так как более специфичный)
-app.get('/api/rides/nearby', async (req, res) => {
+app.get('/api/rides/nearby', async (req: ExpressRequest, res: ExpressResponse) => {
   await findNearbyRides(req, res);
 });
 
 // Расширенный поиск (должен быть перед общим list, так как более специфичный)
-app.get('/api/rides/search', async (req, res) => {
+app.get('/api/rides/search', async (req: ExpressRequest, res: ExpressResponse) => {
   await searchRides(req, res);
 });
 
-app.get('/api/rides', async (req, res) => {
+app.get('/api/rides', async (req: ExpressRequest, res: ExpressResponse) => {
   await listRides(req, res);
 });
 
-app.get('/api/rides/my', async (req, res) => {
+app.get('/api/rides/my', async (req: ExpressRequest, res: ExpressResponse) => {
   await getMyRides(req, res);
 });
 
-app.get('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
+app.get('/api/rides/:id', validateUUIDParam('id'), async (req: ExpressRequest, res: ExpressResponse) => {
   const rideId = req.params.id;
   await getRide(req, res, rideId);
 });
 
-app.post('/api/rides', createContentLimiter, validateCreateRide, async (req, res) => {
+app.post('/api/rides', createContentLimiter, validateCreateRide, async (req: ExpressRequest, res: ExpressResponse) => {
   await createRide(req, res);
 });
 
-app.put('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
+app.put('/api/rides/:id', validateUUIDParam('id'), async (req: ExpressRequest, res: ExpressResponse) => {
   const rideId = req.params.id;
   await updateRide(req, res, rideId);
 });
 
-app.delete('/api/rides/:id', validateUUIDParam('id'), async (req, res) => {
+app.delete('/api/rides/:id', validateUUIDParam('id'), async (req: ExpressRequest, res: ExpressResponse) => {
   const rideId = req.params.id;
   await deleteRide(req, res, rideId);
 });
 
 // Bookings routes
-app.get('/api/bookings', async (req, res) => {
+app.get('/api/bookings', async (req: ExpressRequest, res: ExpressResponse) => {
   await listBookings(req, res);
 });
 
-app.get('/api/bookings/ride/:rideId', validateUUIDParam('rideId'), async (req, res) => {
+app.get('/api/bookings/ride/:rideId', validateUUIDParam('rideId'), async (req: ExpressRequest, res: ExpressResponse) => {
   const rideId = req.params.rideId;
   await getRideBookings(req, res, rideId);
 });
 
-app.post('/api/bookings', createContentLimiter, async (req, res) => {
+app.post('/api/bookings', createContentLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
   await createBooking(req, res);
 });
 
-app.put('/api/bookings/:id', validateUUIDParam('id'), async (req, res) => {
+app.put('/api/bookings/:id', validateUUIDParam('id'), async (req: ExpressRequest, res: ExpressResponse) => {
   const bookingId = req.params.id;
   await updateBooking(req, res, bookingId);
 });
 
 // Reviews routes
-app.get('/api/reviews', async (req, res) => {
+app.get('/api/reviews', async (req: ExpressRequest, res: ExpressResponse) => {
   await listReviews(req, res);
 });
 
-app.post('/api/reviews', createContentLimiter, async (req, res) => {
+app.post('/api/reviews', createContentLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
   await createReview(req, res);
 });
 
 // Messages routes
-app.get('/api/messages/:rideId', validateUUIDParam('rideId'), async (req, res) => {
+app.get('/api/messages/:rideId', validateUUIDParam('rideId'), async (req: ExpressRequest, res: ExpressResponse) => {
   const rideId = req.params.rideId;
   await listMessages(req, res, rideId);
 });
 
-app.post('/api/messages', messageLimiter, async (req, res) => {
+app.post('/api/messages', messageLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
   await createMessage(req, res);
 });
 
 // Profiles routes
-app.get('/api/profiles/me', async (req, res) => {
+app.get('/api/profiles/me', async (req: ExpressRequest, res: ExpressResponse) => {
   await getProfile(req, res);
 });
 
-app.get('/api/profiles/:userId', validateUUIDParam('userId'), async (req, res) => {
+app.get('/api/profiles/:userId', validateUUIDParam('userId'), async (req: ExpressRequest, res: ExpressResponse) => {
   const userId = req.params.userId;
   await getProfile(req, res, userId);
 });
 
-app.put('/api/profiles/me', async (req, res) => {
+app.put('/api/profiles/me', async (req: ExpressRequest, res: ExpressResponse) => {
   await updateProfile(req, res);
 });
 
-app.put('/api/profiles/:userId/ban', validateUUIDParam('userId'), async (req, res) => {
+app.put('/api/profiles/:userId/ban', validateUUIDParam('userId'), async (req: ExpressRequest, res: ExpressResponse) => {
   const userId = req.params.userId;
   await banUser(req, res, userId);
 });
 
 // Reports routes
-app.get('/api/reports', async (req, res) => {
+app.get('/api/reports', async (req: ExpressRequest, res: ExpressResponse) => {
   await listReports(req, res);
 });
 
-app.post('/api/reports', createContentLimiter, async (req, res) => {
+app.post('/api/reports', createContentLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
   await createReport(req, res);
 });
 
-app.put('/api/reports/:id', validateUUIDParam('id'), async (req, res) => {
+app.put('/api/reports/:id', validateUUIDParam('id'), async (req: ExpressRequest, res: ExpressResponse) => {
   const reportId = req.params.id;
   await updateReport(req, res, reportId);
 });
 
 // Users routes (admin only)
-app.get('/api/users', async (req, res) => {
+app.get('/api/users', async (req: ExpressRequest, res: ExpressResponse) => {
   await listUsers(req, res);
 });
 
 // Telegram bot routes
-app.post('/api/telegram/subscribe', async (req, res) => {
+app.post('/api/telegram/subscribe', async (req: ExpressRequest, res: ExpressResponse) => {
   await subscribeToBot(req, res);
 });
 
-app.post('/api/telegram/unsubscribe', async (req, res) => {
+app.post('/api/telegram/unsubscribe', async (req: ExpressRequest, res: ExpressResponse) => {
   await unsubscribeFromBot(req, res);
 });
 
-app.get('/api/telegram/status', async (req, res) => {
+app.get('/api/telegram/status', async (req: ExpressRequest, res: ExpressResponse) => {
   await getSubscriptionStatus(req, res);
 });
 
 // Telegram webhook (для обработки обновлений от Telegram)
-app.post('/api/telegram/webhook', async (req, res) => {
+app.post('/api/telegram/webhook', async (req: ExpressRequest, res: ExpressResponse) => {
   await telegramWebhook(req, res);
 });
 
 // Notifications endpoints
-app.get('/api/notifications', async (req, res) => {
+app.get('/api/notifications', async (req: ExpressRequest, res: ExpressResponse) => {
   await listNotifications(req, res);
 });
 
-app.put('/api/notifications/:id/read', async (req, res) => {
+app.put('/api/notifications/:id/read', async (req: ExpressRequest, res: ExpressResponse) => {
   await markNotificationRead(req, res);
 });
 
-app.put('/api/notifications/read-all', async (req, res) => {
+app.put('/api/notifications/read-all', async (req: ExpressRequest, res: ExpressResponse) => {
   await markAllNotificationsRead(req, res);
 });
 
 // Saved searches endpoints
-app.get('/api/saved-searches', async (req, res) => {
+app.get('/api/saved-searches', async (req: ExpressRequest, res: ExpressResponse) => {
   await listSavedSearches(req, res);
 });
 
-app.post('/api/saved-searches', async (req, res) => {
+app.post('/api/saved-searches', async (req: ExpressRequest, res: ExpressResponse) => {
   await createSavedSearch(req, res);
 });
 
-app.put('/api/saved-searches/:id', async (req, res) => {
+app.put('/api/saved-searches/:id', async (req: ExpressRequest, res: ExpressResponse) => {
   await updateSavedSearch(req, res);
 });
 
-app.delete('/api/saved-searches/:id', async (req, res) => {
+app.delete('/api/saved-searches/:id', async (req: ExpressRequest, res: ExpressResponse) => {
   await deleteSavedSearch(req, res);
 });
 
-app.post('/api/saved-searches/:id/increment', async (req, res) => {
+app.post('/api/saved-searches/:id/increment', async (req: ExpressRequest, res: ExpressResponse) => {
   await incrementSavedSearchUsage(req, res);
 });
 
 // Geocoding endpoints
-app.get('/api/geocoding/geocode', async (req, res) => {
+app.get('/api/geocoding/geocode', async (req: ExpressRequest, res: ExpressResponse) => {
   await geocodeAddress(req, res);
 });
 
-app.get('/api/geocoding/reverse', async (req, res) => {
+app.get('/api/geocoding/reverse', async (req: ExpressRequest, res: ExpressResponse) => {
   await reverseGeocode(req, res);
 });
 
 // Location endpoints
-app.get('/api/location', async (req, res) => {
+app.get('/api/location', async (req: ExpressRequest, res: ExpressResponse) => {
   await getUserLocation(req, res);
 });
 
-app.post('/api/location', async (req, res) => {
+app.post('/api/location', async (req: ExpressRequest, res: ExpressResponse) => {
   await updateUserLocation(req, res);
 });
 
 // Stats endpoints
-app.get('/api/stats/platform', async (req, res) => {
+app.get('/api/stats/platform', async (req: ExpressRequest, res: ExpressResponse) => {
   await getPlatformStats(req, res);
 });
 
-app.get('/api/stats/user', async (req, res) => {
+app.get('/api/stats/user', async (req: ExpressRequest, res: ExpressResponse) => {
   await getUserStats(req, res);
 });
 
@@ -407,14 +406,14 @@ export { io };
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0'; // Слушаем на всех интерфейсах для Docker/Cloud
 
-httpServer.listen(PORT, HOST, () => {
+httpServer.listen(PORT, HOST as string, () => {
   logger.info('Server started successfully', {
     port: PORT,
     host: HOST,
     corsOrigins: allowedOrigins.length > 0 ? allowedOrigins : ['all (dev mode)'],
     nodeEnv: process.env.NODE_ENV,
   });
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-  console.log(`📡 WebSocket server ready`);
-  console.log(`🌍 CORS allowed origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'all (dev mode)'}`);
+  logger.info(`Server running on http://${HOST}:${PORT}`);
+  logger.info('WebSocket server ready');
+  logger.info(`CORS allowed origins: ${allowedOrigins.length > 0 ? allowedOrigins.join(', ') : 'all (dev mode)'}`);
 });

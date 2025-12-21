@@ -18,27 +18,40 @@ async function fixImportsInFile(filePath) {
     
     // Исправляем __dirname для ESM (если это index.js)
     if (filePath.endsWith('/index.js')) {
-      // Заменяем все path.join(__dirname на path.join(process.cwd()
+      // Шаг 1: Заменяем все path.join(__dirname на path.join(process.cwd()
       if (content.includes('path.join(__dirname')) {
         content = content.replace(/path\.join\(__dirname/g, 'path.join(process.cwd()');
         modified = true;
         console.log(`✅ Fixed path.join(__dirname in: ${filePath}`);
       }
       
-      // Также заменяем использование __dirname в других местах если нужно
-      const oldDirnamePattern = /const __filename = fileURLToPath\(import\.meta\.url\);\s*const __dirname = dirname\(__filename\);/;
-      const newDirnameCode = `let __dirname;
-try {
-  const __filename = fileURLToPath(import.meta.url);
-  __dirname = dirname(__filename);
-} catch {
-  __dirname = process.cwd();
-}`;
-      
-      if (oldDirnamePattern.test(content)) {
-        content = content.replace(oldDirnamePattern, newDirnameCode);
-        modified = true;
-        console.log(`✅ Fixed __dirname definition in: ${filePath}`);
+      // Шаг 2: Заменяем просто __dirname на process.cwd() везде где используется
+      // Но избегаем замены в определениях (let/const __dirname)
+      if (content.includes('__dirname')) {
+        // Сначала удаляем проблемные определения
+        const problematicDefs = [
+          /const\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);\s*const\s+__dirname\s*=\s*dirname\(__filename\);/g,
+          /let\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);\s*let\s+__dirname\s*=\s*dirname\(__filename\);/g,
+          /const\s+__dirname\s*=\s*dirname\(fileURLToPath\(import\.meta\.url\)\);/g,
+          /let\s+__dirname\s*=\s*dirname\(fileURLToPath\(import\.meta\.url\)\);/g,
+        ];
+        
+        for (const pattern of problematicDefs) {
+          if (pattern.test(content)) {
+            content = content.replace(pattern, '');
+            modified = true;
+            console.log(`✅ Removed problematic __dirname definition in: ${filePath}`);
+          }
+        }
+        
+        // Теперь заменяем оставшиеся использования __dirname на process.cwd()
+        // Используем более точный паттерн, чтобы не трогать строки/комментарии
+        const dirnameUsagePattern = /([^a-zA-Z_'"`])__dirname([^a-zA-Z_'"`])/g;
+        if (dirnameUsagePattern.test(content)) {
+          content = content.replace(dirnameUsagePattern, '$1process.cwd()$2');
+          modified = true;
+          console.log(`✅ Replaced __dirname with process.cwd() in: ${filePath}`);
+        }
       }
     }
     

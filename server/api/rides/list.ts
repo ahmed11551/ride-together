@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger.js';
 
 
 export async function listRides(req: Request, res: Response): Promise<void> {
@@ -153,8 +154,11 @@ export async function listRides(req: Request, res: Response): Promise<void> {
 
     // Иначе возвращаем просто массив (обратная совместимость)
     res.status(200).json(rides);
-  } catch (error: any) {
-    console.error('List rides error:', error);
+  } catch (error: unknown) {
+    logger.error('List rides error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      query: req.query,
+    });
     res.status(500).json({ error: 'Ошибка при получении списка поездок' });
   }
 }

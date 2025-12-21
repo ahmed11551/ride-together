@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger.js';
 
 
 export async function deleteRide(req: Request, res: Response, rideId: string): Promise<void> {
@@ -62,8 +63,11 @@ export async function deleteRide(req: Request, res: Response, rideId: string): P
     await db.query('DELETE FROM rides WHERE id = $1', [rideId]);
 
     res.status(200).json({ message: 'Поездка удалена' });
-  } catch (error: any) {
-    console.error('Delete ride error:', error);
+  } catch (error: unknown) {
+    logger.error('Delete ride error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      rideId: req.params.id,
+    });
     res.status(500).json({ error: 'Ошибка при удалении поездки' });
   }
 }

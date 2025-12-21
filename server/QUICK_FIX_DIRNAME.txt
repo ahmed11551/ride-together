@@ -1,0 +1,24 @@
+cd /var/www/ride-together/server
+
+# Посмотреть что на строке 10
+head -15 dist/index.js | cat -n
+
+# Исправить через Python (самый надежный способ)
+python3 << 'EOF'
+import re
+with open('dist/index.js', 'r') as f:
+    content = f.read()
+content = re.sub(r'const\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);\s*\n?', '', content)
+content = re.sub(r'const\s+__dirname\s*=\s*dirname\(__filename\);\s*\n?', '', content)
+content = re.sub(r'let\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);\s*\n?', '', content)
+content = re.sub(r'let\s+__dirname\s*=\s*dirname\(__filename\);\s*\n?', '', content)
+content = re.sub(r'path\.join\(__dirname', 'path.join(process.cwd()', content)
+content = re.sub(r'__dirname', 'process.cwd()', content)
+with open('dist/index.js', 'w') as f:
+    f.write(content)
+print("✅ Исправлено!")
+EOF
+
+pm2 restart ride-backend
+pm2 logs ride-backend --err --lines 10 --nostream
+

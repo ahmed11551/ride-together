@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger.js';
 
 
 export async function getMyRides(req: Request, res: Response): Promise<void> {
@@ -61,10 +62,13 @@ export async function getMyRides(req: Request, res: Response): Promise<void> {
 
       res.status(200).json(rides);
       return;
-  } catch (error: any) {
-    console.error('Get my rides error:', error);
-      res.status(500).json({ error: 'Ошибка при получении поездок' });
-      return;
+  } catch (error: unknown) {
+    logger.error('Get my rides error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      query: req.query,
+    });
+    res.status(500).json({ error: 'Ошибка при получении поездок' });
+    return;
   }
 }
 

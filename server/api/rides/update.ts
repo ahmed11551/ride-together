@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { logger } from '../../utils/logger.js';
 
 
 export async function updateRide(req: Request, res: Response, rideId: string): Promise<void> {
@@ -101,8 +102,12 @@ export async function updateRide(req: Request, res: Response, rideId: string): P
       created_at: ride.created_at,
       updated_at: ride.updated_at,
     });
-  } catch (error: any) {
-    console.error('Update ride error:', error);
+  } catch (error: unknown) {
+    logger.error('Update ride error', error instanceof Error ? error : new Error(String(error)), {
+      path: req.path,
+      rideId: req.params.id,
+      body: req.body,
+    });
     res.status(500).json({ error: 'Ошибка при обновлении поездки' });
   }
 }

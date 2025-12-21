@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSearchRidesPaginated } from "@/hooks/useRidesPaginated";
 import { Button } from "@/components/ui/button";
@@ -9,22 +9,26 @@ import { RideCardSkeleton } from "@/components/ui/skeleton-loaders";
 import { LazyRidesMap } from "@/components/map/LazyRidesMap";
 import { Pagination } from "@/components/ui/pagination";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, SlidersHorizontal, Search, X, Map as MapIcon, List } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ArrowLeft, SlidersHorizontal, Search, X, Map as MapIcon, List, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
+import { logError, getUserFriendlyError } from "@/lib/error-handler";
 
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const { toast } = useToast();
 
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
   const date = searchParams.get("date") || "";
   const passengers = parseInt(searchParams.get("passengers") || "1");
 
-  const { data: paginatedData, isLoading } = useSearchRidesPaginated(
+  const { data: paginatedData, isLoading, isError, error } = useSearchRidesPaginated(
     {
       from,
       to,
@@ -36,6 +40,19 @@ const SearchResults = () => {
       pageSize: 10,
     }
   );
+
+  // Показываем toast при ошибке
+  useEffect(() => {
+    if (isError && error) {
+      logError(error, "SearchRides");
+      const friendlyError = getUserFriendlyError(error);
+      toast({
+        variant: "destructive",
+        title: friendlyError.title,
+        description: friendlyError.description,
+      });
+    }
+  }, [isError, error, toast]);
 
   const rides = paginatedData?.data || [];
   const totalPages = paginatedData?.totalPages || 0;
@@ -92,7 +109,25 @@ const SearchResults = () => {
 
       {/* Results */}
       <div className="container py-6">
-        {isLoading ? (
+        {isError ? (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Произошла ошибка</AlertTitle>
+            <AlertDescription>
+              {error instanceof Error 
+                ? getUserFriendlyError(error).description 
+                : "Пожалуйста, попробуйте еще раз или обратитесь в поддержку"}
+            </AlertDescription>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Обновить страницу
+            </Button>
+          </Alert>
+        ) : isLoading ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
               <div className="h-5 w-40 bg-muted rounded-lg animate-shimmer" />

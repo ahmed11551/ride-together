@@ -1,0 +1,79 @@
+# ============================================
+# НАЙТИ И ИСПРАВИТЬ ПРОБЛЕМУ
+# Выполнить на сервере:
+# ============================================
+
+cd /var/www/ride-together/server
+
+# Шаг 1: Найти где используется new URL
+echo "🔍 Ищем использование new URL:"
+grep -n "new URL\|searchParams" dist/api/rides/list.js
+
+echo ""
+echo "🔍 Показываем строки вокруг ошибки (строка 12):"
+sed -n '8,20p' dist/api/rides/list.js
+
+echo ""
+echo "🔍 Показываем весь файл (первые 30 строк):"
+head -30 dist/api/rides/list.js
+
+# Шаг 2: Исправим напрямую через sed и Python
+echo ""
+echo "🔧 Исправляем..."
+
+# Сначала удалим строки с new URL более агрессивно
+sed -i '/new URL(req\.url)/d' dist/api/rides/list.js
+sed -i '/const url = new URL/d' dist/api/rides/list.js
+sed -i '/let url = new URL/d' dist/api/rides/list.js
+sed -i '/var url = new URL/d' dist/api/rides/list.js
+
+# Теперь исправим через Python более точно
+python3 << 'EOF'
+import re
+
+filepath = 'dist/api/rides/list.js'
+
+with open(filepath, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+new_lines = []
+modified = False
+
+for i, line in enumerate(lines):
+    # Пропускаем строки с new URL
+    if 'new URL' in line and 'req.url' in line:
+        print(f"Удаляем строку {i+1}: {line.strip()}")
+        modified = True
+        continue
+    
+    # Заменяем url.searchParams на req.query
+    if 'url.searchParams' in line:
+        print(f"Исправляем строку {i+1}: {line.strip()}")
+        # Заменяем все варианты
+        line = line.replace('url.searchParams.get', 'req.query')
+        line = line.replace('url.searchParams', 'req.query')
+        # Убираем .get( и заменяем на прямую точку
+        line = re.sub(r"req\.query\(['\"](\w+)['\"]\)", r"req.query.\1", line)
+        line = re.sub(r'req\.query\(["\'](\w+)["\']\)', r"req.query.\1", line)
+        modified = True
+    
+    new_lines.append(line)
+
+if modified:
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.writelines(new_lines)
+    print("✅ Файл исправлен")
+else:
+    print("⚠️  Файл не изменен")
+    
+    # Покажем проблемные строки
+    print("\n📋 Показываем строки с 'url':")
+    for i, line in enumerate(lines):
+        if 'url' in line.lower():
+            print(f"{i+1}: {line.strip()}")
+EOF
+
+pm2 restart ride-backend
+sleep 3
+pm2 logs ride-backend --err --lines 10 --nostream
+

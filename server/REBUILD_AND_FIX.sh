@@ -1,90 +1,103 @@
 #!/bin/bash
-# Пересборка и исправление всех проблем
 
-set -e
+# Пересборка и исправление ошибки ERR_INVALID_URL
+# Выполнить на сервере: bash REBUILD_AND_FIX.sh
 
 cd /var/www/ride-together/server
 
-echo "🔧 Полная пересборка сервера..."
-echo ""
+echo "🔧 Пересборка проекта и исправление ошибок..."
 
-# 1. Очистка
-echo "1️⃣  Очистка старых файлов..."
-rm -rf dist
-echo "✅ Очищено"
+# 1. Останавливаем PM2
+echo "⏸️  Останавливаем PM2..."
+pm2 stop ride-backend || true
 
-# 2. Установка зависимостей (если нужно)
-echo ""
-echo "2️⃣  Проверка зависимостей..."
-npm install --production 2>&1 | tail -3 || echo "⚠️  npm install пропущен"
+# 2. Пересобираем проект
+echo "📦 Пересобираем проект..."
+npm run build 2>&1 | tail -30
 
-# 3. Компиляция TypeScript
-echo ""
-echo "3️⃣  Компиляция TypeScript..."
-npx tsc --noEmitOnError false 2>&1 | grep -E "(error|Error)" | head -10 || echo "✅ Компиляция завершена"
-
-# 4. Исправление импортов
+# 3. Исправляем импорты (если есть скрипт)
 if [ -f "fix-imports.js" ]; then
-    echo ""
-    echo "4️⃣  Исправление импортов..."
-    node fix-imports.js 2>/dev/null || echo "⚠️  fix-imports завершился с ошибкой"
+    echo "🔧 Исправляем импорты..."
+    node fix-imports.js
 fi
 
-# 5. Исправление __dirname в index.js
-echo ""
-echo "5️⃣  Исправление __dirname..."
-if [ -f "dist/index.js" ]; then
-    cd dist
-    python3 << 'PYTHON'
+# 4. Исправляем __dirname
+echo "🔧 Исправляем __dirname..."
+python3 << 'PYEOF'
 import re
 
-with open('index.js', 'r') as f:
-    content = f.read()
-
-# Исправляем path.join(__dirname на path.join(process.cwd()
-if 'path.join(__dirname' in content:
-    content = content.replace('path.join(__dirname,', 'path.join(process.cwd(),')
-    with open('index.js', 'w') as f:
+filepath = 'dist/index.js'
+try:
+    with open(filepath, 'r') as f:
+        content = f.read()
+    
+    # Заменяем path.join(__dirname на path.join(process.cwd()
+    content = re.sub(r'path\.join\(__dirname', 'path.join(process.cwd()', content)
+    
+    # Удаляем определения __dirname если есть
+    content = re.sub(r'const\s+__filename\s*=\s*fileURLToPath\(import\.meta\.url\);?\s*\n', '', content)
+    content = re.sub(r'const\s+__dirname\s*=\s*dirname\(__filename\);?\s*\n', '', content)
+    
+    with open(filepath, 'w') as f:
         f.write(content)
-    print("✅ path.join(__dirname) исправлен")
-else:
-    print("✅ path.join(__dirname) уже исправлен")
-PYTHON
-    cd ..
-fi
+    print("✅ __dirname исправлен")
+except Exception as e:
+    print(f"⚠️  Ошибка: {e}")
+PYEOF
 
-# 6. Исправление req.headers.get (на всякий случай)
-echo ""
-echo "6️⃣  Исправление req.headers.get..."
-find dist/api -name "*.js" -type f -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \; 2>/dev/null || true
-find dist/api -name "*.js" -type f -exec sed -i 's/headers\.get(/req.get(/g' {} \; 2>/dev/null || true
-echo "✅ Исправлено"
+# 5. Исправляем new URL в rides/list.js
+echo "🔧 Исправляем new URL в API файлах..."
+find dist/api -name "*.js" -type f -exec python3 << 'PYEOF'
+import re, sys
 
-# 7. Проверка синтаксиса
-echo ""
-echo "7️⃣  Проверка синтаксиса..."
-if node --check dist/index.js 2>/dev/null; then
-    echo "✅ Синтаксис правильный!"
-else
-    echo "⚠️  Ошибка синтаксиса (но продолжаем)"
-fi
+filepath = sys.argv[1]
+try:
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+    
+    new_lines = []
+    modified = False
+    
+    for line in lines:
+        # Пропускаем строки с new URL(req.url)
+        if 'new URL' in line and 'req.url' in line:
+            modified = True
+            continue
+        
+        # Заменяем url.searchParams на req.query
+        if 'url.searchParams' in line:
+            line = re.sub(r"url\.searchParams\.get\(['\"](\w+)['\"]\)", r'req.query.\1', line)
+            line = line.replace('url.searchParams', 'req.query')
+            modified = True
+        
+        new_lines.append(line)
+    
+    if modified:
+        with open(filepath, 'w') as f:
+            f.writelines(new_lines)
+        print(f"✅ Исправлен: {filepath}")
+except:
+    pass
+PYEOF
+{} \;
 
-# 8. Перезапуск PM2
+# 6. Исправляем req.headers.get на req.get
+echo "🔧 Исправляем req.headers.get..."
+find dist/api -name "*.js" -type f -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \;
+find dist/api -name "*.js" -type f -exec sed -i 's/headers\.get(/req.get(/g' {} \;
+
+# 7. Запускаем PM2
+echo "🚀 Запускаем PM2..."
+pm2 restart ride-backend --update-env
+
 echo ""
-echo "8️⃣  Перезапуск PM2..."
-pm2 restart ride-backend --update-env || pm2 start ecosystem.config.cjs
+echo "⏳ Ждём 3 секунды..."
 sleep 3
 
-# 9. Проверка
 echo ""
-echo "9️⃣  Проверка работы..."
-echo "📋 Статус PM2:"
-pm2 status | grep ride-backend || echo "⚠️  PM2 процесс не найден"
+echo "📋 Проверяем логи..."
+pm2 logs ride-backend --err --lines 15 --nostream
 
 echo ""
-echo "🏥 Health check:"
-curl -s http://localhost:3001/health && echo "" || echo "❌ Сервер не отвечает"
-
-echo ""
-echo "✅ Пересборка завершена!"
+echo "✅ Готово!"
 

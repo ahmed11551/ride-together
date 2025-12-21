@@ -1,0 +1,43 @@
+# ============================================
+# КОМАНДЫ ДЛЯ ВЫПОЛНЕНИЯ НА СЕРВЕРЕ
+# ============================================
+
+# Скопируйте и выполните на сервере:
+
+cd /var/www/ride-together/server
+
+# Создайте скрипт SETUP_DB_ON_SERVER.sh (содержимое будет отправлено отдельно)
+
+# Затем:
+chmod +x SETUP_DB_ON_SERVER.sh
+./SETUP_DB_ON_SERVER.sh
+
+# Или выполните вручную:
+
+# 1. Установка PostgreSQL (если не установлен)
+sudo apt update && sudo apt install postgresql postgresql-contrib -y
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# 2. Создание базы и пользователя
+sudo -u postgres psql << 'EOF'
+CREATE USER ride_user WITH PASSWORD 'ваш_пароль_здесь';
+CREATE DATABASE ride_together OWNER ride_user;
+GRANT ALL PRIVILEGES ON DATABASE ride_together TO ride_user;
+\c ride_together
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+\q
+EOF
+
+# 3. Обновить ecosystem.config.cjs
+nano ecosystem.config.cjs
+# Замените DATABASE_URL на: postgresql://ride_user:пароль@localhost:5432/ride_together
+
+# 4. Применить схему
+psql postgresql://ride_user:пароль@localhost:5432/ride_together < ../TIMEWEB_FULL_SCHEMA.sql
+
+# 5. Перезапустить PM2
+pm2 restart ride-backend --update-env
+pm2 logs ride-backend
+

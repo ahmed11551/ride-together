@@ -1,108 +1,55 @@
 # Ride Together
 
-Платформа для совместных поездок - найдите попутчиков или станьте водителем.
+Сервис для поиска попутчиков и совместных поездок.
 
-## 🚀 Быстрый старт
+## 🚀 Запуск на сервере
 
-### 1. Установка зависимостей
+### Быстрый старт:
 
 ```bash
+cd /var/www/ride-together/server
+chmod +x START_SERVER.sh
+./START_SERVER.sh
+```
+
+### Или вручную:
+
+```bash
+cd /var/www/ride-together/server
 npm install
-```
-
-### 2. Настройка переменных окружения
-
-Создайте `.env` файл:
-
-```env
-# Backend API (ОБЯЗАТЕЛЬНО)
-VITE_API_URL=http://localhost:3001
-
-# WebSocket (опционально)
-VITE_WS_URL=ws://localhost:3001
-
-# Яндекс.Карты (опционально)
-VITE_YANDEX_MAPS_API_KEY=your-key
-
-# Telegram Bot (опционально)
-VITE_TELEGRAM_BOT_TOKEN=your-token
-
-# Мониторинг (опционально)
-VITE_SENTRY_DSN=your-sentry-dsn
-```
-
-### 3. Запуск в режиме разработки
-
-```bash
-npm run dev
-```
-
-Приложение будет доступно по адресу `http://localhost:8080`
-
-## 📦 Сборка для production
-
-```bash
 npm run build
+
+# Исправить проблемы после компиляции
+sed -i 's/path\.join(__dirname/path.join(process.cwd()/g' dist/index.js
+sed -i '/const __filename = fileURLToPath(import\.meta\.url);/d' dist/index.js
+sed -i '/const __dirname = dirname(__filename);/d' dist/index.js
+find dist -name "*.js" -type f -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \;
+
+# Запустить
+pm2 restart ride-backend
 ```
 
-Файлы будут в папке `dist/`
+## 📁 Структура проекта
 
-## 🏗️ Архитектура
+- `server/` - Backend (Node.js/Express)
+- `src/` - Frontend (React/Vite)
 
-- **Frontend**: React + TypeScript + Vite
-- **Backend**: Node.js + Express (в папке `server/`)
-- **Database**: PostgreSQL на Timeweb Cloud
-- **Deployment**: Timeweb Cloud (App Platform + Static Hosting)
+## 🔧 Технологии
 
-## 📚 Документация
+**Backend:**
+- Node.js + Express
+- TypeScript
+- PostgreSQL
+- Socket.io (WebSocket)
+- JWT авторизация
 
-Документация по деплою и настройке находится в папке `server/`.
+**Frontend:**
+- React
+- Vite
+- TypeScript
 
-## 🛠️ Технологии
+## 📝 Примечания
 
-- React 18.3.1
-- TypeScript 5.8.3
-- Vite 5.4.19
-- Tailwind CSS 3.4.17
-- shadcn/ui
-- React Router 6.30.1
-- React Query 5.83.0
-- Yandex Maps API
-
-## 📝 Скрипты
-
-- `npm run dev` - Запуск в режиме разработки
-- `npm run build` - Сборка для production
-- `npm run preview` - Предпросмотр production сборки
-- `npm run lint` - Проверка кода
-- `npm test` - Запуск тестов
-
-## 🔧 Полезные скрипты
-
-- `./scripts/build-for-timeweb.sh` - Сборка для деплоя на Timeweb
-- `./scripts/prepare-deploy.sh` - Подготовка к деплою
-- `./scripts/check-deploy.sh` - Проверка готовности
-
-## 📖 Структура проекта
-
-```
-ride-together/
-├── server/          # Backend (Node.js/Express)
-├── src/             # Frontend (React)
-├── public/          # Статические файлы
-├── scripts/         # Вспомогательные скрипты
-└── dist/            # Собранный фронтенд (после build)
-```
-
-## 🚀 Деплой
-
-Backend сервер находится в папке `server/`. Для деплоя:
-
-1. Установите зависимости: `cd server && npm install`
-2. Настройте переменные окружения (см. `server/env.example`)
-3. Соберите проект: `npm run build`
-4. Запустите: `npm start` или используйте PM2: `pm2 start dist/index.js`
-
-## 📄 Лицензия
-
-MIT
+- Проект использует ES модули (`"type": "module"`)
+- После компиляции TypeScript автоматически исправляются импорты через `fix-imports.js`
+- На сервере нужно дополнительно исправить `__dirname` и `req.headers.get` в скомпилированных файлах

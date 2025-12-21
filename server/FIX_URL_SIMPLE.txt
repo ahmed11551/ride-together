@@ -1,0 +1,38 @@
+# ============================================
+# БЫСТРОЕ ИСПРАВЛЕНИЕ ERR_INVALID_URL
+# Скопируйте и выполните на сервере:
+# ============================================
+
+cd /var/www/ride-together/server
+
+# Вариант 1: Через Python (рекомендуется)
+python3 << 'EOF'
+import re
+filepath = 'dist/api/rides/list.js'
+with open(filepath, 'r') as f:
+    content = f.read()
+original = content
+# Удаляем строки с new URL
+content = re.sub(r'const\s+url\s*=\s*new\s+URL\(req\.url\);?\s*\n?', '', content)
+content = re.sub(r'let\s+url\s*=\s*new\s+URL\(req\.url\);?\s*\n?', '', content)
+content = re.sub(r'var\s+url\s*=\s*new\s+URL\(req\.url\);?\s*\n?', '', content)
+# Заменяем searchParams на req.query
+content = re.sub(r"url\.searchParams\.get\(['\"](\w+)['\"]\)", r'req.query.\1', content)
+content = re.sub(r'url\.searchParams', 'req.query', content)
+if content != original:
+    with open(filepath, 'w') as f:
+        f.write(content)
+    print("✅ Исправлено")
+else:
+    print("⚠️  Файл не изменен")
+EOF
+
+pm2 restart ride-backend
+sleep 3
+pm2 logs ride-backend --err --lines 10 --nostream
+
+# ============================================
+# Вариант 2: Посмотреть что в файле
+# ============================================
+# grep -n "new URL\|searchParams" dist/api/rides/list.js
+

@@ -1,0 +1,10 @@
+cd /var/www/ride-together/server
+npm install
+npm run build
+sed -i 's/path\.join(__dirname/path.join(process.cwd()/g' dist/index.js
+sed -i '/const __filename = fileURLToPath(import\.meta\.url);/d' dist/index.js
+sed -i '/const __dirname = dirname(__filename);/d' dist/index.js
+find dist -name "*.js" -type f -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \;
+pm2 restart ride-backend
+pm2 logs ride-backend --lines 20
+

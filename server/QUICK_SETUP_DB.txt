@@ -1,0 +1,28 @@
+cd /var/www/ride-together/server
+
+# Вариант 1: Автоматическая настройка (рекомендуется)
+chmod +x SETUP_DB_COMPLETE.sh
+./SETUP_DB_COMPLETE.sh
+
+# Вариант 2: Ручная настройка
+
+# 1. Создать пользователя и базу
+sudo -u postgres psql << EOF
+CREATE USER ride_user WITH PASSWORD 'ваш_пароль';
+CREATE DATABASE ride_together OWNER ride_user;
+GRANT ALL PRIVILEGES ON DATABASE ride_together TO ride_user;
+\c ride_together
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+\q
+EOF
+
+# 2. Обновить ecosystem.config.cjs
+# Заменить DATABASE_URL на: postgresql://ride_user:пароль@localhost:5432/ride_together
+
+# 3. Применить схему
+psql postgresql://ride_user:пароль@localhost:5432/ride_together < ../TIMEWEB_FULL_SCHEMA.sql
+
+# 4. Перезапустить PM2
+pm2 restart ride-backend --update-env
+
