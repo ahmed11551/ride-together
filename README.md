@@ -1,55 +1,76 @@
 # Ride Together
 
-Сервис для поиска попутчиков и совместных поездок.
+Платформа для поиска попутчиков и совместных поездок.
 
-## 🚀 Запуск на сервере
+Работает как **веб-сайт** на десктопе и как **PWA / Telegram Mini App** на мобильных устройствах.
 
-### Быстрый старт:
+## Стек
+
+| Слой | Технологии |
+|------|------------|
+| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui |
+| Backend | Node.js, Express, TypeScript, PostgreSQL |
+| Realtime | Socket.io (чат, геолокация) |
+| Auth | JWT + bcrypt |
+
+## Быстрый старт (локально)
+
+### 1. База данных
+
+Создайте PostgreSQL и выполните схему:
 
 ```bash
-cd /var/www/ride-together/server
-chmod +x START_SERVER.sh
-./START_SERVER.sh
+psql -U postgres -d ride_together -f database/schema.sql
 ```
 
-### Или вручную:
+### 2. Backend
 
 ```bash
-cd /var/www/ride-together/server
+cd server
+cp env.example .env   # заполните DATABASE_URL и JWT_SECRET
 npm install
-npm run build
-
-# Исправить проблемы после компиляции
-sed -i 's/path\.join(__dirname/path.join(process.cwd()/g' dist/index.js
-sed -i '/const __filename = fileURLToPath(import\.meta\.url);/d' dist/index.js
-sed -i '/const __dirname = dirname(__filename);/d' dist/index.js
-find dist -name "*.js" -type f -exec sed -i 's/req\.headers\.get(/req.get(/g' {} \;
-
-# Запустить
-pm2 restart ride-backend
+npm run dev           # http://localhost:3001
 ```
 
-## 📁 Структура проекта
+### 3. Frontend
 
-- `server/` - Backend (Node.js/Express)
-- `src/` - Frontend (React/Vite)
+```bash
+cp env.example .env   # VITE_API_URL=http://localhost:3001
+npm install
+npm run dev           # http://localhost:8080
+```
 
-## 🔧 Технологии
+## Деплой на новый сервер
 
-**Backend:**
-- Node.js + Express
-- TypeScript
-- PostgreSQL
-- Socket.io (WebSocket)
-- JWT авторизация
+1. **PostgreSQL** — выполните `database/schema.sql`
+2. **Backend** — `npm run build && npm start` (или PM2 через `ecosystem.config.cjs`)
+3. **Frontend** — `npm run build`, раздайте `dist/` через nginx
+4. **Nginx** — проксируйте `/api` и `/socket.io` на backend (см. `nginx-regru.conf.example`)
 
-**Frontend:**
-- React
-- Vite
-- TypeScript
+### Переменные окружения
 
-## 📝 Примечания
+**Backend** (`server/.env`):
+- `DATABASE_URL` — строка подключения PostgreSQL
+- `JWT_SECRET` — секрет для JWT (мин. 32 символа)
+- `ALLOWED_ORIGINS` — домены фронтенда через запятую
+- `FRONTEND_URL` — URL фронтенда
+- `TELEGRAM_BOT_TOKEN` — для Mini App auth и уведомлений
 
-- Проект использует ES модули (`"type": "module"`)
-- После компиляции TypeScript автоматически исправляются импорты через `fix-imports.js`
-- На сервере нужно дополнительно исправить `__dirname` и `req.headers.get` в скомпилированных файлах
+**Frontend** (`.env`):
+- `VITE_API_URL` — URL backend API
+
+## Структура
+
+```
+src/          — React frontend
+server/       — Express backend
+database/     — SQL-схема для новой БД
+scripts/      — утилиты деплоя и тестов
+e2e/          — Playwright E2E тесты
+```
+
+## Режимы работы
+
+- **Десктоп** — полноценный сайт с навигацией в шапке
+- **Мобильный браузер** — нижняя навигация (BottomNav), PWA
+- **Telegram Mini App** — автоматическая авторизация через Telegram

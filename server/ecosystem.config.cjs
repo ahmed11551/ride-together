@@ -11,13 +11,12 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: '3001',
       HOST: '0.0.0.0',
-      // JWT_SECRET должен быть установлен здесь или через .env.production
-      // Генерация: openssl rand -base64 32
-      JWT_SECRET: 'lUj1cLWZ0+Lskxda8ZTwqTxXKDk9GVcGIrw7K+UDclc=',
-      DATABASE_URL: 'postgresql://gen_user:fn)un5%40K2oLrBJ@9d497bc2bf9dd679bd9834af.twc1.net:5432/default_db?sslmode=verify-full',
-      ALLOWED_ORIGINS: 'http://194.67.124.123,https://194.67.124.123,https://ridetogether.ru,https://www.ridetogether.ru,https://api.ridetogether.ru',
-      TELEGRAM_BOT_TOKEN: '8346758333:AAFJgFLdLHe4wSRWjZReGFYvwNsOOWYScyY',
-      FRONTEND_URL: 'https://ridetogether.ru'
+      // Задайте секреты через .env.production на сервере или PM2 env
+      // JWT_SECRET=...
+      // DATABASE_URL=...
+      // ALLOWED_ORIGINS=https://yourdomain.com
+      // TELEGRAM_BOT_TOKEN=...
+      // FRONTEND_URL=https://yourdomain.com
     },
     error_file: './logs/err.log',
     out_file: './logs/out.log',
@@ -25,7 +24,6 @@ module.exports = {
     merge_logs: true,
     autorestart: true,
     max_restarts: 10,
-    min_uptime: '10s'
-  }]
+    min_uptime: '10s',
+  }],
 };
-

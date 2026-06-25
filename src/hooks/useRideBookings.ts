@@ -16,13 +16,13 @@ export interface RideBooking {
     full_name: string | null;
     avatar_url: string | null;
     phone: string | null;
-    rating: number; // Рейтинг водителя (если пассажир также водитель)
-    passenger_rating: number; // Рейтинг пассажира
+    rating: number;
+    passenger_rating: number;
   };
 }
 
 /**
- * Hook to get all bookings for a specific ride (for drivers)
+ * Бронирования конкретной поездки (для водителя)
  */
 export const useRideBookings = (rideId: string | undefined) => {
   const { user } = useAuth();
@@ -31,70 +31,8 @@ export const useRideBookings = (rideId: string | undefined) => {
     queryKey: ["ride-bookings", rideId, user?.id],
     queryFn: async () => {
       if (!rideId || !user) return [];
-
-      const bookings = await apiClient.get<RideBooking[]>(`/api/bookings/ride/${rideId}`);
-      return bookings;
+      return apiClient.get<RideBooking[]>(`/api/bookings/ride/${rideId}`);
     },
     enabled: !!rideId && !!user,
   });
 };
-
-/**
- * Hook to get all bookings for user's rides (for drivers to see all requests)
- */
-export const useMyRideBookings = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ["my-ride-bookings", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-
-      // Get all user's rides
-      const { data: rides, error: ridesError } = await supabase
-        .from("rides")
-        .select("id")
-        .eq("driver_id", user.id)
-        .eq("status", "active");
-
-      if (ridesError) throw ridesError;
-
-      const rideIds = rides?.map(r => r.id) || [];
-      if (rideIds.length === 0) return [];
-
-      // Get all bookings for these rides
-      const { data: bookings, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("*")
-        .in("ride_id", rideIds)
-        .order("created_at", { ascending: false });
-
-      if (bookingsError) throw bookingsError;
-
-      // Fetch passenger profiles
-      const passengerIds = [...new Set(bookings?.map(b => b.passenger_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, avatar_url, phone, rating, passenger_rating")
-        .in("user_id", passengerIds);
-
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-      // Fetch ride info
-      const { data: ridesInfo } = await supabase
-        .from("rides")
-        .select("id, from_city, to_city, departure_date, departure_time")
-        .in("id", rideIds);
-
-      const rideMap = new Map(ridesInfo?.map(r => [r.id, r]) || []);
-
-      return (bookings || []).map(booking => ({
-        ...booking,
-        passenger: profileMap.get(booking.passenger_id),
-        ride: rideMap.get(booking.ride_id),
-      })) as (RideBooking & { ride?: { from_city: string; to_city: string; departure_date: string; departure_time: string } })[];
-    },
-    enabled: !!user,
-  });
-};
-

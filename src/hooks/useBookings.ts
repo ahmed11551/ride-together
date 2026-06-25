@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/contexts/AuthContext";
-import { notifyNewBooking, notifyBookingConfirmed } from "@/lib/notifications";
 
 export interface Booking {
   id: string;
@@ -39,9 +38,7 @@ export const useMyBookings = () => {
     queryKey: ["bookings", "my", user?.id],
     queryFn: async () => {
       if (!user) return [];
-
-      const data = await apiClient.get<BookingWithRide[]>('/api/bookings');
-      return data;
+      return apiClient.get<BookingWithRide[]>('/api/bookings');
     },
     enabled: !!user,
   });
@@ -55,22 +52,11 @@ export const useCreateBooking = () => {
     mutationFn: async ({ rideId, seats, totalPrice }: { rideId: string; seats: number; totalPrice: number }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const data = await apiClient.post<Booking>('/api/bookings', {
+      return apiClient.post<Booking>('/api/bookings', {
         ride_id: rideId,
         seats_booked: seats,
         total_price: totalPrice,
       });
-
-      // Отправляем уведомление водителю (асинхронно, не блокируем)
-      if (data) {
-        sendBookingNotification(rideId, data.id, user.id, seats).catch((err) => {
-          import('@/lib/logger').then(({ logger }) => {
-            logger.error('Ошибка отправки уведомления о бронировании', err);
-          });
-        });
-      }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -79,72 +65,13 @@ export const useCreateBooking = () => {
     },
   });
 };
-
-/**
- * Отправка уведомления водителю о новом бронировании
- */
-async function sendBookingNotification(
-  rideId: string,
-  bookingId: string,
-  passengerId: string,
-  seats: number
-): Promise<void> {
-  try {
-    // Получаем информацию о поездке
-    const ride = await apiClient.get<{ driver_id: string }>(`/api/rides/${rideId}`);
-    if (!ride) return;
-
-    // Получаем информацию о пассажире
-    const passengerProfile = await apiClient.get<{ full_name: string | null }>(`/api/profiles/${passengerId}`);
-    const passengerName = passengerProfile?.full_name || "Пассажир";
-
-    // Отправляем уведомление водителю
-    await notifyNewBooking(ride.driver_id, bookingId, passengerName, seats);
-  } catch (error) {
-    import('@/lib/logger').then(({ logger }) => {
-      logger.error("Ошибка отправки уведомления о бронировании", error);
-    });
-  }
-}
 
 export const useUpdateBookingStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: Booking["status"] }) => {
-      // Получаем текущее бронирование из кэша
-      const cachedBookings = queryClient.getQueryData<BookingWithRide[]>(["bookings", "my"]);
-      let currentBooking = cachedBookings?.find(b => b.id === id);
-      
-      // Если не в кэше, получаем из списка
-      if (!currentBooking) {
-        const allBookings = await apiClient.get<BookingWithRide[]>('/api/bookings');
-        currentBooking = allBookings.find(b => b.id === id);
-        if (!currentBooking) throw new Error("Booking not found");
-      }
-
-      const oldStatus = currentBooking.status;
-
-      // Обновляем статус бронирования
-      const data = await apiClient.put<Booking>(`/api/bookings/${id}`, { status });
-
-      // Если бронирование подтверждено, отправляем уведомление пассажиру
-      if (status === "confirmed" && oldStatus === "pending") {
-        queryClient.invalidateQueries({ queryKey: ["rides", currentBooking.ride_id] });
-        queryClient.invalidateQueries({ queryKey: ["ride", currentBooking.ride_id] });
-
-        // Отправляем уведомление пассажиру о подтверждении (асинхронно)
-        sendBookingConfirmedNotification(
-          currentBooking.ride_id,
-          data.passenger_id
-        ).catch((err) => {
-          import('@/lib/logger').then(({ logger }) => {
-            logger.error('Ошибка отправки уведомления о подтверждении', err);
-          });
-        });
-      }
-
-      return data;
+      return apiClient.put<Booking>(`/api/bookings/${id}`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
@@ -153,29 +80,3 @@ export const useUpdateBookingStatus = () => {
     },
   });
 };
-
-/**
- * Отправка уведомления пассажиру о подтверждении бронирования
- */
-async function sendBookingConfirmedNotification(
-  rideId: string,
-  passengerId: string
-): Promise<void> {
-  try {
-    // Получаем информацию о поездке
-    const ride = await apiClient.get<{ from_city: string; to_city: string }>(`/api/rides/${rideId}`);
-    if (!ride) return;
-
-    // Отправляем уведомление пассажиру
-    await notifyBookingConfirmed(
-      passengerId,
-      rideId,
-      ride.from_city,
-      ride.to_city
-    );
-  } catch (error) {
-    import('@/lib/logger').then(({ logger }) => {
-      logger.error("Ошибка отправки уведомления о подтверждении", error);
-    });
-  }
-}

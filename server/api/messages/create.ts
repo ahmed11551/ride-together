@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { notificationService } from '../../services/notificationService.js';
 
 
 export async function createMessage(req: Request, res: Response): Promise<void> {
@@ -81,11 +82,35 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     };
 
     // Отправляем через WebSocket всем участникам
-    // Используем broadcastMessage из websocket/server
     const { io } = await import('../../index.js').catch(() => ({ io: null }));
     if (io) {
       io.to(`ride-${ride_id}`).emit('new-message', messageWithSender);
     }
+
+    // Уведомления получателям (асинхронно)
+    const senderName = profile?.full_name || 'Пользователь';
+    const driverId = rideResult.rows[0].driver_id;
+    const participants = await db.query(
+      `SELECT passenger_id FROM bookings WHERE ride_id = $1 AND status IN ('pending', 'confirmed')`,
+      [ride_id]
+    );
+
+    const recipientIds = new Set<string>();
+    if (driverId !== payload.userId) recipientIds.add(driverId);
+    participants.rows.forEach((row) => {
+      if (row.passenger_id !== payload.userId) recipientIds.add(row.passenger_id);
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://ridetogether.ru';
+    recipientIds.forEach((recipientId) => {
+      notificationService.send({
+        userId: recipientId,
+        title: 'Новое сообщение',
+        message: `${senderName}: ${content.trim().substring(0, 100)}`,
+        url: `${frontendUrl}/ride/${ride_id}`,
+        data: { type: 'message', rideId: ride_id },
+      }).catch(console.error);
+    });
 
       res.status(201).json(messageWithSender);
       return;

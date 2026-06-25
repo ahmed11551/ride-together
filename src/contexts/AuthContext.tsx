@@ -27,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  signInWithToken: (token: string, user: User) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -178,7 +179,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      // TODO: Реализовать endpoint для сброса пароля
       await apiClient.post('/api/auth/reset-password', { email });
       return { error: null };
     } catch (error) {
@@ -186,8 +186,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const signInWithToken = async (token: string, userData: User) => {
+    apiClient.setToken(token);
+    const sessionData: Session = {
+      user: userData,
+      access_token: token,
+    };
+    setSession(sessionData);
+    setUser(userData);
+    setSentryUser(userData.id, userData.email, userData.user_metadata?.full_name);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword, signInWithToken }}>
       {children}
     </AuthContext.Provider>
   );

@@ -11,11 +11,12 @@ import { createProfile } from '../../utils/profile.js';
 
 export async function signUp(req: Request, res: Response): Promise<void> {
   try {
-    const { email, password, fullName } = req.body as { email?: string; password?: string; fullName?: string };
+    const body = req.body as { email?: string; password?: string; fullName?: string; full_name?: string };
+    const { email, password } = body;
+    const fullName = body.fullName || body.full_name;
 
-    // Валидация
     if (!email || !password || !fullName) {
-      res.status(400).json({ error: 'Email, password и fullName обязательны' });
+      res.status(400).json({ error: 'Email, password и имя обязательны' });
       return;
     }
 

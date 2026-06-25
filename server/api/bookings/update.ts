@@ -6,6 +6,7 @@
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { Request, Response } from 'express';
+import { notificationService } from '../../services/notificationService.js';
 
 
 export async function updateBooking(req: Request, res: Response, bookingId: string): Promise<void> {
@@ -85,6 +86,26 @@ export async function updateBooking(req: Request, res: Response, bookingId: stri
     );
 
     const updatedBooking = result.rows[0];
+
+    if (status === 'confirmed' && booking.status === 'pending') {
+      const rideInfo = await db.query(
+        'SELECT from_city, to_city, departure_date, departure_time, driver_id FROM rides WHERE id = $1',
+        [booking.ride_id]
+      );
+      const ride = rideInfo.rows[0];
+      const driverProfile = await db.query('SELECT full_name FROM profiles WHERE user_id = $1', [ride?.driver_id]);
+      const driverName = driverProfile.rows[0]?.full_name || 'Водитель';
+
+      notificationService.confirmBookingToPassenger(
+        booking.passenger_id,
+        driverName,
+        booking.ride_id,
+        ride?.from_city || '',
+        ride?.to_city || '',
+        ride?.departure_date || '',
+        ride?.departure_time || ''
+      ).catch(console.error);
+    }
 
     res.status(200).json({
       id: updatedBooking.id,

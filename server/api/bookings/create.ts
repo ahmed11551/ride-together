@@ -81,38 +81,21 @@ export async function createBooking(req: Request, res: Response): Promise<void> 
     const booking = result.rows[0];
 
     // Получаем информацию о пассажире и водителе для уведомлений
-    const [passengerResult, driverResult] = await Promise.all([
-      db.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [payload.userId]),
-      db.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [ride.driver_id]),
+    const [passengerResult] = await Promise.all([
+      db.query('SELECT full_name FROM profiles WHERE user_id = $1', [payload.userId]),
     ]);
 
-    const passenger = passengerResult.rows[0];
-    const driver = driverResult.rows[0];
-    const passengerName = `${passenger?.first_name || ''} ${passenger?.last_name || ''}`.trim() || 'Пассажир';
-    const driverName = `${driver?.first_name || ''} ${driver?.last_name || ''}`.trim() || 'Водитель';
+    const passengerName = passengerResult.rows[0]?.full_name || 'Пассажир';
 
-    // Отправляем уведомления асинхронно (не ждём результат)
-    Promise.all([
-      // Уведомление водителю
-      notificationService.notifyDriverAboutBooking(
-        ride.driver_id,
-        passengerName,
-        ride_id,
-        ride.from_city || '',
-        ride.to_city || '',
-        ride.departure_date || ''
-      ),
-      // Подтверждение пассажиру
-      notificationService.confirmBookingToPassenger(
-        payload.userId,
-        driverName,
-        ride_id,
-        ride.from_city || '',
-        ride.to_city || '',
-        ride.departure_date || '',
-        ride.departure_time || ''
-      ),
-    ]).catch((err) => {
+    // Уведомление водителю
+    notificationService.notifyDriverAboutBooking(
+      ride.driver_id,
+      passengerName,
+      ride_id,
+      ride.from_city || '',
+      ride.to_city || '',
+      ride.departure_date || ''
+    ).catch((err) => {
       logger.error('Error sending booking notifications', err, { bookingId: booking.id });
     });
 

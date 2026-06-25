@@ -1,30 +1,31 @@
 {
-  "name": "Ride Together - Платформа для совместных поездок",
+  "name": "Ride Together",
   "short_name": "Ride Together",
-  "description": "Найдите попутчиков для совместных поездок",
+  "description": "Платформа для совместных поездок",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0d9488",
-  "orientation": "portrait-primary",
-  "icons": [],
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
   "categories": ["travel", "transportation"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Создать поездку",
       "short_name": "Создать",
-      "description": "Опубликовать новую поездку",
-      "url": "/create-ride",
-      "icons": []
+      "url": "/create-ride"
     },
     {
       "name": "Найти поездку",
       "short_name": "Поиск",
-      "description": "Найти подходящую поездку",
-      "url": "/search",
-      "icons": []
+      "url": "/search"
     }
   ]
 }
-

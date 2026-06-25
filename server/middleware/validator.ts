@@ -41,7 +41,8 @@ export function validateUUID(uuid: string): boolean {
  * Middleware для валидации регистрации
  */
 export function validateSignup(req: Request, res: Response, next: NextFunction): void {
-  const { email, password, fullName } = req.body;
+  const { email, password } = req.body;
+  const fullName = req.body.fullName || req.body.full_name;
 
   if (!email || !validateEmail(email)) {
     res.status(400).json({ error: 'Некорректный email адрес' });

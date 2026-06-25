@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: CI
 
 on:
   push:
@@ -10,48 +10,37 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Lint, Test & Build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
-      
-      - name: Install dependencies
+
+      - name: Install frontend dependencies
         run: npm ci
-      
+
       - name: Run linter
         run: npm run lint
-      
+
       - name: Run tests
         run: npm test -- --run
-      
-      - name: Build
+
+      - name: Build frontend
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_API_URL: http://localhost:3001
 
-  deploy:
-    name: Deploy to Vercel
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Build backend
+        working-directory: server
+        run: npm run build
