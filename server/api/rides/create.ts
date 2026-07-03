@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { db } from '../../utils/database.js';
 import { extractTokenFromHeader, verifyToken } from '../../utils/jwt.js';
 import { logger } from '../../utils/logger.js';
+import { notifyMatchingSavedSearches } from '../../services/savedSearchService.js';
 
 export async function createRide(req: Request, res: Response): Promise<void> {
   try {
@@ -86,6 +87,20 @@ export async function createRide(req: Request, res: Response): Promise<void> {
     );
 
     const ride = result.rows[0];
+
+    notifyMatchingSavedSearches({
+      id: ride.id,
+      driver_id: ride.driver_id,
+      from_city: ride.from_city,
+      to_city: ride.to_city,
+      departure_date: ride.departure_date,
+      departure_time: ride.departure_time,
+      price: parseFloat(ride.price),
+      seats_available: ride.seats_available,
+      allow_smoking: ride.allow_smoking,
+      allow_pets: ride.allow_pets,
+      allow_music: ride.allow_music,
+    }).catch((err) => logger.error('Saved search notify error', err));
 
     res.status(201).json({
       id: ride.id,

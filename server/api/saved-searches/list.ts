@@ -22,7 +22,7 @@ export async function listSavedSearches(req: Request, res: Response): Promise<vo
     const result = await db.query(
       `SELECT id, name, from_city, to_city, date, date_from, date_to, time_from, time_to,
               passengers, min_price, max_price, allow_smoking, allow_pets, allow_music,
-              min_rating, sort_by, created_at, updated_at, last_searched_at
+              min_rating, sort_by, notify_telegram, created_at, updated_at, last_searched_at
        FROM saved_searches
        WHERE user_id = $1
        ORDER BY last_searched_at DESC
@@ -49,6 +49,7 @@ export async function listSavedSearches(req: Request, res: Response): Promise<vo
         allowMusic: row.allow_music,
         minRating: row.min_rating ? parseFloat(row.min_rating) : undefined,
         sortBy: row.sort_by,
+        notifyTelegram: row.notify_telegram ?? true,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         lastSearchedAt: row.last_searched_at,

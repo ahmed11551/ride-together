@@ -814,6 +814,7 @@ CREATE TABLE IF NOT EXISTS public.saved_searches (
     allow_music BOOLEAN,
     min_rating DECIMAL(3,2),
     sort_by TEXT DEFAULT 'departure',
+    notify_telegram BOOLEAN DEFAULT true NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     last_searched_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL

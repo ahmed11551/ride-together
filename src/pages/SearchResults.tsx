@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { logError, getUserFriendlyError } from "@/lib/error-handler";
+import { SaveSearchButton } from "@/components/search/SaveSearchButton";
 
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,6 +110,18 @@ const SearchResults = () => {
 
       {/* Results */}
       <div className="container py-6">
+        {(from || to) && (
+          <div className="mb-4">
+            <SaveSearchButton
+              from={from}
+              to={to}
+              date={date}
+              passengers={passengers}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        )}
+
         {isError ? (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />

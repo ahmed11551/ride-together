@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationSettings } from "@/components/notifications/NotificationSettings";
+import { SavedSearchesList } from "@/components/search/SavedSearchesList";
 import { 
   ArrowLeft, 
   User, 
@@ -222,6 +223,10 @@ const Profile = () => {
             </div>
           </div>
         </div>
+
+        <SavedSearchesList />
+
+        <NotificationSettings />
 
         {/* Quick Links */}
         <div className="bg-card rounded-2xl shadow-card overflow-hidden">

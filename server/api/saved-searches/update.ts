@@ -37,6 +37,7 @@ export async function updateSavedSearch(req: Request, res: Response): Promise<vo
       allowMusic?: boolean;
       minRating?: number;
       sortBy?: string;
+      notifyTelegram?: boolean;
     };
 
     // Проверяем, что поиск принадлежит пользователю
@@ -118,6 +119,10 @@ export async function updateSavedSearch(req: Request, res: Response): Promise<vo
     if (body.sortBy !== undefined) {
       updates.push(`sort_by = $${paramIndex++}`);
       params.push(body.sortBy);
+    }
+    if (body.notifyTelegram !== undefined) {
+      updates.push(`notify_telegram = $${paramIndex++}`);
+      params.push(body.notifyTelegram);
     }
 
     if (updates.length === 0) {
