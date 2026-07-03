@@ -27,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  confirmResetPassword: (token: string, password: string) => Promise<{ error: Error | null }>;
   signInWithToken: (token: string, user: User) => Promise<void>;
 }
 
@@ -186,6 +187,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const confirmResetPassword = async (token: string, password: string) => {
+    try {
+      await apiClient.post('/api/auth/confirm-reset-password', { token, password });
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Password reset failed') };
+    }
+  };
+
   const signInWithToken = async (token: string, userData: User) => {
     apiClient.setToken(token);
     const sessionData: Session = {
@@ -198,7 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword, signInWithToken }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, resetPassword, confirmResetPassword, signInWithToken }}>
       {children}
     </AuthContext.Provider>
   );

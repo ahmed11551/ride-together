@@ -71,6 +71,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     telegram_first_name TEXT,
     telegram_last_name TEXT,
     telegram_photo_url TEXT,
+    email_notifications BOOLEAN DEFAULT true,
+    push_notifications BOOLEAN DEFAULT true,
+    telegram_notifications BOOLEAN DEFAULT false,
+    sms_notifications BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
     CONSTRAINT check_rating CHECK (rating >= 0 AND rating <= 5),
@@ -766,6 +770,89 @@ COMMENT ON TABLE public.subscriptions IS 'Подписки на Telegram бот�
 COMMENT ON TABLE public.bot_users IS 'Пользователи Telegram бота';
 COMMENT ON TABLE public.referrals IS 'Реферальная программа';
 COMMENT ON TABLE public.bot_reviews IS 'Отзывы через Telegram бота';
+
+-- =============================================
+-- 15. УВЕДОМЛЕНИЯ
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    data JSONB,
+    url TEXT,
+    read BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    read_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
+
+-- =============================================
+-- 16. СОХРАНЁННЫЕ ПОИСКИ
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.saved_searches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    name TEXT,
+    from_city TEXT,
+    to_city TEXT,
+    date TEXT,
+    date_from TEXT,
+    date_to TEXT,
+    time_from TEXT,
+    time_to TEXT,
+    passengers INTEGER DEFAULT 1,
+    min_price DECIMAL(10,2),
+    max_price DECIMAL(10,2),
+    allow_smoking BOOLEAN,
+    allow_pets BOOLEAN,
+    allow_music BOOLEAN,
+    min_rating DECIMAL(3,2),
+    sort_by TEXT DEFAULT 'departure',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    last_searched_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_searches_user_id ON public.saved_searches(user_id);
+CREATE INDEX IF NOT EXISTS idx_saved_searches_last_searched_at ON public.saved_searches(last_searched_at DESC);
+
+-- =============================================
+-- 17. ГЕОЛОКАЦИЯ
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS public.user_locations (
+    user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+    lat DECIMAL(10, 8) NOT NULL,
+    lng DECIMAL(11, 8) NOT NULL,
+    accuracy DECIMAL(10, 2),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_locations_updated_at ON public.user_locations(updated_at);
+
+CREATE TABLE IF NOT EXISTS public.ride_coordinates (
+    ride_id UUID PRIMARY KEY REFERENCES public.rides(id) ON DELETE CASCADE,
+    from_lat DECIMAL(10, 8),
+    from_lng DECIMAL(11, 8),
+    to_lat DECIMAL(10, 8),
+    to_lng DECIMAL(11, 8),
+    distance_km DECIMAL(10, 2),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ride_coordinates_from ON public.ride_coordinates(from_lat, from_lng);
+CREATE INDEX IF NOT EXISTS idx_ride_coordinates_to ON public.ride_coordinates(to_lat, to_lng);
+
+COMMENT ON TABLE public.notifications IS 'In-app и push уведомления';
+COMMENT ON TABLE public.saved_searches IS 'Сохранённые поисковые запросы';
+COMMENT ON TABLE public.user_locations IS 'Текущее местоположение пользователей';
+COMMENT ON TABLE public.ride_coordinates IS 'Кэш координат поездок';
 
 COMMIT;
 

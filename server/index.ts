@@ -57,6 +57,7 @@ import { signOut } from './api/auth/signout.js';
 import { getCurrentUser } from './api/auth/me.js';
 import { telegramAuth } from './api/auth/telegram.js';
 import { resetPassword } from './api/auth/reset-password.js';
+import { confirmResetPassword } from './api/auth/confirm-reset-password.js';
 import { listRides } from './api/rides/list.js';
 import { searchRides } from './api/rides/search.js';
 import { findNearbyRides } from './api/rides/nearby.js';
@@ -209,6 +210,10 @@ app.post('/api/auth/telegram', authLimiter, async (req: ExpressRequest, res: Exp
 
 app.post('/api/auth/reset-password', authLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
   await resetPassword(req, res);
+});
+
+app.post('/api/auth/confirm-reset-password', authLimiter, async (req: ExpressRequest, res: ExpressResponse) => {
+  await confirmResetPassword(req, res);
 });
 
 // Rides routes

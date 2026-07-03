@@ -17,8 +17,6 @@
 
 ### 1. База данных
 
-Создайте PostgreSQL и выполните схему:
-
 ```bash
 psql -U postgres -d ride_together -f database/schema.sql
 ```
