@@ -38,12 +38,17 @@ npm install
 npm run dev           # http://localhost:8080
 ```
 
-## Деплой на новый сервер
+## Деплой на сервер
 
-1. **PostgreSQL** — выполните `database/schema.sql`
-2. **Backend** — `npm run build && npm start` (или PM2 через `ecosystem.config.cjs`)
-3. **Frontend** — `npm run build`, раздайте `dist/` через nginx
-4. **Nginx** — проксируйте `/api` и `/socket.io` на backend (см. `nginx-regru.conf.example`)
+Полная инструкция: **[deploy/README.md](deploy/README.md)**
+
+```bash
+# На VPS после git clone:
+cp deploy/env.server.example server/.env.production
+cp deploy/env.frontend.example .env.production
+# заполнить оба файла, затем:
+DOMAIN=yourdomain.ru ./scripts/deploy-server.sh
+```
 
 ### Переменные окружения
 
